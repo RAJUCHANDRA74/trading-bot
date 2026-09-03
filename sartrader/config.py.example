@@ -1,0 +1,66 @@
+"""
+=============================================================
+config.py — Platform Configuration
+=============================================================
+COPY THIS FILE TO config.py AND FILL IN YOUR CREDENTIALS.
+config.py is in .gitignore — your secrets stay local.
+=============================================================
+"""
+import os
+from pathlib import Path
+
+BASE_DIR      = Path(__file__).parent.parent
+DATA_DIR      = BASE_DIR / "data"
+LOG_DIR       = BASE_DIR / "logs"
+DASHBOARD_DIR = BASE_DIR / "dashboard"
+
+MODE = "PAPER"           # "PAPER" or "LIVE"
+
+INITIAL_CAPITAL  = 100_000
+REAL_CAPITAL     = 100_000
+
+# ── M-Stock Broker ─────────────────────────────────────────
+MSTOCK = {
+    "enabled": False,
+    "api_key": "YOUR_API_KEY",
+    "client_code": "YOUR_CLIENT_CODE",
+    "password": "YOUR_PASSWORD",
+    "totp_secret": "YOUR_TOTP_SECRET",
+    "whitelisted_ip": "YOUR_VPS_IP",
+}
+
+# ── Zerodha Broker ─────────────────────────────────────────
+ZERODHA = {
+    "enabled": False,
+    "api_key": "YOUR_API_KEY",
+    "api_secret": "YOUR_API_SECRET",
+    "request_token": "",
+    "access_token": "",
+}
+
+DASHBOARD_PORT = 8765
+PAPER = {
+    "slippage_pct": 0.05,
+    "brokerage_per_lot": 40,
+    "lot_sizes": {
+        "BANKNIFTY": 30,
+        "NIFTY": 50,
+    },
+}
+
+INSTRUMENTS = {
+    "BANKNIFTY26SEPFUT": {
+        "enabled": True,
+        "strategy": "SAR_TOP_BOTTOM",
+        "strategy_params": {"stop_pct": 3.0, "be_pct": 2.5},
+        "broker": "MSTOCK",
+    },
+    "NIFTY26SEPFUT": {
+        "enabled": True,
+        "strategy": "SAR_TOP_BOTTOM",
+        "strategy_params": {"stop_pct": 3.0, "be_pct": 2.5},
+        "broker": "MSTOCK",
+    },
+}
+
+LOG_LEVEL = "INFO"

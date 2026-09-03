@@ -1,0 +1,17 @@
+# SARTrader Platform Dependencies
+# Install: pip install -r requirements_platform.txt
+
+# Broker APIs
+mStock-TradingApi-B>=1.0.0
+kiteconnect>=4.0.0
+
+# OTP (for M-Stock TOTP)
+pyotp>=2.9.0
+
+# Web server
+websockets>=12.0
+aiohttp>=3.9.0
+
+# Data / analysis
+numpy>=1.24.0
+pandas>=2.0.0

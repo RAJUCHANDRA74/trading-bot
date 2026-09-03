@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAR Trader — Dark Theme</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg-primary: #0d1117;
+  --bg-secondary: #161b22;
+  --bg-tertiary: #21262d;
+  --border: #30363d;
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted: #484f58;
+  --green: #3fb950;
+  --green-bg: rgba(63,185,80,0.1);
+  --red: #f85149;
+  --red-bg: rgba(248,81,73,0.1);
+  --blue: #58a6ff;
+  --blue-bg: rgba(88,166,255,0.1);
+  --yellow: #d29922;
+  --yellow-bg: rgba(210,153,34,0.1);
+  --purple: #bc8cff;
+  --font: 'Segoe UI', -apple-system, sans-serif;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--green);
+  letter-spacing: -0.5px;
+}
+
+.logo span { color: var(--text-primary); }
+
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  animation: pulse 2s infinite;
+}
+
+.dot.yellow { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); animation: none; }
+.dot.red { background: var(--red); box-shadow: 0 0 6px var(--red); }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.clock {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.time-range {
+  font-size: 11px;
+  color: var(--yellow);
+  background: var(--yellow-bg);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+/* ── LAYOUT ── */
+.layout {
+  display: grid;
+  grid-template-columns: 260px 1fr 300px;
+  height: calc(100vh - 52px);
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-bottom: 2px;
+}
+
+.nav-item:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.nav-item.active {
+  background: var(--blue-bg);
+  color: var(--blue);
+  font-weight: 600;
+}
+
+.nav-item .icon { font-size: 16px; }
+
+.nav-section {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  padding: 12px 12px 6px;
+}
+
+.instrument-list {
+  margin-top: 4px;
+}
+
+.instrument-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-bottom: 1px;
+}
+
+.instrument-item:hover { background: var(--bg-tertiary); }
+.instrument-item.selected { background: var(--bg-tertiary); border-left: 2px solid var(--blue); }
+
+.inst-name {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.inst-segment {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.inst-price {
+  font-weight: 700;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.inst-change { font-size: 11px; }
+.inst-change.up { color: var(--green); }
+.inst-change.dn { color: var(--red); }
+
+/* ── MAIN CONTENT ── */
+.main {
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.main::-webkit-scrollbar { width: 6px; }
+.main::-webkit-scrollbar-track { background: transparent; }
+.main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ── KPI ROW ── */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.kpi-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.kpi-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.kpi-value {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi-value.up { color: var(--green); }
+.kpi-value.dn { color: var(--red); }
+.kpi-value.neutral { color: var(--text-primary); }
+
+.kpi-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+/* ── CHART ── */
+.chart-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.chart-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.chart-legend {
+  display: flex;
+  gap: 16px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.chart-area {
+  height: 220px;
+  position: relative;
+  background: var(--bg-primary);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.chart-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* Candlestick simulation */
+.candle-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 200px;
+  padding: 0 4px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.candle {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.candle-body {
+  width: 100%;
+  max-width: 14px;
+  border-radius: 2px;
+  position: relative;
+}
+
+.candle-wick {
+  width: 1px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.candle.green .candle-body { background: var(--green); }
+.candle.red .candle-body { background: var(--red); }
+
+.entry-marker {
+  position: absolute;
+  width: 2px;
+  background: var(--blue);
+  left: 50%;
+}
+
+.entry-label {
+  position: absolute;
+  background: var(--blue);
+  color: #fff;
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  white-space: nowrap;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.stop-marker {
+  position: absolute;
+  width: 2px;
+  background: var(--red);
+  left: 50%;
+}
+
+.stop-label {
+  position: absolute;
+  background: var(--red);
+  color: #fff;
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  white-space: nowrap;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* ── SIGNAL TABLE ── */
+.signals-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.card-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.signal-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.signal-table th {
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+}
+
+.signal-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.signal-table tr:last-child td { border-bottom: none; }
+
+.signal-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+.strategy-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.strategy-tag.sar {
+  background: var(--blue-bg);
+  color: var(--blue);
+}
+
+.strategy-tag.pending {
+  background: var(--yellow-bg);
+  color: var(--yellow);
+}
+
+.signal-direction {
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.signal-direction.long { color: var(--green); }
+.signal-direction.short { color: var(--red); }
+
+.signal-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.signal-status.active {
+  background: var(--green-bg);
+  color: var(--green);
+}
+
+.signal-status.pending {
+  background: var(--yellow-bg);
+  color: var(--yellow);
+}
+
+.signal-status.exited {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+}
+
+/* ── RIGHT PANEL ── */
+.right-panel {
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.right-panel::-webkit-scrollbar { width: 6px; }
+.right-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.panel-section {
+  margin-bottom: 16px;
+}
+
+.panel-section-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  padding: 0 4px;
+}
+
+.trade-item {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+}
+
+.trade-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.trade-dir {
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.trade-dir.long { color: var(--green); }
+.trade-dir.short { color: var(--red); }
+
+.trade-pnl {
+  font-weight: 700;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.trade-pnl.pos { color: var(--green); }
+.trade-pnl.neg { color: var(--red); }
+
+.trade-details {
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+}
+
+.trade-reason {
+  display: inline-block;
+  margin-top: 5px;
+  font-size: 10px;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  padding: 1px 6px;
+  border-radius: 6px;
+}
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s;
+}
+
+.btn-primary {
+  background: var(--blue);
+  color: #fff;
+}
+
+.btn-primary:hover { filter: brightness(1.1); }
+
+.btn-ghost {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+
+.btn-ghost:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 4px;
+}
+
+.toggle-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.toggle {
+  width: 36px;
+  height: 20px;
+  background: var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s;
+}
+
+.toggle.on { background: var(--green); }
+
+.toggle::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border-radius: 50%;
+  top: 3px;
+  left: 3px;
+  transition: left 0.2s;
+}
+
+.toggle.on::after { left: 19px; }
+
+.strategy-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+}
+
+.strategy-card-name {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.strategy-card-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.param-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 3px;
+}
+
+.param-val {
+  font-weight: 600;
+  color: var(--blue);
+}
+</style>
+</head>
+<body>
+
+<!-- ── TOPBAR ── -->
+<div class="topbar">
+  <div class="logo">SAR<span>Trader</span></div>
+  <div class="status-row">
+    <div class="status-badge">
+      <div class="dot"></div>
+      M-Stock Connected
+    </div>
+    <div class="status-badge">
+      <div class="dot" style="background:#a371f7;box-shadow:0 0 6px #a371f7"></div>
+      Zerodha Connected
+    </div>
+    <div class="status-badge">
+      <div class="dot yellow"></div>
+      Paper Mode
+    </div>
+    <div>
+      <span class="clock" id="clock">09:15:00</span>
+      <span class="time-range">09:15 – 15:30</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── LAYOUT ── -->
+<div class="layout">
+
+  <!-- ── LEFT SIDEBAR ── -->
+  <div class="sidebar">
+    <div class="nav-section">Navigation</div>
+    <div class="nav-item active">
+      <span class="icon">&#9673;</span> Dashboard
+    </div>
+    <div class="nav-item">
+      <span class="icon">&#9632;</span> Signals
+    </div>
+    <div class="nav-item">
+      <span class="icon">&#9744;</span> Trade Log
+    </div>
+    <div class="nav-item">
+      <span class="icon">&#9881;</span> Strategies
+    </div>
+    <div class="nav-item">
+      <span class="icon">&#9744;</span> Brokers
+    </div>
+    <div class="nav-item">
+      <span class="icon">&#9633;</span> Settings
+    </div>
+
+    <div class="nav-section" style="margin-top:8px">Watchlist</div>
+    <div class="instrument-list">
+      <div class="instrument-item selected">
+        <div>
+          <div class="inst-name">BANKNIFTY</div>
+          <div class="inst-segment">NFO Futures</div>
+        </div>
+        <div style="text-align:right">
+          <div class="inst-price">57,509</div>
+          <div class="inst-change up">+0.42%</div>
+        </div>
+      </div>
+      <div class="instrument-item">
+        <div>
+          <div class="inst-name">NIFTY</div>
+          <div class="inst-segment">NSE Futures</div>
+        </div>
+        <div style="text-align:right">
+          <div class="inst-price">24,102</div>
+          <div class="inst-change up">+0.31%</div>
+        </div>
+      </div>
+      <div class="instrument-item">
+        <div>
+          <div class="inst-name">FINNIFTY</div>
+          <div class="inst-segment">NSE Futures</div>
+        </div>
+        <div style="text-align:right">
+          <div class="inst-price">19,847</div>
+          <div class="inst-change dn">-0.18%</div>
+        </div>
+      </div>
+      <div class="instrument-item">
+        <div>
+          <div class="inst-name">SENSEX</div>
+          <div class="inst-segment">BSE Futures</div>
+        </div>
+        <div style="text-align:right">
+          <div class="inst-price">81,240</div>
+          <div class="inst-change up">+0.55%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MAIN CONTENT ── -->
+  <div class="main">
+    <!-- KPI Row -->
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-label">Today's P&L</div>
+        <div class="kpi-value up">+Rs.12,663</div>
+        <div class="kpi-sub">+1.72% return</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Capital</div>
+        <div class="kpi-value neutral">Rs.7,48,200</div>
+        <div class="kpi-sub">Rs.1,63,199 deposited</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Open Positions</div>
+        <div class="kpi-value neutral">1</div>
+        <div class="kpi-sub">1 long active</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Win Rate (30d)</div>
+        <div class="kpi-value up">62%</div>
+        <div class="kpi-sub">8 of 13 trades won</div>
+      </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">BANKNIFTY Futures — 15 Min Chart</div>
+        <div class="chart-legend">
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#3fb950"></div>
+            Long Entry @ 57,200
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#f85149"></div>
+            Stop Loss @ 55,484
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#58a6ff"></div>
+            Current Price
+          </div>
+        </div>
+      </div>
+      <div class="chart-area">
+        <!-- Simulated candlesticks -->
+        <div class="candle-row" id="candleRow"></div>
+        <!-- Price line overlay -->
+        <div style="position:absolute;right:12px;top:12px;background:#21262d;border:1px solid #30363d;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700;color:#3fb950">
+          LTP: 57,509 ▲
+        </div>
+        <!-- Entry marker -->
+        <div style="position:absolute;left:calc(58% - 1px);bottom:80px;width:2px;height:100px;background:#58a6ff;opacity:0.8"></div>
+        <div style="position:absolute;left:calc(58% + 4px);bottom:175px;background:#58a6ff;color:#fff;font-size:9px;padding:2px 5px;border-radius:3px;white-space:nowrap">ENTRY 57,200</div>
+        <!-- SL marker -->
+        <div style="position:absolute;left:calc(58% - 1px);bottom:20px;width:2px;height:calc(100% - 20px);background:#f85149;opacity:0.6"></div>
+        <div style="position:absolute;left:calc(58% + 4px);bottom:22px;background:#f85149;color:#fff;font-size:9px;padding:2px 5px;border-radius:3px;white-space:nowrap">SL 55,484</div>
+        <!-- BE marker -->
+        <div style="position:absolute;left:calc(58% - 1px);bottom:112px;width:2px;height:calc(100% - 112px);background:#d29922;opacity:0.7;top:0"></div>
+        <div style="position:absolute;left:calc(58% + 4px);bottom:114px;background:#d29922;color:#fff;font-size:9px;padding:2px 5px;border-radius:3px;white-space:nowrap">BE 57,200</div>
+      </div>
+    </div>
+
+    <!-- Active Signals -->
+    <div class="signals-card">
+      <div class="card-header">
+        Active Signals
+        <span class="btn btn-ghost" style="font-size:11px;padding:3px 10px">View All</span>
+      </div>
+      <table class="signal-table">
+        <thead>
+          <tr>
+            <th>Strategy</th>
+            <th>Instrument</th>
+            <th>Direction</th>
+            <th>Entry Price</th>
+            <th>SL</th>
+            <th>Target</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="strategy-tag sar">&#9670; SAR-TopBot</span></td>
+            <td>BANKNIFTY26SEPFUT</td>
+            <td><span class="signal-direction long">LONG &#9650;</span></td>
+            <td>57,200</td>
+            <td style="color:var(--red)">55,484</td>
+            <td>—</td>
+            <td><span class="signal-status active">&#9679; Active</span></td>
+          </tr>
+          <tr>
+            <td><span class="strategy-tag sar">&#9670; SAR-TopBot</span></td>
+            <td>NIFTY26SEPFUT</td>
+            <td><span class="signal-direction short">SHORT &#9660;</span></td>
+            <td>24,150</td>
+            <td style="color:var(--red)">24,450</td>
+            <td>—</td>
+            <td><span class="signal-status pending">&#9679; Pending</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── RIGHT PANEL ── -->
+  <div class="right-panel">
+
+    <div class="panel-section">
+      <div class="panel-section-title">Trade Log</div>
+      <div class="trade-item">
+        <div class="trade-item-header">
+          <span class="trade-dir long">LONG &#9650;</span>
+          <span class="trade-pnl pos">+Rs.12,663</span>
+        </div>
+        <div class="trade-details">
+          <span>BANKNIFTY</span>
+          <span style="text-align:right">57,200 → 57,622</span>
+          <span>22 Aug 09:30</span>
+          <span style="text-align:right">22 Aug 14:45</span>
+        </div>
+        <div style="display:flex;gap:4px;margin-top:5px">
+          <span class="trade-reason">signal_reversal</span>
+          <span class="trade-reason">ATR 1.8%</span>
+        </div>
+      </div>
+      <div class="trade-item">
+        <div class="trade-item-header">
+          <span class="trade-dir long">LONG &#9650;</span>
+          <span class="trade-pnl neg">-Rs.50,383</span>
+        </div>
+        <div class="trade-details">
+          <span>BANKNIFTY</span>
+          <span style="text-align:right">54,200 → 52,520</span>
+          <span>06 May 10:15</span>
+          <span style="text-align:right">12 May 15:25</span>
+        </div>
+        <div style="display:flex;gap:4px;margin-top:5px">
+          <span class="trade-reason">stop_hit</span>
+        </div>
+      </div>
+      <div class="trade-item">
+        <div class="trade-item-header">
+          <span class="trade-dir long">LONG &#9650;</span>
+          <span class="trade-pnl pos">+Rs.38,100</span>
+        </div>
+        <div class="trade-details">
+          <span>BANKNIFTY</span>
+          <span style="text-align:right">50,500 → 51,770</span>
+          <span>15 Apr 09:45</span>
+          <span style="text-align:right">22 Apr 13:30</span>
+        </div>
+        <div style="display:flex;gap:4px;margin-top:5px">
+          <span class="trade-reason">signal_reversal</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">Strategies</div>
+      <div class="strategy-card">
+        <div class="strategy-card-name">SAR Top-Bottom</div>
+        <div class="strategy-card-desc">Swing tops/bottoms breakout</div>
+        <div class="toggle-row">
+          <span class="toggle-label">Enabled</span>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="param-row">
+          <span>Breakeven</span>
+          <span class="param-val">2.5%</span>
+        </div>
+        <div class="param-row">
+          <span>ATR Filter</span>
+          <span class="param-val">&lt; 2.0%</span>
+        </div>
+        <div class="param-row">
+          <span>Stop Loss</span>
+          <span class="param-val">3.0%</span>
+        </div>
+      </div>
+      <div class="strategy-card">
+        <div class="strategy-card-name">RSI Momentum <span style="color:var(--text-muted);font-size:10px">(coming soon)</span></div>
+        <div class="strategy-card-desc">RSI overbought/oversold</div>
+        <div class="toggle-row">
+          <span class="toggle-label">Enabled</span>
+          <div class="toggle" onclick="this.classList.toggle('on')"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">Broker Status</div>
+      <div class="strategy-card">
+        <div class="toggle-row">
+          <span class="toggle-label">&#9670; M-Stock</span>
+          <div style="display:flex;align-items:center;gap:4px">
+            <div class="dot"></div>
+            <span style="font-size:11px;color:var(--green)">Live</span>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">
+          Balance: Rs.1,63,199 | Client: MA1116489
+        </div>
+        <div class="toggle-row">
+          <span class="toggle-label" style="margin-top:6px">&#9670; Zerodha</span>
+          <div style="display:flex;align-items:center;gap:4px">
+            <div class="dot" style="background:#a371f7;box-shadow:0 0 6px #a371f7"></div>
+            <span style="font-size:11px;color:#a371f7">Demo</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:8px 4px">
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:9px">
+        &#9881; Strategy Settings
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Generate candlestick chart
+const candleData = [
+  { o: 57300, h: 57500, l: 57100, c: 57350 },
+  { o: 57350, h: 57600, l: 57200, c: 57400 },
+  { o: 57400, h: 57700, l: 57300, c: 57550 },
+  { o: 57550, h: 57800, l: 57450, c: 57600 },
+  { o: 57600, h: 57900, l: 57500, c: 57750 },
+  { o: 57750, h: 58000, l: 57650, c: 57800 },
+  { o: 57800, h: 57950, l: 57700, c: 57700 },
+  { o: 57700, h: 57800, l: 57550, c: 57600 },
+  { o: 57600, h: 57850, l: 57500, c: 57800 },
+  { o: 57800, h: 58050, l: 57750, c: 57950 },
+  { o: 57950, h: 58100, l: 57850, c: 57900 },
+  { o: 57900, h: 57950, l: 57700, c: 57750 },
+  { o: 57750, h: 57800, l: 57500, c: 57500 },
+  { o: 57500, h: 57650, l: 57300, c: 57350 },
+  { o: 57350, h: 57500, l: 57150, c: 57200 },
+  { o: 57200, h: 57400, l: 57000, c: 57100 },
+  { o: 57100, h: 57300, l: 56900, c: 57150 },
+  { o: 57150, h: 57400, l: 57000, c: 57200 },
+  { o: 57200, h: 57450, l: 57050, c: 57100 },
+  { o: 57100, h: 57300, l: 56950, c: 57000 },
+  { o: 57000, h: 57250, l: 56850, c: 57050 },
+  { o: 57050, h: 57300, l: 56900, c: 56950 },
+  { o: 56950, h: 57100, l: 56700, c: 56750 },
+  { o: 56750, h: 56900, l: 56500, c: 56550 },
+  { o: 56550, h: 56700, l: 56300, c: 56350 },
+  { o: 56350, h: 56500, l: 56100, c: 56200 },
+  { o: 56200, h: 56500, l: 56100, c: 56450 },
+  { o: 56450, h: 56800, l: 56300, c: 56700 },
+  { o: 56700, h: 57000, l: 56550, c: 56850 },
+  { o: 56850, h: 57100, l: 56700, c: 57000 },
+  { o: 57000, h: 57300, l: 56900, c: 57200 },
+  { o: 57200, h: 57500, l: 57100, c: 57450 },
+  { o: 57450, h: 57700, l: 57350, c: 57600 },
+  { o: 57600, h: 57800, l: 57500, c: 57550 },
+  { o: 57550, h: 57700, l: 57400, c: 57450 },
+  { o: 57450, h: 57600, l: 57300, c: 57200 },
+  { o: 57200, h: 57400, l: 57000, c: 57050 },
+  { o: 57050, h: 57200, l: 56850, c: 56900 },
+  { o: 56900, h: 57100, l: 56700, c: 56850 },
+  { o: 56850, h: 57100, l: 56750, c: 57050 },
+];
+
+const row = document.getElementById('candleRow');
+const allPrices = candleData.flatMap(d => [d.h, d.l]);
+const minP = Math.min(...allPrices);
+const maxP = Math.max(...allPrices);
+const range = maxP - minP;
+
+candleData.forEach(d => {
+  const isGreen = d.c >= d.o;
+  const cls = isGreen ? 'green' : 'red';
+  const bodyTop = ((maxP - Math.max(d.o, d.c)) / range * 200).toFixed(1);
+  const bodyBot = ((maxP - Math.min(d.o, d.c)) / range * 200).toFixed(1);
+  const wickTop = ((maxP - d.h) / range * 200).toFixed(1);
+  const wickBot = ((maxP - d.l) / range * 200).toFixed(1);
+  const bodyH = Math.max(Math.abs(d.o - d.c) / range * 200, 1).toFixed(1);
+
+  const div = document.createElement('div');
+  div.className = `candle ${cls}`;
+  div.style.flex = '1';
+  div.style.height = '100%';
+  div.style.display = 'flex';
+  div.style.flexDirection = 'column';
+  div.style.justifyContent = 'flex-end';
+  div.style.position = 'relative';
+
+  div.innerHTML = `
+    <div style="position:absolute;left:50%;width:1px;background:${isGreen?'#3fb950':'#f85149'};opacity:0.4;
+      bottom:${wickBot}px;top:${(200-parseFloat(wickTop)).toFixed(0)}px;transform:translateX(-50%)"></div>
+    <div style="width:60%;margin:0 auto;border-radius:2px;
+      height:${bodyH}px;
+      background:${isGreen?'#3fb950':'#f85149'};
+      position:relative;
+      bottom:${(200-parseFloat(bodyBot)).toFixed(0)}px;
+      "></div>
+  `;
+  row.appendChild(div);
+});
+
+// Clock
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleTimeString('en-IN', {hour12: false});
+}
+updateClock();
+setInterval(updateClock, 1000);
+</script>
+</body>
+</html>
