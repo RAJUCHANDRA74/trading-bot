@@ -21,6 +21,7 @@ import logging
 import threading
 import asyncio
 import sqlite3
+import argparse
 from pathlib import Path
 from datetime import datetime as _dt, time as dtime
 from typing import Dict, Optional, List, Any
@@ -1295,6 +1296,12 @@ async def run_http_dashboard(engine_ref, host="localhost", port=8765, server_rea
 # ── Entry Point ───────────────────────────────────────────────────────────────
 
 async def main_async():
+    # Parse CLI args
+    parser = argparse.ArgumentParser(description="SARTrader Engine")
+    parser.add_argument("--host", default="localhost", help="Dashboard host (use 0.0.0.0 for public)")
+    parser.add_argument("--port", type=int, default=config.DASHBOARD_PORT, help="Dashboard port")
+    args = parser.parse_args()
+
     logger.info("=" * 60)
     logger.info("  SARTrader Platform v1.0")
     logger.info("  Mode: " + config.MODE)
@@ -1303,8 +1310,8 @@ async def main_async():
     engine = TradingEngine()
 
     # Start HTTP + WebSocket
-    port = config.DASHBOARD_PORT
-    host = "localhost"
+    host = args.host
+    port = args.port
 
     # Event: fires when HTTP server is listening — tick loop waits for this
     server_ready = asyncio.Event()
