@@ -860,6 +860,9 @@ class TradingEngine:
                     "_position_side":    v["strategy"]._position_side,
                     "_entry_price":      v["strategy"]._entry_price,
                     "_closed_pnl":       closed_pnl_per_inst.get(k, 0),
+                    # Swing points for SAR Top-Bottom strategy
+                    "_recent_tops":      [(p, float(t)) for _, p, t in getattr(v["strategy"], "_recent_tops", [])],
+                    "_recent_bots":      [(p, float(t)) for _, p, t in getattr(v["strategy"], "_recent_bots", [])],
                 }
                 for k, v in self.strategies.items()
             },

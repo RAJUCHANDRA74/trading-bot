@@ -526,6 +526,29 @@ table.full-width tbody tr:hover td { background: rgba(255,255,255,0.02); }
 .param-card-sub   { font-size: 9px; color: var(--text-muted); margin-top: 2px; }
 .strat-actions { display: flex; gap: 8px; }
 
+.swing-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+.swing-box {
+  flex: 1;
+  text-align: center;
+  padding: 10px;
+  border-radius: 8px;
+}
+.swing-top { background: var(--red-dim); border: 1px solid rgba(239,68,68,0.25); }
+.swing-bot { background: var(--green-dim); border: 1px solid rgba(16,185,129,0.25); }
+.swing-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 4px; }
+.swing-val { font-size: 18px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.swing-top .swing-val { color: var(--red); }
+.swing-bot .swing-val { color: var(--green); }
+.swing-vs { font-size: 11px; color: var(--text-muted); font-weight: 700; flex-shrink: 0; }
+
 /* ── Brokers View ── */
 .broker-card {
   background: var(--bg-card); border: 1px solid var(--border);
@@ -3906,6 +3929,10 @@ function updateStrategies(strategies) {
   for (const [key, strat] of Object.entries(strategies)) {
     const enabled = strat.enabled;
     const p = strat.params || {};
+    const tops = strat._recent_tops || [];
+    const bots = strat._recent_bots || [];
+    const lastTop = tops.length > 0 ? tops[tops.length - 1][0] : null;
+    const lastBot = bots.length > 0 ? bots[bots.length - 1][0] : null;
     html += `<div class="strat-card">
       <div class="strat-top">
         <div class="strat-name">SAR Top-Bottom</div>
@@ -3926,6 +3953,17 @@ function updateStrategies(strategies) {
       </div>`;
     }
     html += `</div>
+      <div class="swing-row">
+        <div class="swing-box swing-top">
+          <div class="swing-label">Recent Swing Top</div>
+          <div class="swing-val">${lastTop != null ? '₹' + lastTop.toFixed(2) : '—'}</div>
+        </div>
+        <div class="swing-vs">vs</div>
+        <div class="swing-box swing-bot">
+          <div class="swing-label">Recent Swing Bottom</div>
+          <div class="swing-val">${lastBot != null ? '₹' + lastBot.toFixed(2) : '—'}</div>
+        </div>
+      </div>
       <div class="strat-actions">
         <div class="toggle ${enabled?'on':''}" id="toggleStrat-${key}" onclick="toggleStrat('${key}')"></div>
         <span style="font-size:12px;color:var(--text-secondary);margin-left:4px">Strategy ${enabled?'Enabled':'Disabled'}</span>

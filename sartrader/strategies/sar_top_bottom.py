@@ -112,7 +112,16 @@ class SARTopBottomStrategy(AbstractStrategy):
 
         # ── No position → look for entry ────────────────────────────────────
         if not self._position_open:
-            return self._find_entry(close, i, last_top, last_bot, candles)
+            sig = self._find_entry(close, i, last_top, last_bot, candles)
+            if sig is None:
+                atr = self.get_atr_pct(14)
+                if atr:
+                    logger.info(
+                        f"[{self.instrument}] No signal | close={close:.2f} "
+                        f"| top={top_price:.2f} bot={bot_price:.2f} "
+                        f"| ATR%={atr:.2f}% (threshold={self._atr_threshold}%)"
+                    )
+            return sig
 
         # ── Have position → manage it ───────────────────────────────────────
         return self._manage_position(close, high, low, i, last_top, last_bot)
@@ -141,19 +150,19 @@ class SARTopBottomStrategy(AbstractStrategy):
             if candles[j].close < candles[lo].close:
                 lo = j
 
-        # If current candle is a local top
+        # If current candle is a local top — record at CLOSE (line chart)
         if hi == check_idx:
             price = candles[check_idx].close
             if not self._recent_tops or self._recent_tops[-1][1] != price:
                 self._recent_tops.append((check_idx, price, ts))
-                logger.debug(f"[{self.instrument}] New top: {price}")
+                logger.info(f"[{self.instrument}] Swing TOP recorded: {price}")
 
-        # If current candle is a local bottom
+        # If current candle is a local bottom — record at CLOSE (line chart)
         if lo == check_idx:
             price = candles[check_idx].close
             if not self._recent_bots or self._recent_bots[-1][1] != price:
                 self._recent_bots.append((check_idx, price, ts))
-                logger.debug(f"[{self.instrument}] New bottom: {price}")
+                logger.info(f"[{self.instrument}] Swing BOTTOM recorded: {price}")
 
         # Prune old swing points (older than max_swing_age)
         cutoff_idx = current_idx - self._max_swing_age
