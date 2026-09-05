@@ -1048,22 +1048,56 @@ table.full-width tr:hover td { background: var(--bg-card2); }
           </div>
         </div>
 
-        <!-- SEGMENT 3: OPTION STRATEGY (placeholder) -->
+        <!-- SEGMENT 3: OPTION STRATEGY -->
         <div class="strat-segment">
-          <div class="seg-header seg-locked" onclick="toggleSeg('segOption')">
+          <div class="seg-header" onclick="toggleSeg('segOption')">
             <div class="seg-title">
               <span class="seg-icon">📊</span>
               Option Strategy
             </div>
-            <div style="display:flex;align-items:center;gap:8px">
-              <span style="font-size:10px;color:var(--text-muted);font-style:italic">Coming soon...</span>
-              <div class="seg-toggle" id="toggleSegOption">▼</div>
-            </div>
+            <div class="seg-toggle" id="toggleSegOption">▼</div>
           </div>
           <div class="seg-body" id="bodySegOption" style="display:none">
-            <div style="padding:16px;text-align:center;color:var(--text-muted);font-size:12px">
-              Option strategy configuration will be available soon.
+
+            <!-- Stock Options -->
+            <div class="strat-system">
+              <div class="sys-header" onclick="toggleSys('sysStockOpt')">
+                <input type="checkbox" class="sys-cb" id="cbStockOpt" onchange="sysCbChange('STOCKOPT')">
+                <span class="sys-name">Stock Options</span>
+                <span class="sys-count" id="cntSTOCKOPT">0 selected</span>
+                <div class="sys-toggle" id="toggleSysStockOpt">▼</div>
+              </div>
+              <div class="sys-body" id="bodySysStockOpt" style="display:none">
+                <div class="sys-stocks" id="stocksSTOCKOPT"></div>
+              </div>
             </div>
+
+            <!-- Index Options -->
+            <div class="strat-system">
+              <div class="sys-header" onclick="toggleSys('sysIdxOpt')">
+                <input type="checkbox" class="sys-cb" id="cbIdxOpt" onchange="sysCbChange('IDXOPT')">
+                <span class="sys-name">Index Options</span>
+                <span class="sys-count" id="cntIDXOPT">0 selected</span>
+                <div class="sys-toggle" id="toggleSysIdxOpt">▼</div>
+              </div>
+              <div class="sys-body" id="bodySysIdxOpt" style="display:none">
+                <div class="sys-stocks" id="stocksIDXOPT"></div>
+              </div>
+            </div>
+
+            <!-- Commodity Options -->
+            <div class="strat-system">
+              <div class="sys-header" onclick="toggleSys('sysCommoOpt')">
+                <input type="checkbox" class="sys-cb" id="cbCommoOpt" onchange="sysCbChange('COMMOOPT')">
+                <span class="sys-name">Commodity Options</span>
+                <span class="sys-count" id="cntCOMMOOPT">0 selected</span>
+                <div class="sys-toggle" id="toggleSysCommoOpt">▼</div>
+              </div>
+              <div class="sys-body" id="bodySysCommoOpt" style="display:none">
+                <div class="sys-stocks" id="stocksCOMMOOPT"></div>
+              </div>
+            </div>
+
           </div>
         </div>
 
@@ -1504,6 +1538,11 @@ const COMMO_FUTURES = [
   {name:'Aluminium MCX', code:'ALUMINIUMM', label:'Aluminium'},
 ];
 
+// ── Option data (future expansions) ─────────────────────────────
+const STOCK_OPTIONS = CASH_STOCKS.slice(0, 20);  // most liquid stocks
+const INDEX_OPTIONS = ['BANKNIFTY','NIFTY','SENSEX','FINNIFTY','MIDCPNIFTY'];
+const COMMO_OPTIONS = ['Gold','Silver','Crude Oil','Natural Gas','Copper','Zinc'];
+
 // ── Cash strategy systems (each maps to a list of stocks) ──────
 // For now all 5 strategies share the same universe — will be overridden per strategy
 const CASH_SYSTEMS = {
@@ -1669,7 +1708,7 @@ function updateSystemCb(sysId) {
 function updateCounts() {
   // Count per system
   const counts = {};
-  Object.keys(systemSelections).forEach(k => counts[k] = 0);
+  ['ABCT','CUP','TOPBTM','VALUE','MONSTER','STOCKFUT','IDXFUT','COMMOFUT','STOCKOPT','IDXOPT','COMMOOPT'].forEach(k => counts[k] = 0);
   Object.values(selectedInstruments).forEach(sys => { if (counts[sys] !== undefined) counts[sys]++; });
 
   Object.entries(counts).forEach(([sys, cnt]) => {
@@ -1812,7 +1851,54 @@ function initStrategyPage() {
   renderFutureSectors();
   renderIndexFutures();
   renderCommoFutures();
+  renderStockOptions();
+  renderIndexOptions();
+  renderCommoOptions();
   updateCounts();
+}
+
+// ── Render Stock Options ───────────────────────────────────────
+function renderStockOptions() {
+  const container = document.getElementById('stocksSTOCKOPT');
+  if (!container) return;
+  container.innerHTML = STOCK_OPTIONS.map(stock => {
+    const inst = stock + '.NS';
+    const ltp = (window._stratQuotes && window._stratQuotes[inst])
+      ? window._stratQuotes[inst].toLocaleString('en-IN',{minimumFractionDigits:1})
+      : '—';
+    const selClass = selectedInstruments[inst] ? 'selected' : '';
+    return `<label class="stock-chip ${selClass}" id="chip_${inst.replace('.','_')}_STOCKOPT">
+      <input type="checkbox" onchange="toggleStock('${inst}','STOCKOPT',this.checked)" ${selectedInstruments[inst] ? 'checked' : ''}>
+      <span>${stock}</span>
+      <span class="chip-ltp">${ltp}</span>
+    </label>`;
+  }).join('');
+}
+
+// ── Render Index Options ─────────────────────────────────────────
+function renderIndexOptions() {
+  const container = document.getElementById('stocksIDXOPT');
+  if (!container) return;
+  container.innerHTML = INDEX_OPTIONS.map(idx => {
+    const selClass = selectedInstruments[idx + 'OPT'] ? 'selected' : '';
+    return `<label class="stock-chip ${selClass}" id="chip_${idx}_IDXOPT">
+      <input type="checkbox" onchange="toggleStock('${idx}OPT','IDXOPT',this.checked)" ${selectedInstruments[idx + 'OPT'] ? 'checked' : ''}>
+      <span>${idx} Options</span>
+    </label>`;
+  }).join('');
+}
+
+// ── Render Commodity Options ──────────────────────────────────────
+function renderCommoOptions() {
+  const container = document.getElementById('stocksCOMMOOPT');
+  if (!container) return;
+  container.innerHTML = COMMO_OPTIONS.map(c => {
+    const selClass = selectedInstruments[c + 'OPT'] ? 'selected' : '';
+    return `<label class="stock-chip ${selClass}" id="chip_${c}_COMMOOPT">
+      <input type="checkbox" onchange="toggleStock('${c}OPT','COMMOOPT',this.checked)" ${selectedInstruments[c + 'OPT'] ? 'checked' : ''}>
+      <span>${c} Options</span>
+    </label>`;
+  }).join('');
 }
 
 // ── Clock for strategy page ────────────────────────────────────
