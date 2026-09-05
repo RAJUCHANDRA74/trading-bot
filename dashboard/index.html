@@ -443,6 +443,135 @@ table.full-width tr:hover td { background: var(--bg-card2); }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
+/* ════════════════════════════════════════
+   STRATEGY PAGE
+════════════════════════════════════════ */
+
+/* Summary bar */
+.strat-summary-bar {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.ssb-left { display: flex; align-items: center; gap: 10px; }
+.ssb-label { font-size: 12px; color: var(--text-secondary); font-weight: 600; }
+.ssb-count {
+  background: var(--green-dim); color: var(--green);
+  border: 1px solid rgba(0,200,150,0.3);
+  border-radius: 20px; padding: 2px 10px;
+  font-size: 12px; font-weight: 700;
+}
+.ssb-right { display: flex; align-items: center; gap: 10px; }
+.ssb-apply-btn {
+  background: linear-gradient(135deg, var(--green), #00a878);
+  border: none; border-radius: 8px;
+  color: #000; font-size: 12px; font-weight: 700;
+  padding: 8px 18px; cursor: pointer;
+  transition: opacity 0.2s;
+}
+.ssb-apply-btn:hover { opacity: 0.85; }
+.ssb-clear-btn {
+  background: var(--bg-card2); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text-secondary);
+  font-size: 12px; padding: 8px 14px; cursor: pointer;
+}
+.ssb-clear-btn:hover { border-color: var(--red); color: var(--red); }
+
+/* Strategy segments */
+.strat-segments { display: flex; flex-direction: column; gap: 12px; }
+
+.strat-segment {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px; overflow: hidden;
+}
+
+.seg-header {
+  padding: 14px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.seg-header:hover { background: var(--bg-card2); }
+.seg-locked { cursor: default; }
+.seg-locked:hover { background: transparent; }
+.seg-title {
+  font-size: 14px; font-weight: 700; color: var(--text-primary);
+  display: flex; align-items: center; gap: 8px;
+}
+.seg-icon { font-size: 16px; }
+.seg-toggle { font-size: 11px; color: var(--text-muted); transition: transform 0.2s; }
+.seg-body { padding: 8px 0; }
+
+/* Strategy system (ABCT, CUP, etc.) */
+.strat-system { border-bottom: 1px solid rgba(30,48,80,0.5); }
+.strat-system:last-child { border-bottom: none; }
+
+.sys-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px 10px 20px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.sys-header:hover { background: var(--bg-card2); }
+.sys-cb { width: 16px; height: 16px; cursor: pointer; accent-color: var(--green); }
+.sys-name { font-size: 13px; font-weight: 600; color: var(--text-primary); flex: 1; }
+.sys-count {
+  font-size: 11px; color: var(--text-muted);
+  background: var(--bg-secondary); border: 1px solid var(--border);
+  border-radius: 20px; padding: 1px 8px;
+}
+.sys-toggle { font-size: 10px; color: var(--text-muted); transition: transform 0.2s; }
+.sys-body { padding: 0 16px 8px 36px; }
+.sys-stocks { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 0; }
+
+/* Stock chip */
+.stock-chip {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 20px; padding: 4px 10px;
+  font-size: 11px; font-weight: 600; color: var(--text-secondary);
+  cursor: pointer; transition: all 0.15s;
+  user-select: none;
+}
+.stock-chip:hover { border-color: var(--border-light); color: var(--text-primary); }
+.stock-chip.selected {
+  background: var(--green-dim);
+  border-color: rgba(0,200,150,0.4);
+  color: var(--green);
+}
+.stock-chip input[type="checkbox"] { width: 13px; height: 13px; accent-color: var(--green); cursor: pointer; }
+.stock-chip .chip-ltp { font-size: 10px; opacity: 0.7; }
+
+/* Future Sector */
+.future-sector { border-bottom: 1px solid rgba(30,48,80,0.4); }
+.future-sector:last-child { border-bottom: none; }
+.sector-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 16px 9px 24px;
+  cursor: pointer; transition: background 0.15s;
+}
+.sector-header:hover { background: var(--bg-card2); }
+.sector-cb { width: 15px; height: 15px; accent-color: var(--blue); cursor: pointer; }
+.sector-name { font-size: 12px; font-weight: 600; color: var(--text-primary); flex: 1; }
+.sector-count { font-size: 10px; color: var(--text-muted); }
+.sector-toggle { font-size: 10px; color: var(--text-muted); transition: transform 0.2s; }
+.sector-body { padding: 0 16px 8px 40px; }
+
+/* Applied indicator */
+.applied-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: var(--green-dim); color: var(--green);
+  border: 1px solid rgba(0,200,150,0.3);
+  border-radius: 20px; padding: 2px 8px;
+  font-size: 10px; font-weight: 700;
+}
+
 /* Color helpers */
 .text-green { color: var(--green); }
 .text-red   { color: var(--red); }
@@ -769,10 +898,178 @@ table.full-width tr:hover td { background: var(--bg-card2); }
           <div class="live-clock" id="stratClock">—</div>
         </div>
       </div>
-      <div style="text-align:center;padding:60px;color:var(--text-muted)">
-        Strategy configuration coming soon...
+
+      <!-- Active Watchlist Summary Bar -->
+      <div class="strat-summary-bar">
+        <div class="ssb-left">
+          <span class="ssb-label">Active in Watchlist</span>
+          <span class="ssb-count" id="stratActiveCount">0</span>
+          <span class="ssb-label">instruments</span>
+        </div>
+        <div class="ssb-right">
+          <button class="ssb-apply-btn" onclick="applySelectedStrategies()">Apply to Watchlist →</button>
+          <button class="ssb-clear-btn" onclick="clearAllStrategies()">Clear All</button>
+        </div>
       </div>
-    </div>
+
+      <!-- 3 Main Strategy Segments -->
+      <div class="strat-segments">
+
+        <!-- SEGMENT 1: CASH STRATEGY -->
+        <div class="strat-segment">
+          <div class="seg-header" onclick="toggleSeg('segCash')">
+            <div class="seg-title">
+              <span class="seg-icon">💰</span>
+              Cash Strategy
+            </div>
+            <div class="seg-toggle" id="toggleSegCash">▼</div>
+          </div>
+          <div class="seg-body" id="bodySegCash" style="display:none">
+
+            <!-- ABCT System-1 -->
+            <div class="strat-system">
+              <div class="sys-header" onclick="toggleSys('sysABCT')">
+                <input type="checkbox" class="sys-cb" id="cbABCT" onchange="sysCbChange('ABCT')">
+                <span class="sys-name">ABCT System-1</span>
+                <span class="sys-count" id="cntABCT">0 selected</span>
+                <div class="sys-toggle" id="toggleSysABCT">▼</div>
+              </div>
+              <div class="sys-body" id="bodySysABCT" style="display:none">
+                <div class="sys-stocks" id="stocksABCT"></div>
+              </div>
+            </div>
+
+            <!-- CUP Strategy -->
+            <div class="strat-system">
+              <div class="sys-header" onclick="toggleSys('sysCUP')">
+                <input type="checkbox" class="sys-cb" id="cbCUP" onchange="sysCbChange('CUP')">
+                <span class="sys-name">CUP Strategy</span>
+                <span class="sys-count" id="cntCUP">0 selected</span>
+                <div class="sys-toggle" id="toggleSysCUP">▼</div>
+              </div>
+              <div class="sys-body" id="bodySysCUP" style="display:none">
+                <div class="sys-stocks" id="stocksCUP"></div>
+              </div>
+            </div>
+
+            <!-- Top-Bottom -->
+            <div class="strat-system">
+              <div class="sys-header" onclick="toggleSys('sysTOPBTM')">
+                <input type="checkbox" class="sys-cb" id="cbTOPBTM" onchange="sysCbChange('TOPBTM')">
+                <span class="sys-name">Top-Bottom</span>
+                <span class="sys-count" id="cntTOPBTM">0 selected</span>
+                <div class="sys-toggle" id="toggleSysTOPBTM">▼</div>
+              </div>
+              <div class="sys-body" id="bodySysTOPBTM" style="display:none">
+                <div class="sys-stocks" id="stocksTOPBTM"></div>
+              </div>
+            </div>
+
+            <!-- Value Buy -->
+            <div class="strat-system">
+              <div class="sys-header" onclick="toggleSys('sysVALUE')">
+                <input type="checkbox" class="sys-cb" id="cbVALUE" onchange="sysCbChange('VALUE')">
+                <span class="sys-name">Value Buy</span>
+                <span class="sys-count" id="cntVALUE">0 selected</span>
+                <div class="sys-toggle" id="toggleSysVALUE">▼</div>
+              </div>
+              <div class="sys-body" id="bodySysVALUE" style="display:none">
+                <div class="sys-stocks" id="stocksVALUE"></div>
+              </div>
+            </div>
+
+            <!-- Monster Move -->
+            <div class="strat-system">
+              <div class="sys-header" onclick="toggleSys('sysMONSTER')">
+                <input type="checkbox" class="sys-cb" id="cbMONSTER" onchange="sysCbChange('MONSTER')">
+                <span class="sys-name">Monster Move</span>
+                <span class="sys-count" id="cntMONSTER">0 selected</span>
+                <div class="sys-toggle" id="toggleSysMONSTER">▼</div>
+              </div>
+              <div class="sys-body" id="bodySysMONSTER" style="display:none">
+                <div class="sys-stocks" id="stocksMONSTER"></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- SEGMENT 2: FUTURE STRATEGY -->
+        <div class="strat-segment">
+          <div class="seg-header" onclick="toggleSeg('segFuture')">
+            <div class="seg-title">
+              <span class="seg-icon">📈</span>
+              Future Strategy
+            </div>
+            <div class="seg-toggle" id="toggleSegFuture">▼</div>
+          </div>
+          <div class="seg-body" id="bodySegFuture" style="display:none">
+
+            <!-- Stock Futures -->
+            <div class="strat-system">
+              <div class="sys-header" onclick="toggleSys('sysStockFut')">
+                <input type="checkbox" class="sys-cb" id="cbStockFut" onchange="sysCbChange('STOCKFUT')">
+                <span class="sys-name">Stock Futures</span>
+                <span class="sys-count" id="cntSTOCKFUT">0 selected</span>
+                <div class="sys-toggle" id="toggleSysStockFut">▼</div>
+              </div>
+              <div class="sys-body" id="bodySysStockFut" style="display:none">
+                <!-- Sectors will be populated by JS -->
+                <div id="futureSectors"></div>
+              </div>
+            </div>
+
+            <!-- Index Futures -->
+            <div class="strat-system">
+              <div class="sys-header" onclick="toggleSys('sysIdxFut')">
+                <input type="checkbox" class="sys-cb" id="cbIdxFut" onchange="sysCbChange('IDXFUT')">
+                <span class="sys-name">Index Futures</span>
+                <span class="sys-count" id="cntIDXFUT">0 selected</span>
+                <div class="sys-toggle" id="toggleSysIdxFut">▼</div>
+              </div>
+              <div class="sys-body" id="bodySysIdxFut" style="display:none">
+                <div class="sys-stocks" id="stocksIDXFUT"></div>
+              </div>
+            </div>
+
+            <!-- Commodity Futures -->
+            <div class="strat-system">
+              <div class="sys-header" onclick="toggleSys('sysCommoFut')">
+                <input type="checkbox" class="sys-cb" id="cbCommoFut" onchange="sysCbChange('COMMOFUT')">
+                <span class="sys-name">Commodity Futures</span>
+                <span class="sys-count" id="cntCOMMOFUT">0 selected</span>
+                <div class="sys-toggle" id="toggleSysCommoFut">▼</div>
+              </div>
+              <div class="sys-body" id="bodySysCommoFut" style="display:none">
+                <div class="sys-stocks" id="stocksCOMMOFUT"></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- SEGMENT 3: OPTION STRATEGY (placeholder) -->
+        <div class="strat-segment">
+          <div class="seg-header seg-locked" onclick="toggleSeg('segOption')">
+            <div class="seg-title">
+              <span class="seg-icon">📊</span>
+              Option Strategy
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:10px;color:var(--text-muted);font-style:italic">Coming soon...</span>
+              <div class="seg-toggle" id="toggleSegOption">▼</div>
+            </div>
+          </div>
+          <div class="seg-body" id="bodySegOption" style="display:none">
+            <div style="padding:16px;text-align:center;color:var(--text-muted);font-size:12px">
+              Option strategy configuration will be available soon.
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /strat-segments -->
+
+    </div><!-- /viewStrategies -->
 
     <!-- ══════════════════════════════
          ORDERS / TRADE LOG VIEW
@@ -1153,9 +1450,385 @@ function exitAllPositions() {
 }
 
 /* ════════════════════════════════════════
+   STRATEGY PAGE DATA & LOGIC
+════════════════════════════════════════ */
+
+// ── NSE Stock Universe ──────────────────────────────────────────
+const CASH_STOCKS = [
+  'RELIANCE','HDFCBANK','ICICIBANK','TCS','INFY','HINDUNILVR',
+  'ITC','SBIN','BAJFINANCE','LT','MARUTI','TITAN','SUNPHARMA',
+  'WIPRO','KOTAKBANK','HDFC','ASIANPAINT','NESTLEIND','BHARTIARTL',
+  'ULTRACEMCO','TATASTEEL','JSWSTEEL','ADANIPORTS','POWERGRID','NTPC',
+  'CIPLA','TECHM','M&M','BAJAJ-AUTO','HEROMOTOCO','EICHERMOT',
+  'BRITANNIA','DABUR','DRREDDY','DIVISLAB','GRASIM','INDUSINDBK',
+  'JUBLFOOD','MARICO','MUTHOOTFIN','PIDILITIND','SBILIFE','SIEMENS',
+  'BANKBARODA','CANBK','COALINDIA','GAIL','IOC','LUPIN','MANAPPURAM',
+  'NAUKRI','PERSISTENT','PFC','RECLTD','TATACONSUM','TORNTPOWER',
+  'FEDERALBNK','IDFCFIRSTB','L&TFH','AUBANK','BANDHANBNK'
+];
+
+// ── Future Sectors ─────────────────────────────────────────────
+const FUTURE_SECTORS = {
+  'Auto Sector': ['BAJAJ-AUTO','HEROMOTOCO','EICHERMOT','M&M','MARUTI','TVSMOTOR','BOSCHLTD','BALKRISIND'],
+  'PSU Bank Sector': ['SBIN','BANKBARODA','CANBK','UNIONBANK','PNB','INDIANB'],
+  'PVT Bank Sector': ['HDFCBANK','ICICIBANK','AXISBANK','KOTAKBANK','INDUSINDBK','IDFCFIRSTB'],
+  'Consumer Durable Sector': ['TITAN','WESTLIFE','VOLTAS','CROMPTON','HAVELLS','AMARAJA'],
+  'Energy Sector': ['COALINDIA','NMDC','GAIL','BPCL','IOC','ONGC','NTPC','POWERGRID','RELIANCE'],
+  'FMCG Sector': ['HINDUNILVR','NESTLEIND','BRITANNIA','GODREJCP','DABUR','COLPAL','MARICO'],
+  'Financial Services Sector': ['BAJFINANCE','BAJAJFINSV','CHOLAFIN','MUTHOOTFIN','L&TFIN','BAFINA','MUTHOOTCAP','SHRIRAMFIN'],
+  'IT Sector': ['TCS','INFY','HCLTECH','WIPRO','TECHM','MINDTREE','LTIM','COFORGE','PERSISTENT'],
+  'Infra Sector': ['ADANIPORTS','DMART','GMRINFRA','DELHIVERY','CONCOR','ACC','AMBUJACEM','ULTRACEMCO'],
+  'India Defence Sector': ['HAL','BEL','BDL','MAZAGAONDOCK','GARDENREACH','COCHINSHIP','GRINFRABE'],
+  'Metal Sector': ['TATASTEEL','JSWSTEEL','HINDALCO','VEDL','NMDC','SAIL','MOIL','HINDCOPPER'],
+  'Pharma Sector': ['SUNPHARMA','CIPLA','DRREDDY','ZYDUSLIFE','LUPIN','AUROPHARMA','CADILA','GLENMARK','BIOCON','ERIS'],
+  'PSE Sector': ['NTPC','POWERGRID','ONGC','IOC','BPCL','GAIL','COALINDIA','NMDC','RECLTD','PFC','SJVN','NHPC'],
+  'Reality Sector': ['DLF','GODREJPROP','BRIGADE','PRESTIGE','OBEROIRLTY','MACOTRADE','TARC','ASHIANA'],
+  'Miscellaneous Sector': ['ADANIENT','ADANIPORTS','DELHIVERY','DEEPAKNTR','FIVESTAR','CAMS','CRISIL','KALYAN']
+};
+
+// ── Index Futures ──────────────────────────────────────────────
+const INDEX_FUTURES = ['BANKNIFTY','NIFTY','SENSEX','FINNIFTY'];
+
+// ── Commodity Futures ───────────────────────────────────────────
+const COMMO_FUTURES = [
+  {name:'Gold MCX', code:'GOLDM', label:'Gold'},
+  {name:'Gold Mini MCX', code:'GOLDM', label:'Gold Mini'},
+  {name:'Silver MCX', code:'SILVERM', label:'Silver'},
+  {name:'Silver Mini MCX', code:'SILVERM', label:'Silver Mini'},
+  {name:'Crude Oil MCX', code:'CRUDEOILM', label:'Crude Oil'},
+  {name:'Natural Gas MCX', code:'NATURALGASM', label:'Natural Gas'},
+  {name:'Copper MCX', code:'COPPERM', label:'Copper'},
+  {name:'Zinc MCX', code:'ZINCM', label:'Zinc'},
+  {name:'Lead MCX', code:'LEADM', label:'Lead'},
+  {name:'Nickel MCX', code:'NICKELM', label:'Nickel'},
+  {name:'Aluminium MCX', code:'ALUMINIUMM', label:'Aluminium'},
+];
+
+// ── Cash strategy systems (each maps to a list of stocks) ──────
+// For now all 5 strategies share the same universe — will be overridden per strategy
+const CASH_SYSTEMS = {
+  ABCT:   { label: 'ABCT System-1',  stocks: CASH_STOCKS.slice(0, 20) },
+  CUP:    { label: 'CUP Strategy',   stocks: CASH_STOCKS.slice(0, 15) },
+  TOPBTM: { label: 'Top-Bottom',     stocks: CASH_STOCKS.slice(0, 25) },
+  VALUE:  { label: 'Value Buy',      stocks: CASH_STOCKS.slice(0, 18) },
+  MONSTER:{ label: 'Monster Move',   stocks: CASH_STOCKS.slice(0, 12) },
+};
+
+// ── Selected instruments state ──────────────────────────────────
+// Key = instrument code, Value = strategy type that selected it
+const selectedInstruments = {};   // { 'RELIANCE': 'TOPBTM', 'SBIN': 'ABCT' }
+// Count per system
+const systemSelections = { ABCT:0, CUP:0, TOPBTM:0, VALUE:0, MONSTER:0, STOCKFUT:0, IDXFUT:0, COMMOFUT:0 };
+
+// ── Render cash system stocks ───────────────────────────────────
+function renderCashSystem(sysId) {
+  const sys = CASH_SYSTEMS[sysId];
+  const container = document.getElementById('stocks' + sysId);
+  if (!container) return;
+  container.innerHTML = sys.stocks.map(stock => {
+    const inst = stock + '.NS';
+    const ltp = (window._stratQuotes && window._stratQuotes[inst])
+      ? window._stratQuotes[inst].toLocaleString('en-IN',{minimumFractionDigits:1})
+      : '—';
+    const checked = selectedInstruments[inst] ? 'checked' : '';
+    const selClass = selectedInstruments[inst] ? 'selected' : '';
+    return `<label class="stock-chip ${selClass}" id="chip_${inst.replace('.','_')}_${sysId}">
+      <input type="checkbox" onchange="toggleStock('${inst}','${sysId}',this.checked)" ${checked}>
+      <span>${stock}</span>
+      <span class="chip-ltp">${ltp}</span>
+    </label>`;
+  }).join('');
+}
+
+// ── Render future sectors ────────────────────────────────────────
+function renderFutureSectors() {
+  const container = document.getElementById('futureSectors');
+  if (!container) return;
+  container.innerHTML = Object.entries(FUTURE_SECTORS).map(([sector, stocks]) => {
+    const stocksHtml = stocks.map(stock => {
+      const inst = stock + 'SEP26';  // use current expiry
+      const ltp = (window._stratQuotes && window._stratQuotes[inst])
+        ? window._stratQuotes[inst].toLocaleString('en-IN',{minimumFractionDigits:1})
+        : '—';
+      const selClass = selectedInstruments[inst] ? 'selected' : '';
+      return `<label class="stock-chip ${selClass}" id="chip_${inst.replace('.','_')}_STOCKFUT">
+        <input type="checkbox" onchange="toggleStock('${inst}','STOCKFUT',this.checked)" ${selectedInstruments[inst] ? 'checked' : ''}>
+        <span>${stock}</span>
+        <span class="chip-ltp">${ltp}</span>
+      </label>`;
+    }).join('');
+    return `<div class="future-sector">
+      <div class="sector-header" onclick="toggleSector(this)">
+        <input type="checkbox" class="sector-cb" onchange="toggleSectorCb('${sector}',this.checked)">
+        <span class="sector-name">${sector}</span>
+        <span class="sector-count" id="cntSec_${sector.replace(/ /g,'_')}">${stocks.length} stocks</span>
+        <div class="sector-toggle">▼</div>
+      </div>
+      <div class="sector-body" style="display:none">
+        <div class="sys-stocks">${stocksHtml}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Render index futures ───────────────────────────────────────
+function renderIndexFutures() {
+  const container = document.getElementById('stocksIDXFUT');
+  if (!container) return;
+  const now = new Date();
+  const mo = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][now.getMonth()];
+  const yr = now.getFullYear().toString().slice(-2);
+  const expiry = mo + yr;
+
+  container.innerHTML = INDEX_FUTURES.map(idx => {
+    const inst = idx + expiry + 'FUT';
+    const ltp = (window._stratQuotes && window._stratQuotes[idx])
+      ? window._stratQuotes[idx].toLocaleString('en-IN',{minimumFractionDigits:0})
+      : '—';
+    const selClass = selectedInstruments[inst] ? 'selected' : '';
+    return `<label class="stock-chip ${selClass}" id="chip_${inst.replace('.','_')}_IDXFUT">
+      <input type="checkbox" onchange="toggleStock('${inst}','IDXFUT',this.checked)" ${selectedInstruments[inst] ? 'checked' : ''}>
+      <span>${idx} ${expiry}FUT</span>
+      <span class="chip-ltp">${ltp}</span>
+    </label>`;
+  }).join('');
+}
+
+// ── Render commodity futures ─────────────────────────────────────
+function renderCommoFutures() {
+  const container = document.getElementById('stocksCOMMOFUT');
+  if (!container) return;
+  const now = new Date();
+  const mo = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][now.getMonth()];
+  const yr = now.getFullYear().toString().slice(-2);
+  const expiry = mo + yr;
+
+  container.innerHTML = COMMO_FUTURES.map(c => {
+    const inst = c.code + expiry;
+    const selClass = selectedInstruments[inst] ? 'selected' : '';
+    return `<label class="stock-chip ${selClass}" id="chip_${inst.replace('.','_')}_COMMOFUT">
+      <input type="checkbox" onchange="toggleStock('${inst}','COMMOFUT',this.checked)" ${selectedInstruments[inst] ? 'checked' : ''}>
+      <span>${c.name}</span>
+    </label>`;
+  }).join('');
+}
+
+// ── Toggle segment ──────────────────────────────────────────────
+function toggleSeg(id) {
+  const body = document.getElementById('body' + id.charAt(3).toUpperCase() + id.slice(4));
+  const toggle = document.getElementById('toggle' + id);
+  if (!body || !toggle) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  toggle.style.transform = isOpen ? 'rotate(-90deg)' : 'rotate(0deg)';
+}
+
+// ── Toggle system ───────────────────────────────────────────────
+function toggleSys(id) {
+  const body = document.getElementById('body' + id);
+  const toggle = document.getElementById('toggle' + id);
+  if (!body || !toggle) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  toggle.style.transform = isOpen ? 'rotate(-90deg)' : 'rotate(0deg)';
+}
+
+// ── Toggle sector ──────────────────────────────────────────────
+function toggleSector(headerEl) {
+  const body = headerEl.nextElementSibling;
+  const toggle = headerEl.querySelector('.sector-toggle');
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  toggle.style.transform = isOpen ? 'rotate(-90deg)' : 'rotate(0deg)';
+}
+
+// ── Toggle individual stock chip ───────────────────────────────
+function toggleStock(inst, sysId, checked) {
+  if (checked) {
+    selectedInstruments[inst] = sysId;
+  } else {
+    delete selectedInstruments[inst];
+  }
+  // Update chip appearance
+  const chip = document.getElementById('chip_' + inst.replace('.','_') + '_' + sysId);
+  if (chip) chip.classList.toggle('selected', checked);
+  // Update system checkbox
+  updateSystemCb(sysId);
+  updateCounts();
+}
+
+function updateSystemCb(sysId) {
+  const cb = document.getElementById('cb' + sysId);
+  if (!cb) return;
+  const allChips = document.querySelectorAll('[id^="chip_"][id$="_' + sysId + '"]');
+  const checkedChips = document.querySelectorAll('[id^="chip_"][id$="_' + sysId + '"].selected');
+  cb.checked = checkedChips.length > 0;
+  cb.indeterminate = checkedChips.length > 0 && checkedChips.length < allChips.length;
+}
+
+function updateCounts() {
+  // Count per system
+  const counts = {};
+  Object.keys(systemSelections).forEach(k => counts[k] = 0);
+  Object.values(selectedInstruments).forEach(sys => { if (counts[sys] !== undefined) counts[sys]++; });
+
+  Object.entries(counts).forEach(([sys, cnt]) => {
+    const el = document.getElementById('cnt' + sys);
+    if (el) el.textContent = cnt === 0 ? '0 selected' : cnt + ' selected';
+  });
+
+  // Total active
+  const total = Object.keys(selectedInstruments).length;
+  const countEl = document.getElementById('stratActiveCount');
+  if (countEl) countEl.textContent = total;
+}
+
+// ── System checkbox change (select all / deselect all) ────────
+function sysCbChange(sysId) {
+  const cb = document.getElementById('cb' + sysId);
+  const checked = cb.checked;
+  const allChips = document.querySelectorAll('[id^="chip_"][id$="_' + sysId + '"]');
+  allChips.forEach(chip => {
+    const input = chip.querySelector('input[type="checkbox"]');
+    const inst = chip.id.replace('chip_','').replace('_' + sysId,'').replace(/_/g,'.');
+    if (checked) {
+      selectedInstruments[inst] = sysId;
+      input.checked = true;
+      chip.classList.add('selected');
+    } else {
+      delete selectedInstruments[inst];
+      input.checked = false;
+      chip.classList.remove('selected');
+    }
+  });
+  updateCounts();
+}
+
+// ── Sector checkbox (select all in sector) ────────────────────
+function toggleSectorCb(sectorName, checked) {
+  const stocks = FUTURE_SECTORS[sectorName] || [];
+  stocks.forEach(stock => {
+    const inst = stock + 'SEP26';
+    const chip = document.getElementById('chip_' + inst.replace('.','_') + '_STOCKFUT');
+    const input = chip ? chip.querySelector('input') : null;
+    if (checked) {
+      selectedInstruments[inst] = 'STOCKFUT';
+      if (input) { input.checked = true; }
+      if (chip) chip.classList.add('selected');
+    } else {
+      delete selectedInstruments[inst];
+      if (input) { input.checked = false; }
+      if (chip) chip.classList.remove('selected');
+    }
+  });
+  updateSystemCb('STOCKFUT');
+  updateCounts();
+}
+
+// ── Apply selected strategies to engine ─────────────────────────
+function applySelectedStrategies() {
+  const instruments = Object.keys(selectedInstruments);
+  if (!instruments.length) {
+    showToast('Select at least one instrument first', 'var(--orange)');
+    return;
+  }
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({
+      command: 'apply_strategy',
+      strategyName: 'SAR_TOP_BOTTOM',
+      instruments: instruments
+    }));
+    showToast(`Applying ${instruments.length} instruments to watchlist...`, 'var(--green)');
+  } else {
+    showToast('WebSocket not connected', 'var(--red)');
+  }
+}
+
+// ── Clear all selections ────────────────────────────────────────
+function clearAllStrategies() {
+  if (!confirm('Clear all strategy selections?')) return;
+  Object.keys(selectedInstruments).forEach(inst => {
+    const chip = document.getElementById('chip_' + inst.replace('.','_') + '_' + Object.values(selectedInstruments).find(s => selectedInstruments[inst] === s));
+    if (chip) {
+      chip.classList.remove('selected');
+      const input = chip.querySelector('input');
+      if (input) input.checked = false;
+    }
+  });
+  Object.keys(selectedInstruments).forEach(k => delete selectedInstruments[k]);
+  document.querySelectorAll('.sys-cb, .sector-cb').forEach(cb => { cb.checked = false; cb.indeterminate = false; });
+  updateCounts();
+  showToast('All selections cleared', 'var(--blue)');
+}
+
+// ── Update LTP prices in strategy page ─────────────────────────
+function updateStratPrices(quotes) {
+  window._stratQuotes = quotes;
+  // Update cash chips
+  Object.keys(CASH_SYSTEMS).forEach(sysId => {
+    CASH_SYSTEMS[sysId].stocks.forEach(stock => {
+      const inst = stock + '.NS';
+      const ltp = quotes[inst];
+      const chip = document.getElementById('chip_' + inst.replace('.','_') + '_' + sysId);
+      if (chip && ltp) {
+        const ltpEl = chip.querySelector('.chip-ltp');
+        if (ltpEl) ltpEl.textContent = ltp.toLocaleString('en-IN',{minimumFractionDigits:1});
+      }
+    });
+  });
+  // Update future sector chips
+  Object.entries(FUTURE_SECTORS).forEach(([sector, stocks]) => {
+    stocks.forEach(stock => {
+      const inst = stock + 'SEP26';
+      const ltp = quotes[inst];
+      const chip = document.getElementById('chip_' + inst.replace('.','_') + '_STOCKFUT');
+      if (chip && ltp) {
+        const ltpEl = chip.querySelector('.chip-ltp');
+        if (ltpEl) ltpEl.textContent = ltp.toLocaleString('en-IN',{minimumFractionDigits:1});
+      }
+    });
+  });
+}
+
+// ── Update counts when state arrives ──────────────────────────
+const _origUpdateAll = updateAll;
+updateAll = function(state) {
+  _origUpdateAll(state);
+  if (state.quotes) updateStratPrices(state.quotes || {});
+  if (state.strategies) {
+    // Mark already-active instruments
+    Object.keys(state.strategies).forEach(inst => {
+      if (!selectedInstruments[inst]) {
+        // It's already active from previous session
+      }
+    });
+  }
+};
+
+// ── Initialize strategy page on load ───────────────────────────
+function initStrategyPage() {
+  // Render all sections
+  Object.keys(CASH_SYSTEMS).forEach(sysId => renderCashSystem(sysId));
+  renderFutureSectors();
+  renderIndexFutures();
+  renderCommoFutures();
+  updateCounts();
+}
+
+// ── Clock for strategy page ────────────────────────────────────
+function initStratClock() {
+  setInterval(() => {
+    const el = document.getElementById('stratClock');
+    if (el) el.textContent = new Date().toLocaleTimeString('en-IN',{hour12:true});
+  }, 1000);
+}
+
+/* ════════════════════════════════════════
    INIT
 ════════════════════════════════════════ */
 connectWS();
+initStrategyPage();
+initStratClock();
 </script>
 </body>
 </html>
