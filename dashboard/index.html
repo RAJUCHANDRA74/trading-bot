@@ -599,6 +599,92 @@ details.strat-system[open] .sys-toggle { transform: rotate(90deg); }
 .text-blue  { color: var(--blue); }
 .text-muted { color: var(--text-muted); }
 .fw-700 { font-weight: 700; }
+
+/* ════════════════════════════════════════
+   WATCHLIST PAGE
+════════════════════════════════════════ */
+.watchlist-stats {
+  display: flex; gap: 16px; margin-bottom: 20px;
+}
+.wl-stat {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 12px 20px; text-align: center; min-width: 90px;
+}
+.wl-stat-num {
+  font-size: 22px; font-weight: 800; color: var(--text-primary); line-height: 1;
+}
+.wl-stat-num.green { color: var(--green); }
+.wl-stat-num.red   { color: var(--red); }
+.wl-stat-lbl { font-size: 10px; color: var(--text-muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+.watchlist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px; margin-bottom: 24px;
+}
+.wl-empty {
+  grid-column: 1 / -1; text-align: center; padding: 60px 20px;
+  background: var(--bg-card); border: 1px dashed var(--border);
+  border-radius: 16px;
+}
+.wl-empty-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.3; }
+.wl-empty-title { font-size: 16px; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px; }
+.wl-empty-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.6; }
+.wl-go-strategies {
+  background: var(--blue-dim); color: var(--blue); border: 1px solid var(--blue);
+  border-radius: 8px; padding: 8px 20px; font-size: 13px; cursor: pointer;
+  transition: all 0.15s;
+}
+.wl-go-strategies:hover { background: var(--blue); color: #fff; }
+
+.wl-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 8px;
+  transition: border-color 0.15s;
+}
+.wl-card:hover { border-color: var(--border-light); }
+.wl-card-top { display: flex; align-items: flex-start; justify-content: space-between; }
+.wl-card-name { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.wl-card-rm {
+  width: 20px; height: 20px; line-height: 20px;
+  background: var(--red-dim); color: var(--red);
+  border-radius: 50%; font-size: 11px; text-align: center;
+  cursor: pointer; flex-shrink: 0; opacity: 0;
+  transition: opacity 0.15s;
+}
+.wl-card:hover .wl-card-rm { opacity: 1; }
+.wl-card-ltp { font-size: 18px; font-weight: 700; color: var(--text-primary); }
+.wl-card-ltp .wl-change { font-size: 12px; margin-left: 6px; }
+.wl-card-ltp .wl-change.up { color: var(--green); }
+.wl-card-ltp .wl-change.dn { color: var(--red); }
+.wl-card-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10px; padding: 2px 8px; border-radius: 20px;
+}
+.tag-long  { background: var(--green-dim);  color: var(--green); }
+.tag-short { background: var(--red-dim);    color: var(--red); }
+.tag-signal { background: var(--gold-dim);  color: var(--gold); }
+
+.wl-add-section {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 16px;
+}
+.wl-add-label { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+.wl-add-row { display: flex; gap: 10px; }
+.wl-add-input {
+  flex: 1; background: var(--bg-secondary); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 12px; color: var(--text-primary);
+  font-size: 13px; outline: none;
+}
+.wl-add-input:focus { border-color: var(--green); }
+.wl-add-btn {
+  background: var(--green-dim); color: var(--green); border: 1px solid rgba(0,200,150,0.4);
+  border-radius: 8px; padding: 8px 18px; font-size: 13px; cursor: pointer;
+  transition: all 0.15s; font-weight: 600;
+}
+.wl-add-btn:hover { background: var(--green); color: #fff; }
+
 </style>
 </head>
 <body>
@@ -692,6 +778,9 @@ details.strat-system[open] .sys-toggle { transform: rotate(90deg); }
     <div class="sidebar-nav">
       <div class="nav-item active" id="navDashboard" onclick="switchView('Dashboard')">
         <span class="nav-icon">◉</span> Dashboard
+      </div>
+      <div class="nav-item" id="navWatchlist" onclick="switchView('Watchlist')">
+        <span class="nav-icon">☆</span> Watchlist
       </div>
       <div class="nav-item" id="navStrategies" onclick="switchView('Strategies')">
         <span class="nav-icon">⚙</span> Strategies
@@ -907,6 +996,57 @@ details.strat-system[open] .sys-toggle { transform: rotate(90deg); }
       </div>
 
     </div><!-- /viewDashboard -->
+
+    <!-- ══════════════════════════════
+         WATCHLIST VIEW
+    ══════════════════════════════ -->
+    <div class="view" id="viewWatchlist">
+      <div class="content-header">
+        <div class="breadcrumb">SARTrader / <span>Watchlist</span></div>
+        <div class="header-right">
+          <div class="live-clock" id="watchlistClock">—</div>
+        </div>
+      </div>
+
+      <!-- Watchlist Stats Bar -->
+      <div class="watchlist-stats">
+        <div class="wl-stat">
+          <div class="wl-stat-num" id="wlCount">0</div>
+          <div class="wl-stat-lbl">Instruments</div>
+        </div>
+        <div class="wl-stat">
+          <div class="wl-stat-num green" id="wlLongs">0</div>
+          <div class="wl-stat-lbl">Longs</div>
+        </div>
+        <div class="wl-stat">
+          <div class="wl-stat-num red" id="wlShorts">0</div>
+          <div class="wl-stat-lbl">Shorts</div>
+        </div>
+        <div class="wl-stat">
+          <div class="wl-stat-num" id="wlSignal">—</div>
+          <div class="wl-stat-lbl">Active Signal</div>
+        </div>
+      </div>
+
+      <!-- Watchlist Grid -->
+      <div class="watchlist-grid" id="watchlistGrid">
+        <div class="wl-empty" id="wlEmpty">
+          <div class="wl-empty-icon">☆</div>
+          <div class="wl-empty-title">Watchlist is empty</div>
+          <div class="wl-empty-sub">Go to <strong>Strategies</strong> page → select stocks → click <strong>Apply to Watchlist</strong></div>
+          <button class="wl-go-strategies" onclick="switchView('Strategies')">Go to Strategies →</button>
+        </div>
+      </div>
+
+      <!-- Add Custom Instrument -->
+      <div class="wl-add-section">
+        <div class="wl-add-label">Add custom instrument</div>
+        <div class="wl-add-row">
+          <input type="text" id="wlAddInput" class="wl-add-input" placeholder="e.g. RELIANCE, BANKNIFTY, GOLD">
+          <button class="wl-add-btn" onclick="wlAddInstrument()">+ Add</button>
+        </div>
+      </div>
+    </div><!-- /viewWatchlist -->
 
     <!-- ══════════════════════════════
          STRATEGIES VIEW
@@ -1233,6 +1373,7 @@ function initClock() {
 ════════════════════════════════════════ */
 const VIEWS = {
   Dashboard:  { nav: 'navDashboard',  id: 'viewDashboard'  },
+  Watchlist:  { nav: 'navWatchlist', id: 'viewWatchlist'  },
   Strategies: { nav: 'navStrategies', id: 'viewStrategies'  },
   Orders:     { nav: 'navOrders',     id: 'viewOrders'      },
   Portfolio:  { nav: 'navPortfolio',  id: 'viewPortfolio'   },
@@ -1344,6 +1485,10 @@ function updateAll(state) {
 
   // Recent Trades
   updateTrades(trades);
+
+  // Watchlist — sync quotes and re-render
+  window._stratQuotes = quotes;
+  renderWatchlist();
 }
 
 function updateTicker(id, quote, label) {
@@ -1703,9 +1848,13 @@ function toggleStock(inst, sysId, checked) {
   } else {
     delete selectedInstruments[inst];
   }
-  // Update chip appearance
+  // Update chip appearance AND the actual checkbox input
   const chip = document.getElementById('chip_' + inst.replace('.','_') + '_' + sysId);
-  if (chip) chip.classList.toggle('selected', checked);
+  if (chip) {
+    chip.classList.toggle('selected', checked);
+    const input = chip.querySelector('input[type="checkbox"]');
+    if (input) input.checked = checked;
+  }
   // Update system checkbox
   updateSystemCb(sysId);
   updateCounts();
@@ -1793,6 +1942,8 @@ function applySelectedStrategies() {
       instruments: instruments
     }));
     showToast(`Applying ${instruments.length} instruments to watchlist...`, 'var(--green)');
+    renderWatchlist();
+    switchView('Watchlist');
   } else {
     showToast('WebSocket not connected', 'var(--red)');
   }
@@ -1842,6 +1993,8 @@ function updateStratPrices(quotes) {
       }
     });
   });
+  // Also refresh watchlist LTP cards
+  renderWatchlist();
 }
 
 // ── Update counts when state arrives ──────────────────────────
@@ -1927,12 +2080,108 @@ function initStratClock() {
   }, 1000);
 }
 
+// ── Watchlist clock ───────────────────────────────────────────
+function initWatchlistClock() {
+  setInterval(() => {
+    const el = document.getElementById('watchlistClock');
+    if (el) el.textContent = new Date().toLocaleTimeString('en-IN',{hour12:true});
+  }, 1000);
+}
+
+// ── Render Watchlist ──────────────────────────────────────────
+function renderWatchlist() {
+  const grid = document.getElementById('watchlistGrid');
+  const empty = document.getElementById('wlEmpty');
+  const countEl = document.getElementById('wlCount');
+  if (!grid) return;
+
+  const insts = Object.keys(selectedInstruments);
+  const quotes = window._stratQuotes || {};
+
+  // Update stats
+  if (countEl) countEl.textContent = insts.length;
+  const longs = insts.filter(i => selectedInstruments[i] === 'LONG').length;
+  const shorts = insts.filter(i => selectedInstruments[i] === 'SHORT').length;
+  const longEl = document.getElementById('wlLongs');
+  const shortEl = document.getElementById('wlShorts');
+  if (longEl) longEl.textContent = longs;
+  if (shortEl) shortEl.textContent = shorts;
+
+  if (insts.length === 0) {
+    grid.innerHTML = '';
+    grid.appendChild(empty || createEmptyState());
+    return;
+  }
+
+  grid.innerHTML = insts.map(inst => {
+    const sysId = selectedInstruments[inst];
+    const ltp = quotes[inst];
+    const ltpStr = ltp ? '₹' + ltp.toLocaleString('en-IN',{minimumFractionDigits:2}) : '—';
+    const ltpChange = '';
+    const tagClass = sysId === 'LONG' ? 'tag-long' : sysId === 'SHORT' ? 'tag-short' : '';
+    const tagText = sysId === 'LONG' ? '▲ LONG' : sysId === 'SHORT' ? '▼ SHORT' : '☆ ' + sysId;
+    return `<div class="wl-card" id="wlCard_${inst.replace(/[^a-zA-Z0-9]/g,'_')}">
+      <div class="wl-card-top">
+        <div class="wl-card-name">${inst}</div>
+        <div class="wl-card-rm" onclick="wlRemoveInstrument('${inst}')">✕</div>
+      </div>
+      <div class="wl-card-ltp">${ltpStr} ${ltpChange}</div>
+      ${tagClass ? `<span class="wl-card-tag ${tagClass}">${tagText}</span>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function createEmptyState() {
+  const div = document.createElement('div');
+  div.className = 'wl-empty';
+  div.id = 'wlEmpty';
+  div.innerHTML = `
+    <div class="wl-empty-icon">☆</div>
+    <div class="wl-empty-title">Watchlist is empty</div>
+    <div class="wl-empty-sub">Go to <strong>Strategies</strong> page → select stocks → click <strong>Apply to Watchlist</strong></div>
+    <button class="wl-go-strategies" onclick="switchView('Strategies')">Go to Strategies →</button>`;
+  return div;
+}
+
+// ── Remove instrument from watchlist ──────────────────────────
+function wlRemoveInstrument(inst) {
+  toggleStock(inst, selectedInstruments[inst] || 'CUSTOM', false);
+  // Also tell engine to remove
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ command: 'remove_instrument', instrument: inst }));
+  }
+  renderWatchlist();
+  showToast(`Removed ${inst} from watchlist`, 'var(--blue)');
+}
+
+// ── Add custom instrument ─────────────────────────────────────
+function wlAddInstrument() {
+  const input = document.getElementById('wlAddInput');
+  if (!input) return;
+  const val = input.value.trim().toUpperCase();
+  if (!val) return;
+  selectedInstruments[val] = 'CUSTOM';
+  input.value = '';
+  renderWatchlist();
+  // Sync to engine
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({
+      command: 'apply_strategy',
+      strategyName: 'CUSTOM',
+      instruments: [val]
+    }));
+  }
+  showToast(`Added ${val} to watchlist`, 'var(--green)');
+}
+
 /* ════════════════════════════════════════
    INIT
 ════════════════════════════════════════ */
 connectWS();
 initStrategyPage();
 initStratClock();
+initWatchlistClock();
+renderWatchlist();
 </script>
 </body>
 </html>
