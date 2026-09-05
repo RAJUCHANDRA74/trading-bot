@@ -166,8 +166,10 @@ body {
   color: var(--text-primary);
   font-family: var(--font);
   font-size: 13px; line-height: 1.5;
-  display: none; /* hidden until login */
 }
+
+/* Main layout hidden until login */
+.layout { display: none; }
 
 .layout { display: flex; height: 100vh; overflow: hidden; }
 
@@ -849,7 +851,7 @@ function attemptLogin() {
   const err = document.getElementById('loginError');
   if (pw === DASHBOARD_PASSWORD) {
     document.getElementById('loginOverlay').style.display = 'none';
-    document.body.style.display = 'flex';
+    document.querySelector('.layout').style.display = 'flex';
     initClock();
     initParticles();
   } else {
