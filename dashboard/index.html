@@ -557,6 +557,16 @@ details.strat-system[open] .sys-toggle { transform: rotate(90deg); }
 }
 .stock-chip input[type="checkbox"] { width: 13px; height: 13px; accent-color: var(--green); cursor: pointer; }
 .stock-chip .chip-ltp { font-size: 10px; opacity: 0.7; }
+.chip-rm {
+  display: none;
+  width: 14px; height: 14px; line-height: 14px;
+  background: rgba(255,77,106,0.25); color: var(--red);
+  border-radius: 50%; font-size: 10px; text-align: center;
+  cursor: pointer; flex-shrink: 0;
+  margin-left: 2px;
+}
+.stock-chip:hover .chip-rm,
+.stock-chip.selected .chip-rm { display: flex; align-items: center; justify-content: center; }
 
 /* Future Sector */
 .future-sector { border-bottom: 1px solid rgba(30,48,80,0.4); }
@@ -1254,8 +1264,11 @@ let pendingArmed = new Set();
 let pendingSignal = new Set();
 
 function connectWS() {
-  const host = location.host || '157.230.47.84:8765';
-  ws = new WebSocket(`ws://${host}`);
+  // HTTP serves on :8765, WebSocket runs on :8766 (port+1)
+  const httpHost = location.host || '157.230.47.84:8765';
+  const [host, port] = httpHost.includes(':') ? httpHost.split(':') : [httpHost, '8765'];
+  const wsPort = String(Number(port) + 1);
+  ws = new WebSocket(`ws://${host}:${wsPort}`);
 
   ws.onopen = () => {
     clearTimeout(wsReconnectTimer);
@@ -1573,6 +1586,7 @@ function renderCashSystem(sysId) {
       <input type="checkbox" onchange="toggleStock('${inst}','${sysId}',this.checked)" ${checked}>
       <span>${stock}</span>
       <span class="chip-ltp">${ltp}</span>
+      <span class="chip-rm" onclick="event.stopPropagation(); toggleStock('${inst}','${sysId}',false)">✕</span>
     </label>`;
   }).join('');
 }
@@ -1592,6 +1606,7 @@ function renderFutureSectors() {
         <input type="checkbox" onchange="toggleStock('${inst}','STOCKFUT',this.checked)" ${selectedInstruments[inst] ? 'checked' : ''}>
         <span>${stock}</span>
         <span class="chip-ltp">${ltp}</span>
+        <span class="chip-rm" onclick="event.stopPropagation(); toggleStock('${inst}','STOCKFUT',false)">✕</span>
       </label>`;
     }).join('');
     return `<div class="future-sector">
@@ -1627,6 +1642,7 @@ function renderIndexFutures() {
       <input type="checkbox" onchange="toggleStock('${inst}','IDXFUT',this.checked)" ${selectedInstruments[inst] ? 'checked' : ''}>
       <span>${idx} ${expiry}FUT</span>
       <span class="chip-ltp">${ltp}</span>
+      <span class="chip-rm" onclick="event.stopPropagation(); toggleStock('${inst}','IDXFUT',false)">✕</span>
     </label>`;
   }).join('');
 }
@@ -1646,6 +1662,7 @@ function renderCommoFutures() {
     return `<label class="stock-chip ${selClass}" id="chip_${inst.replace('.','_')}_COMMOFUT">
       <input type="checkbox" onchange="toggleStock('${inst}','COMMOFUT',this.checked)" ${selectedInstruments[inst] ? 'checked' : ''}>
       <span>${c.name}</span>
+      <span class="chip-rm" onclick="event.stopPropagation(); toggleStock('${inst}','COMMOFUT',false)">✕</span>
     </label>`;
   }).join('');
 }
@@ -1869,6 +1886,7 @@ function renderStockOptions() {
       <input type="checkbox" onchange="toggleStock('${inst}','STOCKOPT',this.checked)" ${selectedInstruments[inst] ? 'checked' : ''}>
       <span>${stock}</span>
       <span class="chip-ltp">${ltp}</span>
+      <span class="chip-rm" onclick="event.stopPropagation(); toggleStock('${inst}','STOCKOPT',false)">✕</span>
     </label>`;
   }).join('');
 }
@@ -1882,6 +1900,7 @@ function renderIndexOptions() {
     return `<label class="stock-chip ${selClass}" id="chip_${idx}_IDXOPT">
       <input type="checkbox" onchange="toggleStock('${idx}OPT','IDXOPT',this.checked)" ${selectedInstruments[idx + 'OPT'] ? 'checked' : ''}>
       <span>${idx} Options</span>
+      <span class="chip-rm" onclick="event.stopPropagation(); toggleStock('${idx}OPT','IDXOPT',false)">✕</span>
     </label>`;
   }).join('');
 }
@@ -1895,6 +1914,7 @@ function renderCommoOptions() {
     return `<label class="stock-chip ${selClass}" id="chip_${c}_COMMOOPT">
       <input type="checkbox" onchange="toggleStock('${c}OPT','COMMOOPT',this.checked)" ${selectedInstruments[c + 'OPT'] ? 'checked' : ''}>
       <span>${c} Options</span>
+      <span class="chip-rm" onclick="event.stopPropagation(); toggleStock('${c}OPT','COMMOOPT',false)">✕</span>
     </label>`;
   }).join('');
 }
