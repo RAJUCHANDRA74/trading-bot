@@ -1654,7 +1654,7 @@ function renderCommoFutures() {
 
 // ── Toggle segment ──────────────────────────────────────────────
 function toggleSeg(id) {
-  const body = document.getElementById('body' + id.charAt(3).toUpperCase() + id.slice(4));
+  const body = document.getElementById('body' + id.charAt(0).toUpperCase() + id.slice(1));
   const toggle = document.getElementById('toggle' + id);
   if (!body || !toggle) return;
   const isOpen = body.style.display !== 'none';
