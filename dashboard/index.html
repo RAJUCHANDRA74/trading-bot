@@ -86,15 +86,11 @@ body{font-family:var(--font);font-size:13px;line-height:1.5;background:var(--bg-
 
 /* TABLES */
 .table-wrap{overflow-y:auto;max-height:300px}
-table.full-width{width:100%;border-collapse:collapse}
-table.full-width th{padding:8px 12px;text-align:left;font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg-card)}
-table.full-width td{padding:8px 12px;border-bottom:1px solid rgba(30,48,80,0.4);font-size:12px}
-table.full-width tr:hover td{background:rgba(255,255,255,0.02)}
-.badge-green,.badge-red,.badge-gold{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700}
-.badge-green{background:var(--green-dim);color:var(--green)}
-.badge-red{background:var(--red-dim);color:var(--red)}
-.badge-gold{background:var(--gold-dim);color:var(--gold)}
-.empty-state{text-align:center;padding:30px;color:var(--text-muted);font-size:12px}
+table{width:100%;border-collapse:collapse}
+table th{padding:8px 10px;text-align:left;font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg-card);white-space:nowrap}
+table td{padding:7px 10px;border-bottom:1px solid rgba(30,48,80,0.35);font-size:12px;white-space:nowrap}
+table tr:hover td{background:rgba(255,255,255,0.02)}
+table .empty-state{text-align:center;padding:30px;color:var(--text-muted);font-size:12px}
 
 /* VIEWS */
 .view{display:none}
@@ -113,8 +109,6 @@ table.full-width tr:hover td{background:rgba(255,255,255,0.02)}
 .strat-seg.open .strat-seg-arrow{transform:rotate(90deg)}
 .strat-seg-body{display:none;padding:8px 12px 12px;border-top:1px solid var(--border)}
 .strat-seg.open .strat-seg-body{display:block}
-
-/* System row */
 .sys-row{background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;overflow:hidden}
 .sys-row-header{display:flex;align-items:center;padding:10px 12px;cursor:pointer;user-select:none;transition:background 0.15s}
 .sys-row-header:hover{background:var(--bg-card)}
@@ -141,8 +135,6 @@ table.full-width tr:hover td{background:rgba(255,255,255,0.02)}
 .stock-chip:hover .chip-rm{opacity:1}
 .chip-rm:hover{background:var(--red);color:#fff}
 .no-stocks{font-size:11px;color:var(--text-muted);padding:6px 0;font-style:italic}
-
-/* Sector row in Future */
 .sector-row{background:rgba(0,0,0,0.1);border:1px solid rgba(30,48,80,0.5);border-radius:6px;margin-bottom:6px;overflow:hidden}
 .sector-row-header{display:flex;align-items:center;padding:8px 10px;cursor:pointer;user-select:none}
 .sector-row-header:hover{background:rgba(255,255,255,0.03)}
@@ -155,45 +147,85 @@ table.full-width tr:hover td{background:rgba(255,255,255,0.02)}
 .sector-row-body{display:none;padding:6px 10px 8px}
 .sector-row.open .sector-row-body{display:block}
 
-/* Watchlist page */
+/* Watchlist */
 .wl-tabs{display:flex;gap:0;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px}
 .wl-tab{flex:1;padding:12px;text-align:center;font-size:13px;font-weight:600;color:var(--text-secondary);cursor:pointer;transition:all 0.15s;border-right:1px solid var(--border)}
 .wl-tab:last-child{border-right:none}
 .wl-tab:hover{background:var(--bg-card2);color:var(--text-primary)}
 .wl-tab.active{background:var(--green-dim);color:var(--green)}
 .wl-tab .wl-tab-count{font-size:10px;opacity:0.7;margin-left:4px}
+
 .wl-panels{display:flex;flex-direction:column;gap:16px}
 .wl-panel{display:none}
 .wl-panel.active{display:block}
-.wl-panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.wl-panel-title{font-size:14px;font-weight:700}
-.wl-panel-sub{font-size:11px;color:var(--text-muted)}
-.wl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:16px}
-.wl-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;transition:border-color 0.15s;position:relative}
-.wl-card:hover{border-color:var(--border-light)}
-.wl-card-name{font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:4px}
-.wl-card-ltp{font-size:16px;font-weight:800;color:var(--text-primary)}
-.wl-card-ltp .wl-chg{font-size:11px;margin-left:4px}
-.wl-card-ltp .wl-chg.up{color:var(--green)}
-.wl-card-ltp .wl-chg.dn{color:var(--red)}
-.wl-card-tag{display:inline-flex;align-items:center;gap:4px;font-size:9px;padding:2px 7px;border-radius:20px;margin-top:6px}
-.tag-cash{background:var(--green-dim);color:var(--green)}
-.tag-fut{background:var(--blue-dim);color:var(--blue)}
-.tag-opt{background:var(--purple-dim);color:var(--purple)}
-.wl-card-rm{position:absolute;top:8px;right:8px;width:18px;height:18px;line-height:18px;text-align:center;background:var(--red-dim);color:var(--red);border-radius:50%;font-size:10px;cursor:pointer;opacity:0;transition:opacity 0.15s;display:flex;align-items:center;justify-content:center}
-.wl-card:hover .wl-card-rm{opacity:1}
-.wl-card-rm:hover{background:var(--red);color:#fff}
-.wl-empty{grid-column:1/-1;text-align:center;padding:40px;background:var(--bg-card);border:1px dashed var(--border);border-radius:12px}
-.wl-empty-icon{font-size:36px;opacity:0.3;margin-bottom:8px}
-.wl-empty-title{font-size:14px;font-weight:600;color:var(--text-secondary);margin-bottom:4px}
-.wl-empty-sub{font-size:12px;color:var(--text-muted)}
-.wl-add-row{display:flex;gap:8px;margin-top:12px}
-.wl-add-inp{flex:1;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text-primary);font-size:12px;outline:none}
+
+.wl-table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border);background:var(--bg-card)}
+.wl-table{width:100%;border-collapse:collapse}
+.wl-table th{
+  padding:9px 12px;text-align:left;font-size:10px;color:var(--text-muted);
+  text-transform:uppercase;letter-spacing:0.5px;
+  border-bottom:1px solid var(--border);
+  position:sticky;top:0;background:var(--bg-card);white-space:nowrap;
+  background:linear-gradient(to bottom,var(--bg-card2),var(--bg-card));
+}
+.wl-table td{padding:8px 12px;border-bottom:1px solid rgba(30,48,80,0.3);font-size:12px;white-space:nowrap;vertical-align:middle}
+.wl-table tr:last-child td{border-bottom:none}
+.wl-table tr:hover td{background:rgba(255,255,255,0.025)}
+.wl-table .wl-empty-row td{padding:40px;text-align:center;color:var(--text-muted);font-size:13px}
+
+/* Watchlist columns */
+.wl-sr{color:var(--text-muted);font-size:11px;width:36px;text-align:center}
+.wl-inst{font-weight:700;color:var(--text-primary);min-width:120px}
+.wl-sys{color:var(--text-secondary);font-size:11px}
+.wl-ltp{font-weight:700;font-size:13px;min-width:80px}
+.wl-ltp.up{color:var(--green)}
+.wl-ltp.dn{color:var(--red)}
+.wl-entry{color:var(--text-secondary);font-size:11px}
+.wl-sl{color:var(--red);font-size:11px}
+.wl-change{font-size:10px;min-width:55px}
+.wl-change.up{color:var(--green)}
+.wl-change.dn{color:var(--red)}
+.wl-mode{display:inline-flex;border-radius:12px;padding:3px 10px;font-size:10px;font-weight:700;cursor:pointer;transition:all 0.15s;border:1px solid}
+.wl-mode.paper{background:var(--blue-dim);color:var(--blue);border-color:rgba(59,130,246,0.3)}
+.wl-mode.live{background:var(--red-dim);color:var(--red);border-color:rgba(255,77,106,0.3)}
+.wl-mode:hover{opacity:0.8}
+.wl-hit{background:var(--green);color:#000;border:none;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;transition:all 0.15s;white-space:nowrap}
+.wl-hit:hover{opacity:0.85}
+.wl-hit:disabled{background:var(--border);color:var(--text-muted);cursor:not-allowed;opacity:1}
+.wl-rm{background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;opacity:0.4;transition:opacity 0.15s;padding:2px 6px;border-radius:4px}
+.wl-rm:hover{opacity:1;background:var(--red-dim)}
+
+/* Editable inputs in table */
+.wl-edit{
+  background:var(--bg-secondary);border:1px solid var(--border);
+  border-radius:5px;padding:3px 7px;color:var(--text-primary);
+  font-size:11px;width:75px;text-align:right;outline:none;
+  font-family:var(--font);
+}
+.wl-edit:focus{border-color:var(--green)}
+.wl-edit::placeholder{color:var(--text-muted);text-align:center}
+
+/* Watchlist header stats */
+.wl-stats{display:flex;gap:12px;margin-bottom:12px}
+.wl-stat-box{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:10px 16px;display:flex;align-items:center;gap:10px}
+.wl-stat-icon{font-size:20px}
+.wl-stat-info{display:flex;flex-direction:column}
+.wl-stat-num{font-size:18px;font-weight:800;line-height:1}
+.wl-stat-lbl{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px}
+
+/* Add row in watchlist */
+.wl-add-section{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:12px 16px}
+.wl-add-lbl{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px}
+.wl-add-row{display:flex;gap:8px;align-items:center}
+.wl-add-inp{flex:1;background:var(--bg-secondary);border:1px solid var(--border);border-radius:7px;padding:8px 12px;color:var(--text-primary);font-size:12px;outline:none}
 .wl-add-inp:focus{border-color:var(--green)}
-.wl-add-btn{background:var(--green-dim);color:var(--green);border:1px solid rgba(0,200,150,0.4);border-radius:8px;padding:8px 16px;font-size:12px;cursor:pointer;font-weight:600;transition:all 0.15s}
+.wl-add-btn{background:var(--green-dim);color:var(--green);border:1px solid rgba(0,200,150,0.4);border-radius:7px;padding:8px 16px;font-size:12px;cursor:pointer;font-weight:600;transition:all 0.15s;white-space:nowrap}
 .wl-add-btn:hover{background:var(--green);color:#000}
 
-/* Misc */
+.badge-green,.badge-red,.badge-gold{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700}
+.badge-green{background:var(--green-dim);color:var(--green)}
+.badge-red{background:var(--red-dim);color:var(--red)}
+.badge-gold{background:var(--gold-dim);color:var(--gold)}
 .btn-link{background:none;border:none;color:var(--blue);cursor:pointer;font-size:12px;text-decoration:none}
 .btn-link:hover{text-decoration:underline}
 .content-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
@@ -249,8 +281,6 @@ table.full-width tr:hover td{background:rgba(255,255,255,0.02)}
 
   <!-- MAIN CONTENT -->
   <div class="main-content">
-
-    <!-- TOP BAR -->
     <div class="top-bar">
       <div class="live-badge paper" id="topModeBadge">● PAPER</div>
       <div class="ticker-bar">
@@ -264,7 +294,7 @@ table.full-width tr:hover td{background:rgba(255,255,255,0.02)}
 
     <div class="content-area">
 
-      <!-- DASHBOARD VIEW -->
+      <!-- DASHBOARD -->
       <div class="view active" id="viewDashboard">
         <div class="content-header">
           <div class="breadcrumb">SARTrader / <span>Dashboard</span></div>
@@ -282,7 +312,7 @@ table.full-width tr:hover td{background:rgba(255,255,255,0.02)}
             <span style="font-size:12px;font-weight:600">Recent Signals</span>
           </div>
           <div class="table-wrap">
-            <table class="full-width">
+            <table>
               <thead><tr><th>#</th><th>Time</th><th>Strategy</th><th>Instrument</th><th>Type</th><th>Price</th></tr></thead>
               <tbody id="signalsBody"><tr><td colspan="6" class="empty-state">No signals yet...</td></tr></tbody>
             </table>
@@ -294,7 +324,7 @@ table.full-width tr:hover td{background:rgba(255,255,255,0.02)}
             <button class="btn-link" onclick="switchView('Orders')">View All →</button>
           </div>
           <div class="table-wrap">
-            <table class="full-width">
+            <table>
               <thead><tr><th>#</th><th>Entry</th><th>Instrument</th><th>Dir</th><th>Entry ₹</th><th>Exit ₹</th><th>P&L</th><th>Status</th></tr></thead>
               <tbody id="tradesBody"><tr><td colspan="8" class="empty-state">No trades yet...</td></tr></tbody>
             </table>
@@ -302,7 +332,7 @@ table.full-width tr:hover td{background:rgba(255,255,255,0.02)}
         </div>
       </div>
 
-      <!-- STRATEGIES VIEW -->
+      <!-- STRATEGIES -->
       <div class="view" id="viewStrategies">
         <div class="content-header">
           <div class="breadcrumb">SARTrader / <span>Strategies</span></div>
@@ -310,7 +340,7 @@ table.full-width tr:hover td{background:rgba(255,255,255,0.02)}
         </div>
         <div class="strat-page-wrap">
 
-          <!-- SEGMENT 1: CASH STRATEGY -->
+          <!-- CASH STRATEGY -->
           <div class="strat-seg open" id="segCASH">
             <div class="strat-seg-header" onclick="toggleSeg('CASH')">
               <span class="strat-seg-icon">💰</span>
@@ -319,7 +349,6 @@ table.full-width tr:hover td{background:rgba(255,255,255,0.02)}
               <span class="strat-seg-arrow">▶</span>
             </div>
             <div class="strat-seg-body">
-              <!-- ABCT -->
               <div class="sys-row open" id="sysABCT">
                 <div class="sys-row-header" onclick="toggleSys('ABCT')">
                   <input type="checkbox" class="sys-cb" id="cbABCT" onchange="onSysCheckChange('ABCT')">
@@ -335,7 +364,6 @@ table.full-width tr:hover td{background:rgba(255,255,255,0.02)}
                   </div>
                 </div>
               </div>
-              <!-- CUP -->
               <div class="sys-row" id="sysCUP">
                 <div class="sys-row-header" onclick="toggleSys('CUP')">
                   <input type="checkbox" class="sys-cb" id="cbCUP" onchange="onSysCheckChange('CUP')">
@@ -351,7 +379,6 @@ table.full-width tr:hover td{background:rgba(255,255,255,0.02)}
                   </div>
                 </div>
               </div>
-              <!-- TOPBTM -->
               <div class="sys-row" id="sysTOPBTM">
                 <div class="sys-row-header" onclick="toggleSys('TOPBTM')">
                   <input type="checkbox" class="sys-cb" id="cbTOPBTM" onchange="onSysCheckChange('TOPBTM')">
@@ -367,7 +394,6 @@ table.full-width tr:hover td{background:rgba(255,255,255,0.02)}
                   </div>
                 </div>
               </div>
-              <!-- VALUE -->
               <div class="sys-row" id="sysVALUE">
                 <div class="sys-row-header" onclick="toggleSys('VALUE')">
                   <input type="checkbox" class="sys-cb" id="cbVALUE" onchange="onSysCheckChange('VALUE')">
@@ -383,7 +409,6 @@ table.full-width tr:hover td{background:rgba(255,255,255,0.02)}
                   </div>
                 </div>
               </div>
-              <!-- MONSTER -->
               <div class="sys-row" id="sysMONSTER">
                 <div class="sys-row-header" onclick="toggleSys('MONSTER')">
                   <input type="checkbox" class="sys-cb" id="cbMONSTER" onchange="onSysCheckChange('MONSTER')">
@@ -402,7 +427,7 @@ table.full-width tr:hover td{background:rgba(255,255,255,0.02)}
             </div>
           </div>
 
-          <!-- SEGMENT 2: FUTURE STRATEGY -->
+          <!-- FUTURE STRATEGY -->
           <div class="strat-seg" id="segFUTURE">
             <div class="strat-seg-header" onclick="toggleSeg('FUTURE')">
               <span class="strat-seg-icon">📈</span>
@@ -411,19 +436,15 @@ table.full-width tr:hover td{background:rgba(255,255,255,0.02)}
               <span class="strat-seg-arrow">▶</span>
             </div>
             <div class="strat-seg-body">
-              <!-- Stock Futures — sector list -->
               <div class="sys-row open" id="sysSTOCKFUT">
                 <div class="sys-row-header" onclick="toggleSys('STOCKFUT')">
                   <input type="checkbox" class="sys-cb" id="cbSTOCKFUT" onchange="onSysCheckChange('STOCKFUT')">
-                  <span class="sys-label">Stock Futures</span>
+                  <span class="sys-label">Stock Futures (by sector)</span>
                   <span class="sys-meta" id="cntSTOCKFUT">0 stocks</span>
                   <span class="sys-arrow">▶</span>
                 </div>
-                <div class="sys-row-body" id="futureSectorsBody">
-                  <!-- Sectors rendered by JS -->
-                </div>
+                <div class="sys-row-body" id="futureSectorsBody"></div>
               </div>
-              <!-- Index Futures -->
               <div class="sys-row" id="sysIDXFUT">
                 <div class="sys-row-header" onclick="toggleSys('IDXFUT')">
                   <input type="checkbox" class="sys-cb" id="cbIDXFUT" onchange="onSysCheckChange('IDXFUT')">
@@ -439,7 +460,6 @@ table.full-width tr:hover td{background:rgba(255,255,255,0.02)}
                   </div>
                 </div>
               </div>
-              <!-- Commodity Futures -->
               <div class="sys-row" id="sysCOMMOFUT">
                 <div class="sys-row-header" onclick="toggleSys('COMMOFUT')">
                   <input type="checkbox" class="sys-cb" id="cbCOMMOFUT" onchange="onSysCheckChange('COMMOFUT')">
@@ -458,7 +478,7 @@ table.full-width tr:hover td{background:rgba(255,255,255,0.02)}
             </div>
           </div>
 
-          <!-- SEGMENT 3: OPTION STRATEGY (placeholder) -->
+          <!-- OPTION STRATEGY (placeholder) -->
           <div class="strat-seg" id="segOPTION">
             <div class="strat-seg-header" onclick="toggleSeg('OPTION')">
               <span class="strat-seg-icon">📊</span>
@@ -475,12 +495,12 @@ table.full-width tr:hover td{background:rgba(255,255,255,0.02)}
 
           <!-- Custom Instrument -->
           <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
-            <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Add custom instrument</div>
-            <div style="display:flex;gap:8px">
-              <input type="text" id="stratCustomInput" class="wl-add-inp" placeholder="e.g. RELIANCE, BANKNIFTYSEP26FUT, GOLD" style="flex:1;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text-primary);font-size:12px;outline:none">
-              <select id="stratCustomSeg" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text-primary);font-size:12px;outline:none">
-                <option value="CASH">Cash</option>
-                <option value="FUTURE">Future</option>
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Add custom instrument</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="text" id="stratCustomInput" class="wl-add-inp" placeholder="e.g. RELIANCE, BANKNIFTYSEP26FUT, GOLD" style="flex:1;background:var(--bg-secondary);border:1px solid var(--border);border-radius:7px;padding:8px 12px;color:var(--text-primary);font-size:12px;outline:none">
+              <select id="stratCustomSeg" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:7px;padding:8px 10px;color:var(--text-primary);font-size:12px;outline:none">
+                <option value="CASH">💰 Cash</option>
+                <option value="FUTURE">📈 Future</option>
               </select>
               <button class="wl-add-btn" onclick="addCustomInstrument()">+ Add</button>
             </div>
@@ -510,53 +530,163 @@ table.full-width tr:hover td{background:rgba(255,255,255,0.02)}
         </div>
 
         <div class="wl-panels">
-          <!-- CASH PANEL -->
+
+          <!-- CASH TABLE -->
           <div class="wl-panel active" id="wlPanelCASH">
-            <div class="wl-panel-header">
-              <div><div class="wl-panel-title">💰 Cash Watchlist</div><div class="wl-panel-sub">Equity stocks for swing trading</div></div>
+            <div class="wl-stats">
+              <div class="wl-stat-box">
+                <div class="wl-stat-icon">💰</div>
+                <div class="wl-stat-info">
+                  <div class="wl-stat-num" id="wlStatCountCASH" style="color:var(--text-primary)">0</div>
+                  <div class="wl-stat-lbl">Instruments</div>
+                </div>
+              </div>
+              <div class="wl-stat-box">
+                <div class="wl-stat-icon">📋</div>
+                <div class="wl-stat-info">
+                  <div class="wl-stat-num" style="color:var(--blue)" id="wlStatPaperCASH">0</div>
+                  <div class="wl-stat-lbl">Paper Mode</div>
+                </div>
+              </div>
+              <div class="wl-stat-box">
+                <div class="wl-stat-icon">⚡</div>
+                <div class="wl-stat-info">
+                  <div class="wl-stat-num" style="color:var(--red)" id="wlStatLiveCASH">0</div>
+                  <div class="wl-stat-lbl">Live Mode</div>
+                </div>
+              </div>
             </div>
-            <div class="wl-grid" id="wlGridCASH">
-              <div class="wl-empty"><div class="wl-empty-icon">💰</div><div class="wl-empty-title">No cash stocks</div><div class="wl-empty-sub">Add stocks from the Strategies page</div></div>
+            <div class="wl-table-wrap">
+              <table class="wl-table">
+                <thead>
+                  <tr>
+                    <th style="width:36px">#</th>
+                    <th>Instrument</th>
+                    <th>Strategy</th>
+                    <th>LTP</th>
+                    <th>Change</th>
+                    <th>Entry Price</th>
+                    <th>Stop Loss</th>
+                    <th>Mode</th>
+                    <th style="width:60px">Action</th>
+                    <th style="width:36px"></th>
+                  </tr>
+                </thead>
+                <tbody id="wlTbodyCASH">
+                  <tr class="wl-empty-row"><td colspan="10">No instruments in Cash Watchlist. Add from the Strategies page.</td></tr>
+                </tbody>
+              </table>
             </div>
-            <div class="wl-add-row">
-              <input type="text" id="wlAddCASH" class="wl-add-inp" placeholder="Type stock name, e.g. RELIANCE">
-              <button class="wl-add-btn" onclick="wlAddInstrument('CASH')">+ Add</button>
+            <div class="wl-add-section">
+              <div class="wl-add-lbl">Add instrument to Cash Watchlist</div>
+              <div class="wl-add-row">
+                <input type="text" id="wlAddCASH" class="wl-add-inp" placeholder="Type stock name, e.g. RELIANCE">
+                <button class="wl-add-btn" onclick="wlAddInstrument('CASH')">+ Add to Watchlist</button>
+              </div>
             </div>
           </div>
-          <!-- FUTURE PANEL -->
+
+          <!-- FUTURE TABLE -->
           <div class="wl-panel" id="wlPanelFUTURE">
-            <div class="wl-panel-header">
-              <div><div class="wl-panel-title">📈 Futures Watchlist</div><div class="wl-panel-sub">Stock futures, index futures, commodities</div></div>
+            <div class="wl-stats">
+              <div class="wl-stat-box">
+                <div class="wl-stat-icon">📈</div>
+                <div class="wl-stat-info">
+                  <div class="wl-stat-num" id="wlStatCountFUTURE" style="color:var(--text-primary)">0</div>
+                  <div class="wl-stat-lbl">Instruments</div>
+                </div>
+              </div>
+              <div class="wl-stat-box">
+                <div class="wl-stat-icon">📋</div>
+                <div class="wl-stat-info">
+                  <div class="wl-stat-num" style="color:var(--blue)" id="wlStatPaperFUTURE">0</div>
+                  <div class="wl-stat-lbl">Paper Mode</div>
+                </div>
+              </div>
+              <div class="wl-stat-box">
+                <div class="wl-stat-icon">⚡</div>
+                <div class="wl-stat-info">
+                  <div class="wl-stat-num" style="color:var(--red)" id="wlStatLiveFUTURE">0</div>
+                  <div class="wl-stat-lbl">Live Mode</div>
+                </div>
+              </div>
             </div>
-            <div class="wl-grid" id="wlGridFUTURE">
-              <div class="wl-empty"><div class="wl-empty-icon">📈</div><div class="wl-empty-title">No futures</div><div class="wl-empty-sub">Add futures from the Strategies page</div></div>
+            <div class="wl-table-wrap">
+              <table class="wl-table">
+                <thead>
+                  <tr>
+                    <th style="width:36px">#</th>
+                    <th>Instrument</th>
+                    <th>Strategy</th>
+                    <th>LTP</th>
+                    <th>Change</th>
+                    <th>Entry Price</th>
+                    <th>Stop Loss</th>
+                    <th>Mode</th>
+                    <th style="width:60px">Action</th>
+                    <th style="width:36px"></th>
+                  </tr>
+                </thead>
+                <tbody id="wlTbodyFUTURE">
+                  <tr class="wl-empty-row"><td colspan="10">No instruments in Futures Watchlist. Add from the Strategies page.</td></tr>
+                </tbody>
+              </table>
             </div>
-            <div class="wl-add-row">
-              <input type="text" id="wlAddFUTURE" class="wl-add-inp" placeholder="Type instrument, e.g. BANKNIFTYSEP26FUT">
-              <button class="wl-add-btn" onclick="wlAddInstrument('FUTURE')">+ Add</button>
+            <div class="wl-add-section">
+              <div class="wl-add-lbl">Add instrument to Futures Watchlist</div>
+              <div class="wl-add-row">
+                <input type="text" id="wlAddFUTURE" class="wl-add-inp" placeholder="Type instrument, e.g. BANKNIFTYSEP26FUT">
+                <button class="wl-add-btn" onclick="wlAddInstrument('FUTURE')">+ Add to Watchlist</button>
+              </div>
             </div>
           </div>
-          <!-- OPTION PANEL -->
+
+          <!-- OPTION TABLE (placeholder) -->
           <div class="wl-panel" id="wlPanelOPTION">
-            <div class="wl-panel-header">
-              <div><div class="wl-panel-title">📊 Options Watchlist</div><div class="wl-panel-sub">Stock options, index options, commodities</div></div>
+            <div class="wl-stats">
+              <div class="wl-stat-box">
+                <div class="wl-stat-icon">📊</div>
+                <div class="wl-stat-info">
+                  <div class="wl-stat-num" style="color:var(--text-muted)">—</div>
+                  <div class="wl-stat-lbl">Options</div>
+                </div>
+              </div>
             </div>
-            <div class="wl-grid" id="wlGridOPTION">
-              <div class="wl-empty"><div class="wl-empty-icon">📊</div><div class="wl-empty-title">No options</div><div class="wl-empty-sub">Options strategy coming soon</div></div>
+            <div class="wl-table-wrap">
+              <table class="wl-table">
+                <thead>
+                  <tr>
+                    <th style="width:36px">#</th>
+                    <th>Instrument</th>
+                    <th>Strategy</th>
+                    <th>LTP</th>
+                    <th>Change</th>
+                    <th>Entry Price</th>
+                    <th>Stop Loss</th>
+                    <th>Mode</th>
+                    <th style="width:60px">Action</th>
+                    <th style="width:36px"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="wl-empty-row"><td colspan="10">Options strategy coming soon. Stay tuned!</td></tr>
+                </tbody>
+              </table>
             </div>
           </div>
-        </div>
+
+        </div><!-- /wl-panels -->
       </div><!-- /viewWatchlist -->
 
-      <!-- ORDERS VIEW -->
+      <!-- ORDERS -->
       <div class="view" id="viewOrders">
         <div class="content-header">
           <div class="breadcrumb">SARTrader / <span>Trade Log</span></div>
         </div>
-        <div style="text-align:center;padding:60px;color:var(--text-muted)">Trade history coming soon...</div>
+        <div style="text-align:center;padding:60px;color:var(--text-muted)">Trade Log — Paper & Live sections coming soon...</div>
       </div>
 
-      <!-- PORTFOLIO VIEW -->
+      <!-- PORTFOLIO -->
       <div class="view" id="viewPortfolio">
         <div class="content-header">
           <div class="breadcrumb">SARTrader / <span>Portfolio</span></div>
@@ -564,7 +694,7 @@ table.full-width tr:hover td{background:rgba(255,255,255,0.02)}
         <div style="text-align:center;padding:60px;color:var(--text-muted)">Portfolio view coming soon...</div>
       </div>
 
-      <!-- BROKERS VIEW -->
+      <!-- BROKERS -->
       <div class="view" id="viewBrokers">
         <div class="content-header">
           <div class="breadcrumb">SARTrader / <span>Brokers</span></div>
@@ -580,58 +710,49 @@ table.full-width tr:hover td{background:rgba(255,255,255,0.02)}
 /* ════════════════════════════════════════
    CONSTANTS
 ════════════════════════════════════════ */
-
-// Cash systems — each has its own stock list (persisted in localStorage)
 const CASH_SYSTEMS = {
   ABCT:    { label: 'ABCT System-1',  stocks: ['RELIANCE','TCS','HDFCBANK','ICICIBANK','SBIN','KOTAKBANK','BAJFINANCE','HDFC','LT','SUNPHARMA'], category: 'CASH' },
   CUP:     { label: 'CUP Strategy',   stocks: ['RELIANCE','HDFCBANK','TCS','BAJFINANCE','HINDUNILVR','TITAN','MARUTI','M&M'], category: 'CASH' },
   TOPBTM:  { label: 'Top-Bottom',     stocks: ['RELIANCE','TCS','HDFCBANK','ICICIBANK','SBIN','KOTAKBANK','BAJFINANCE','HDFC','LT','SUNPHARMA','AXISBANK','INDUSINDBK'], category: 'CASH' },
-  VALUE:   { label: 'Value Buy',       stocks: ['RELIANCE','TCS','HDFCBANK','SBIN','TATASTEEL','JSWSTEEL','COALINDIA','ONGC','NTPC','POWERGRID'], category: 'CASH' },
-  MONSTER: { label: 'Monster Move',    stocks: ['RELIANCE','TCS','INFY','HDFCBANK','ICICIBANK','BAJFINANCE','HINDUNILVR'], category: 'CASH' },
+  VALUE:   { label: 'Value Buy',      stocks: ['RELIANCE','TCS','HDFCBANK','SBIN','TATASTEEL','JSWSTEEL','COALINDIA','ONGC','NTPC','POWERGRID'], category: 'CASH' },
+  MONSTER: { label: 'Monster Move',   stocks: ['RELIANCE','TCS','INFY','HDFCBANK','ICICIBANK','BAJFINANCE','HINDUNILVR'], category: 'CASH' },
 };
-
-// Future systems
 const FUTURE_SYSTEMS = {
-  IDXFUT:   { label: 'Index Futures',  stocks: ['NIFTY','BANKNIFTY','SENSEX','FINNIFTY'], category: 'FUTURE', type: 'INDEX' },
-  COMMOFUT: { label: 'Commodity Futures', stocks: ['GOLD','SILVER','CRUDEOIL','NATURALGAS'], category: 'FUTURE', type: 'COMMO' },
+  IDXFUT:    { label: 'Index Futures',    stocks: ['NIFTY','BANKNIFTY','SENSEX','FINNIFTY'], category: 'FUTURE', type: 'INDEX' },
+  COMMOFUT:  { label: 'Commodity Futures', stocks: ['GOLD','SILVER','CRUDEOIL','NATURALGAS'], category: 'FUTURE', type: 'COMMO' },
 };
-
-// 15 sectors for Stock Futures
 const FUT_SECTORS = {
-  'Auto':           ['MARUTI','M&M','TATAMOTORS','BAJAJ-AUTO','HEROMOTOCO','EICHERMOT','TVSMOTOR','ASHOKLEY','BALKRISIND'],
-  'PSU Bank':       ['SBI','BANK OF BARODA','CANBK','UNIONBANK','PNB','CENTRALBK','INDIANB','UCOBANK'],
-  'PVT Bank':       ['HDFCBANK','ICICIBANK','KOTAKBANK','INDUSINDBK','AXISBANK','IDFCFIRSTB','BANDHANBNK','RBLBANK'],
-  'Consumer Durable':['TITAN','HAVELLS','VOLTAS','CROMPTON','WHIRLPOOL','SYMPHONY','PICNIC','KAJARIA'],
-  'Energy':         ['RELIANCE','ONGC','BPCL','IOC','HPCL','GAIL','OIL','CHAMBLFERT'],
-  'FMCG':           ['HINDUNILVR','NESTLE','DABUR','COLPAL','BRITANNIA','MARICO','GODREJCP','TATACONSUM'],
+  'Auto':              ['MARUTI','M&M','TATAMOTORS','BAJAJ-AUTO','HEROMOTOCO','EICHERMOT','TVSMOTOR','ASHOKLEY','BALKRISIND'],
+  'PSU Bank':         ['SBI','BANK OF BARODA','CANBK','UNIONBANK','PNB','CENTRALBK','INDIANB','UCOBANK'],
+  'PVT Bank':         ['HDFCBANK','ICICIBANK','KOTAKBANK','INDUSINDBK','AXISBANK','IDFCFIRSTB','BANDHANBNK','RBLBANK'],
+  'Consumer Durable':  ['TITAN','HAVELLS','VOLTAS','CROMPTON','WHIRLPOOL','SYMPHONY','KAJARIA'],
+  'Energy':           ['RELIANCE','ONGC','BPCL','IOC','HPCL','GAIL'],
+  'FMCG':             ['HINDUNILVR','NESTLE','DABUR','COLPAL','BRITANNIA','MARICO','GODREJCP','TATACONSUM'],
   'Financial Services':['BAJFINANCE','BAJ FINSERV','MUTHOOTFIN','CHOLAFIN','SHRIRAMFIN','LICHSGFIN','PFC','RECLTD'],
-  'IT':             ['INFY','TCS','HCLTECH','WIPRO','TECHM','LTIM','COFORGE','MINDTREE'],
-  'Infrastructure': ['ADANI PORTS','DELHIVERY','CONCOR','CGCL','KALPATPOWR','GRINFRABLR','KNRMELCO','RUBYMILLS'],
-  'Defence':        ['HAL','BEL','BEML','GRSE','MAZAGON','BDL','COCHINSHIP','GMBL'],
-  'Metal':          ['TATASTEEL','JSWSTEEL','HINDALCO','JSPL','NMDC','SAIL','VEDANTA','COALINDIA'],
-  'Pharma':         ['SUNPHARMA','CIPLA','DRREDDY','APOLLOPHARMA','ZYDUSLIFE','BIOCON','TORNTPHARMA','GLENMARK'],
-  'PSE':            ['NTPC','POWERGRID','ONGC','COALINDIA','NMDC','BEL','HAL','GAIL','IOC','BPCL'],
-  'Realty':         ['DLF','GODREJPROP','SOBHA','BRIGADE','PRESTIGE','MACOTECH','OBEROIRLTY','ASHIANA'],
-  'Miscellaneous':  ['ADANIENT','ADANIGREEN','ADANIPORTS','ADANITRANS','ADANIPOWER','ADANIFORBS'],
+  'IT':               ['INFY','TCS','HCLTECH','WIPRO','TECHM','LTIM','COFORGE'],
+  'Infrastructure':    ['ADANI PORTS','DELHIVERY','CONCOR','CGCL','KALPATPOWR'],
+  'Defence':          ['HAL','BEL','BEML','GRSE','MAZAGON','BDL'],
+  'Metal':            ['TATASTEEL','JSWSTEEL','HINDALCO','JSPL','NMDC','SAIL','VEDANTA'],
+  'Pharma':           ['SUNPHARMA','CIPLA','DRREDDY','APOLLOPHARMA','ZYDUSLIFE','BIOCON','TORNTPHARMA','GLENMARK'],
+  'PSE':              ['NTPC','POWERGRID','ONGC','COALINDIA','NMDC','BEL','HAL','GAIL','IOC','BPCL'],
+  'Realty':           ['DLF','GODREJPROP','SOBHA','BRIGADE','PRESTIGE','OBEROIRLTY'],
+  'Miscellaneous':     ['ADANIENT','ADANIGREEN','ADANIPORTS','ADANITRANS','ADANIPOWER'],
 };
-
-// Options (placeholder)
 const OPTION_SYSTEMS = {
-  IDXOPT:   { label: 'Index Options', stocks: ['NIFTY','BANKNIFTY'], category: 'OPTION' },
-  STOCKOPT: { label: 'Stock Options', stocks: [], category: 'OPTION' },
+  IDXOPT:   { label: 'Index Options',   stocks: ['NIFTY','BANKNIFTY'], category: 'OPTION' },
+  STOCKOPT: { label: 'Stock Options',  stocks: [], category: 'OPTION' },
   COMMOOPT: { label: 'Commodity Options', stocks: [], category: 'OPTION' },
 };
 
-// ── Persistent state (localStorage) ──────────────────────────
-// Strategy stock lists
+/* ════════════════════════════════════════
+   PERSISTENT STATE
+════════════════════════════════════════ */
 let STRAT_STOCKS = {};
 function loadStratStocks() {
   try {
-    const saved = localStorage.getItem('stratStocks');
-    if (saved) {
-      STRAT_STOCKS = JSON.parse(saved);
-    } else {
-      // Initialize from defaults
+    const s = localStorage.getItem('stratStocks');
+    if (s) { STRAT_STOCKS = JSON.parse(s); }
+    else {
       Object.keys(CASH_SYSTEMS).forEach(k => STRAT_STOCKS[k] = [...(CASH_SYSTEMS[k].stocks||[])]);
       Object.keys(FUTURE_SYSTEMS).forEach(k => STRAT_STOCKS[k] = [...(FUTURE_SYSTEMS[k].stocks||[])]);
       Object.keys(FUT_SECTORS).forEach(k => STRAT_STOCKS['SEC_'+k] = [...(FUT_SECTORS[k]||[])]);
@@ -642,12 +763,30 @@ function saveStratStocks() {
   try { localStorage.setItem('stratStocks', JSON.stringify(STRAT_STOCKS)); } catch(e){}
 }
 
-// Selected instruments (checked = in watchlist) — inst -> sysId
+// selectedInstruments: inst -> sysId (used by strategy chips)
 let selectedInstruments = {};
 
-// Three watchlists
-const WATCHLISTS = { CASH: new Set(), FUTURE: new Set(), OPTION: new Set() };
+/*
+  WATCHLIST: Each tab has an array of items.
+  Item shape: { inst, sysId, entryPrice: '', sl: '', mode: 'PAPER' }
+*/
+const WATCHLISTS = { CASH: [], FUTURE: [], OPTION: [] };
 let activeWlTab = 'CASH';
+
+function loadWatchlists() {
+  try {
+    const s = localStorage.getItem('watchlists');
+    if (s) {
+      const parsed = JSON.parse(s);
+      Object.keys(parsed).forEach(k => {
+        if (WATCHLISTS[k]) WATCHLISTS[k] = parsed[k] || [];
+      });
+    }
+  } catch(e) {}
+}
+function saveWatchlists() {
+  try { localStorage.setItem('watchlists', JSON.stringify(WATCHLISTS)); } catch(e){}
+}
 
 /* ════════════════════════════════════════
    LOGIN
@@ -659,8 +798,7 @@ function attemptLogin() {
   if (pw === DASHBOARD_PASSWORD) {
     document.getElementById('loginOverlay').style.display = 'none';
     document.querySelector('.layout').style.display = 'flex';
-    initClock();
-    initParticles();
+    initClock(); initParticles();
   } else {
     err.style.display = 'block';
     document.getElementById('loginPassword').value = '';
@@ -671,7 +809,7 @@ function initParticles() {
   if (!c) return;
   const colors=['#00c896','#3b82f6','#a78bfa','#f5c842','#ff4d6a','#22d3ee'];
   for (let i=0;i<18;i++) {
-    const p=document.createElement('div');p.className='login-particle';
+    const p=document.createElement('div'); p.className='login-particle';
     const sz=Math.random()*6+2;
     p.style.cssText=`width:${sz}px;height:${sz}px;background:${colors[i%colors.length]};left:${Math.random()*100}%;animation-duration:${Math.random()*12+8}s;animation-delay:${Math.random()*10}s`;
     c.appendChild(p);
@@ -713,8 +851,7 @@ let ws=null;
 function connectWS(){
   const httpHost=location.host||'157.230.47.84:8765';
   const [host,port]=httpHost.includes(':')?httpHost.split(':'):[httpHost,'8765'];
-  const wsPort=String(Number(port)+1);
-  ws=new WebSocket(`ws://${host}:${wsPort}`);
+  ws=new WebSocket(`ws://${host}:${Number(port)+1}`);
   ws.onopen=()=>{ ws.send(JSON.stringify({command:'get_state'})); };
   ws.onmessage=(evt)=>{
     try{
@@ -722,7 +859,7 @@ function connectWS(){
       if(msg.type==='state') updateAll(msg.data);
     }catch(e){}
   };
-  ws.onerror=()=>{ document.getElementById('footerMode')&&(document.getElementById('footerMode').textContent='WS ERROR'); };
+  ws.onerror=()=>{ const f=document.getElementById('footerMode'); if(f) f.textContent='WS ERROR'; };
   ws.onclose=()=>{ setTimeout(connectWS,5000); };
 }
 
@@ -779,7 +916,6 @@ function updateTrades(trades){
   document.getElementById('snapRunning').textContent=longs+shorts;
   document.getElementById('snapLongs').textContent=longs;
   document.getElementById('snapShorts').textContent=shorts;
-  document.getElementById('snapFutPnl').textContent=`₹${Math.abs(trades.filter(t=>(t.instrument||'').toUpperCase().includes('FUT')).reduce((s,t)=>s+(t.pnl||0),0)).toLocaleString('en-IN')}`;
 }
 function updateSignals(signals){
   const sb=document.getElementById('signalsBody');
@@ -799,46 +935,58 @@ function updateSignals(signals){
 }
 
 /* ════════════════════════════════════════
-   STRATEGY: TOGGLE HELPERS
+   STRATEGY HELPERS
 ════════════════════════════════════════ */
 function toggleSeg(id){
   const el=document.getElementById('seg'+id);
-  if(!el)return;
-  el.classList.toggle('open');
+  if(el) el.classList.toggle('open');
 }
 function toggleSys(id){
   const el=document.getElementById('sys'+id);
-  if(!el)return;
-  el.classList.toggle('open');
+  if(el) el.classList.toggle('open');
 }
 function toggleSector(sectorId){
   const el=document.getElementById('sec_'+sectorId);
-  if(!el)return;
-  el.classList.toggle('open');
+  if(el) el.classList.toggle('open');
 }
 
 /* ════════════════════════════════════════
-   RENDER STOCK CHIPS
+   QUOTE LOOKUP
 ════════════════════════════════════════ */
-function getLtp(inst){
-  const q=window._quotes;
-  if(!q)return'—';
+function getQuote(inst){
+  const q=window._quotes||{};
   // Try direct key
-  if(q[inst])return'₹'+(q[inst].last_price||q[inst].price||0).toLocaleString('en-IN',{minimumFractionDigits:1});
-  // Try .NS suffix for cash stocks
-  if(q[inst+'.NS'])return'₹'+(q[inst+'.NS'].last_price||q[inst+'.NS'].price||0).toLocaleString('en-IN',{minimumFractionDigits:1});
+  if(q[inst]) return q[inst];
+  // Try .NS suffix
+  if(q[inst+'.NS']) return q[inst+'.NS'];
   // Try NSE: prefix
-  if(q['NSE:'+inst])return'₹'+(q['NSE:'+inst].last_price||q['NSE:'+inst].price||0).toLocaleString('en-IN',{minimumFractionDigits:1});
-  return'—';
+  if(q['NSE:'+inst]) return q['NSE:'+inst];
+  return null;
+}
+function getLtpDisplay(inst){
+  const q=getQuote(inst);
+  if(!q) return {price:'—',change:'—',cls:''};
+  const price=q.last_price||q.price||0;
+  const chg=q.change||0;
+  const pct=q.change_pct||0;
+  const cls=chg>=0?'up':'dn';
+  return {
+    price: '₹'+price.toLocaleString('en-IN',{minimumFractionDigits:2}),
+    change: `${chg>=0?'+':''}${pct.toFixed(2)}%`,
+    cls
+  };
 }
 
+/* ════════════════════════════════════════
+   RENDER STRATEGY CHIPS
+════════════════════════════════════════ */
 function renderChip(inst,sysId,category){
   const isChecked=!!selectedInstruments[inst];
-  const ltp=getLtp(inst);
+  const ltp=getLtpDisplay(inst);
   return `<label class="stock-chip ${isChecked?'checked':''}" id="chip_${inst.replace(/[^a-zA-Z0-9]/g,'_')}_${sysId}">
     <input type="checkbox" onchange="onChipToggle('${inst}','${sysId}','${category}',this.checked)" ${isChecked?'checked':''}>
     <span>${inst}</span>
-    <span class="chip-ltp">${ltp}</span>
+    <span class="chip-ltp">${ltp.price}</span>
     <span class="chip-rm" onclick="event.stopPropagation();onChipRm('${inst}','${sysId}','${category}')">✕</span>
   </label>`;
 }
@@ -849,62 +997,63 @@ function renderSystemStocks(sysId,category){
   const stocks=STRAT_STOCKS[sysId]||[];
   if(!stocks.length){
     container.innerHTML='<div class="no-stocks">No stocks — click "+ Add Stock" to add</div>';
-    return;
+    updateSysCount(sysId,category); return;
   }
   container.innerHTML=stocks.map(stock=>renderChip(stock,sysId,category)).join('');
   updateSysCount(sysId,category);
 }
 
-function renderSectorStocks(sectorKey,sectorLabel){
+function renderSectorStocks(sectorKey){
   const container=document.getElementById('secStocks_'+sectorKey);
   if(!container)return;
   const stocks=STRAT_STOCKS['SEC_'+sectorKey]||[];
-  if(!stocks.length){
-    container.innerHTML='<div class="no-stocks">No stocks</div>';
-    return;
-  }
-  container.innerHTML=stocks.map(stock=>{
-    const inst=stock+'FUT'; // stock futures use FUT suffix
-    return renderChip(stock,'SEC_'+sectorKey,'FUTURE');
-  }).join('');
+  if(!stocks.length){ container.innerHTML='<div class="no-stocks">No stocks</div>'; updateSectorCount(sectorKey); return; }
+  container.innerHTML=stocks.map(stock=>renderChip(stock,'SEC_'+sectorKey,'FUTURE')).join('');
   updateSectorCount(sectorKey);
 }
 
 /* ════════════════════════════════════════
-   CHIP TOGGLE — real-time watchlist sync
+   CHIP TOGGLE
 ════════════════════════════════════════ */
 function onChipToggle(inst,sysId,category,checked){
   if(checked){
     selectedInstruments[inst]=sysId;
-    WATCHLISTS[category].add(inst);
+    // Add to watchlist if not already there
+    if(!WATCHLISTS[category].find(x=>x.inst===inst)){
+      WATCHLISTS[category].push({ inst, sysId, entryPrice:'', sl:'', mode:'PAPER' });
+    }
   } else {
     delete selectedInstruments[inst];
-    WATCHLISTS[category].delete(inst);
+    // Remove from watchlist
+    const idx=WATCHLISTS[category].findIndex(x=>x.inst===inst);
+    if(idx!==-1) WATCHLISTS[category].splice(idx,1);
   }
-  // Update chip class
   const chip=document.getElementById('chip_'+inst.replace(/[^a-zA-Z0-9]/g,'_')+'_'+sysId);
   if(chip) chip.classList.toggle('checked',checked);
   updateSysCount(sysId,category);
+  updateSegCount(category);
+  saveWatchlists();
   renderAllWatchlists();
   syncToEngine();
 }
 
 function onChipRm(inst,sysId,category){
-  // Uncheck the chip
   const chip=document.getElementById('chip_'+inst.replace(/[^a-zA-Z0-9]/g,'_')+'_'+sysId);
   if(chip){ chip.querySelector('input').checked=false; chip.classList.remove('checked'); }
   delete selectedInstruments[inst];
-  WATCHLISTS[category].delete(inst);
+  const idx=WATCHLISTS[category].findIndex(x=>x.inst===inst);
+  if(idx!==-1) WATCHLISTS[category].splice(idx,1);
   updateSysCount(sysId,category);
+  updateSegCount(category);
+  saveWatchlists();
   renderAllWatchlists();
   syncToEngine();
 }
 
 function refreshAllChips(){
-  // Re-render all system stocks to update LTP
   Object.keys(CASH_SYSTEMS).forEach(k=>renderSystemStocks(k,'CASH'));
   Object.keys(FUTURE_SYSTEMS).forEach(k=>renderSystemStocks(k,'FUTURE'));
-  Object.keys(FUT_SECTORS).forEach(k=>renderSectorStocks(k,FUT_SECTORS[k][0]));
+  Object.keys(FUT_SECTORS).forEach(k=>renderSectorStocks(k));
 }
 
 function updateSysCount(sysId,category){
@@ -914,11 +1063,9 @@ function updateSysCount(sysId,category){
     const checked=Object.values(selectedInstruments).filter(v=>v===sysId).length;
     cntEl.textContent=`${checked}/${total} stocks`;
   }
-  // Segment count
   if(category==='CASH') updateSegCount('CASH');
   else if(category==='FUTURE') updateSegCount('FUTURE');
 }
-
 function updateSectorCount(sectorKey){
   const cntEl=document.getElementById('secCnt_'+sectorKey);
   if(cntEl){
@@ -928,64 +1075,65 @@ function updateSectorCount(sectorKey){
   }
   updateSegCount('FUTURE');
 }
-
 function updateSegCount(seg){
   const cntEl=document.getElementById('cnt'+seg);
-  if(cntEl) cntEl.textContent=WATCHLISTS[seg].size+' in watchlist';
+  if(cntEl) cntEl.textContent=WATCHLISTS[seg].length+' in watchlist';
 }
 
 /* ════════════════════════════════════════
-   ADD / REMOVE STOCKS FROM SYSTEMS
+   ADD/REMOVE STOCKS
 ════════════════════════════════════════ */
 function addStockPrompt(sysId){
   const category=CASH_SYSTEMS[sysId]?.category||FUTURE_SYSTEMS[sysId]?.category||'CASH';
-  const stock=prompt(`Add stock to ${CASH_SYSTEMS[sysId]?.label||sysId}:\n\nEnter stock name (e.g. RELIANCE):`);
+  const label=CASH_SYSTEMS[sysId]?.label||FUTURE_SYSTEMS[sysId]?.label||sysId;
+  const stock=prompt(`Add stock to ${label}:\n\nEnter stock name (e.g. RELIANCE):`);
   if(!stock)return;
   const s=stock.trim().toUpperCase();
   if(!s)return;
   if(!STRAT_STOCKS[sysId])STRAT_STOCKS[sysId]=[];
-  if(STRAT_STOCKS[sysId].includes(s)){
-    showToast(`${s} already exists in this system`,'var(--orange)');return;
-  }
+  if(STRAT_STOCKS[sysId].includes(s)){ showToast(`${s} already exists`,'var(--orange)'); return; }
   STRAT_STOCKS[sysId].push(s);
   saveStratStocks();
-  renderSystemStocks(sysId,category);
-  // Also add to watchlist
   selectedInstruments[s]=sysId;
-  WATCHLISTS[category].add(s);
+  if(!WATCHLISTS[category].find(x=>x.inst===s)){
+    WATCHLISTS[category].push({ inst:s, sysId, entryPrice:'', sl:'', mode:'PAPER' });
+  }
+  renderSystemStocks(sysId,category);
   updateSegCount(category);
+  saveWatchlists();
   renderAllWatchlists();
   syncToEngine();
-  showToast(`Added ${s} to ${CASH_SYSTEMS[sysId]?.label||sysId}`,'var(--green)');
+  showToast(`Added ${s} to ${label}`,'var(--green)');
 }
 
 function removeStockPrompt(sysId){
   const category=CASH_SYSTEMS[sysId]?.category||FUTURE_SYSTEMS[sysId]?.category||'CASH';
+  const label=CASH_SYSTEMS[sysId]?.label||FUTURE_SYSTEMS[sysId]?.label||sysId;
   const stocks=STRAT_STOCKS[sysId]||[];
   if(!stocks.length){showToast('No stocks to remove','var(--orange)');return;}
   const list=stocks.map((s,i)=>`${i+1}. ${s}`).join('\n');
-  const stock=prompt(`Remove stock from ${CASH_SYSTEMS[sysId]?.label||sysId}:\n\nCurrent stocks:\n${list}\n\nType the stock name to remove:`);
+  const stock=prompt(`Remove stock from ${label}:\n\nCurrent: ${list}\n\nType the stock name to remove:`);
   if(!stock)return;
   const s=stock.trim().toUpperCase();
   const idx=stocks.indexOf(s);
-  if(idx===-1){showToast(`${s} not found in this system`,'var(--red)');return;}
-  // Remove from system list
+  if(idx===-1){showToast(`${s} not found`,'var(--red)');return;}
   STRAT_STOCKS[sysId].splice(idx,1);
   saveStratStocks();
-  // Uncheck from watchlist if selected
   if(selectedInstruments[s]===sysId){
     delete selectedInstruments[s];
-    WATCHLISTS[category].delete(s);
-    renderAllWatchlists();
-    syncToEngine();
+    const wi=WATCHLISTS[category].findIndex(x=>x.inst===s);
+    if(wi!==-1)WATCHLISTS[category].splice(wi,1);
   }
   renderSystemStocks(sysId,category);
   updateSegCount(category);
-  showToast(`Removed ${s} from ${CASH_SYSTEMS[sysId]?.label||sysId}`,'var(--red)');
+  saveWatchlists();
+  renderAllWatchlists();
+  syncToEngine();
+  showToast(`Removed ${s} from ${label}`,'var(--red)');
 }
 
 /* ════════════════════════════════════════
-   SYSTEM CHECKBOX (select all / deselect all)
+   SYSTEM CHECKBOX
 ════════════════════════════════════════ */
 function onSysCheckChange(sysId){
   const cb=document.getElementById('cb'+sysId);
@@ -995,22 +1143,26 @@ function onSysCheckChange(sysId){
   if(cb.checked){
     stocks.forEach(stock=>{
       selectedInstruments[stock]=sysId;
-      WATCHLISTS[category].add(stock);
+      if(!WATCHLISTS[category].find(x=>x.inst===stock)){
+        WATCHLISTS[category].push({ inst:stock, sysId, entryPrice:'', sl:'', mode:'PAPER' });
+      }
     });
   } else {
     stocks.forEach(stock=>{
       delete selectedInstruments[stock];
-      WATCHLISTS[category].delete(stock);
+      const wi=WATCHLISTS[category].findIndex(x=>x.inst===stock);
+      if(wi!==-1)WATCHLISTS[category].splice(wi,1);
     });
   }
   renderSystemStocks(sysId,category);
-  renderAllWatchlists();
   updateSegCount(category);
+  saveWatchlists();
+  renderAllWatchlists();
   syncToEngine();
 }
 
 /* ════════════════════════════════════════
-   CUSTOM INSTRUMENT (strategy page)
+   CUSTOM INSTRUMENT
 ════════════════════════════════════════ */
 function addCustomInstrument(){
   const input=document.getElementById('stratCustomInput');
@@ -1019,11 +1171,14 @@ function addCustomInstrument(){
   const val=input.value.trim().toUpperCase();
   if(!val)return;
   const category=seg?.value||'CASH';
+  if(!WATCHLISTS[category].find(x=>x.inst===val)){
+    WATCHLISTS[category].push({ inst:val, sysId:category, entryPrice:'', sl:'', mode:'PAPER' });
+  }
   selectedInstruments[val]=category;
-  WATCHLISTS[category].add(val);
   input.value='';
-  renderAllWatchlists();
   updateSegCount(category);
+  saveWatchlists();
+  renderAllWatchlists();
   syncToEngine();
   showToast(`Added ${val} to ${category} watchlist`,'var(--green)');
 }
@@ -1041,59 +1196,178 @@ function switchWlTab(tab){
   });
 }
 
+/* ════════════════════════════════════════
+   RENDER WATCHLIST TABLE
+════════════════════════════════════════ */
 function renderAllWatchlists(){
+  renderWatchlistTable('CASH');
+  renderWatchlistTable('FUTURE');
+  renderWatchlistTable('OPTION');
+  // Update tab counts
   ['CASH','FUTURE','OPTION'].forEach(tab=>{
-    const grid=document.getElementById('wlGrid'+tab);
     const countEl=document.getElementById('wlCount'+tab);
-    if(!grid)return;
-    const items=[...WATCHLISTS[tab]];
-    if(countEl)countEl.textContent=`(${items.length})`;
-    if(!items.length){
-      grid.innerHTML=`<div class="wl-empty">
-        <div class="wl-empty-icon">${tab==='CASH'?'💰':tab==='FUTURE'?'📈':'📊'}</div>
-        <div class="wl-empty-title">No ${tab.toLowerCase()} instruments</div>
-        <div class="wl-empty-sub">Check stocks in the Strategies page</div>
-      </div>`;
-      return;
-    }
-    grid.innerHTML=items.map(inst=>{
-      const ltp=getLtp(inst);
-      const tag=tab==='CASH'?'tag-cash':tab==='FUTURE'?'tag-fut':'tag-opt';
-      const tagIcon=tab==='CASH'?'💰':tab==='FUTURE'?'📈':'📊';
-      return`<div class="wl-card" id="wlCard_${inst.replace(/[^a-zA-Z0-9]/g,'_')}">
-        <div class="wl-card-rm" onclick="wlRemoveInst('${inst}','${tab}')">✕</div>
-        <div class="wl-card-name">${inst}</div>
-        <div class="wl-card-ltp">${ltp}</div>
-        <span class="wl-card-tag ${tag}">${tagIcon} ${tab}</span>
-      </div>`;
-    }).join('');
+    if(countEl)countEl.textContent=`(${WATCHLISTS[tab].length})`;
   });
 }
 
-function wlRemoveInst(inst,tab){
-  const sysId=selectedInstruments[inst];
-  delete selectedInstruments[inst];
-  WATCHLISTS[tab].delete(inst);
-  renderAllWatchlists();
-  if(sysId){
-    updateSysCount(sysId,tab);
+function renderWatchlistTable(tab){
+  const tbody=document.getElementById('wlTbody'+tab);
+  if(!tbody)return;
+  const items=WATCHLISTS[tab];
+
+  // Update stats
+  const statCount=document.getElementById('wlStatCount'+tab);
+  const statPaper=document.getElementById('wlStatPaper'+tab);
+  const statLive=document.getElementById('wlStatLive'+tab);
+  if(statCount)statCount.textContent=items.length;
+  if(statPaper)statPaper.textContent=items.filter(x=>x.mode==='PAPER').length;
+  if(statLive)statLive.textContent=items.filter(x=>x.mode==='LIVE').length;
+
+  if(!items.length){
+    const icons={CASH:'💰',FUTURE:'📈',OPTION:'📊'};
+    tbody.innerHTML=`<tr class="wl-empty-row"><td colspan="10">No instruments in ${tab} Watchlist.<br><span style="font-size:11px">Add from the Strategies page or use the form below.</span></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML=items.map((item,idx)=>{
+    const ltp=getLtpDisplay(item.inst);
+    const sysLabel=CASH_SYSTEMS[item.sysId]?.label
+      ||FUTURE_SYSTEMS[item.sysId]?.label
+      ||FUT_SECTORS[item.sysId.replace('SEC_','')] ? item.sysId.replace('SEC_','')+' Sector'
+      ||item.sysId;
+    const id=`${tab}_${idx}`;
+    const isPaper=item.mode==='PAPER';
+    const modeCls=isPaper?'paper':'live';
+    const modeLbl=isPaper?'PAPER':'LIVE';
+
+    return `<tr data-idx="${idx}" data-tab="${tab}">
+      <td class="wl-sr">${idx+1}</td>
+      <td class="wl-inst">${item.inst}</td>
+      <td class="wl-sys">${sysLabel}</td>
+      <td class="wl-ltp ${ltp.cls}">${ltp.price}</td>
+      <td class="wl-change ${ltp.cls}">${ltp.change}</td>
+      <td class="wl-entry">
+        <input type="number" class="wl-edit" id="wlEntry_${id}"
+          value="${item.entryPrice}"
+          placeholder="Entry"
+          onclick="this.select()"
+          onchange="onWlEntryChange('${tab}',${idx},this.value)">
+      </td>
+      <td class="wl-sl">
+        <input type="number" class="wl-edit" id="wlSL_${id}"
+          value="${item.sl}"
+          placeholder="SL"
+          onclick="this.select()"
+          onchange="onWlSlChange('${tab}',${idx},this.value)">
+      </td>
+      <td>
+        <div class="wl-mode ${modeCls}" id="wlMode_${id}"
+          onclick="onWlModeToggle('${tab}',${idx})"
+          title="Click to switch mode">
+          ${isPaper?'📋 PAPER':'⚡ LIVE'}
+        </div>
+      </td>
+      <td>
+        <button class="wl-hit" id="wlHit_${id}" onclick="onWlHit('${tab}',${idx})">HIT</button>
+      </td>
+      <td>
+        <button class="wl-rm" onclick="onWlRemove('${tab}',${idx})" title="Remove">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+/* ════════════════════════════════════════
+   WATCHLIST EDIT EVENTS
+════════════════════════════════════════ */
+function onWlEntryChange(tab,idx,val){
+  if(WATCHLISTS[tab][idx]) WATCHLISTS[tab][idx].entryPrice=val;
+  saveWatchlists();
+}
+function onWlSlChange(tab,idx,val){
+  if(WATCHLISTS[tab][idx]) WATCHLISTS[tab][idx].sl=val;
+  saveWatchlists();
+}
+function onWlModeToggle(tab,idx){
+  const item=WATCHLISTS[tab][idx];
+  if(!item)return;
+  item.mode=item.mode==='PAPER'?'LIVE':'PAPER';
+  const id=`${tab}_${idx}`;
+  const el=document.getElementById('wlMode_'+id);
+  if(el){
+    el.className=`wl-mode ${item.mode==='PAPER'?'paper':'live'}`;
+    el.innerHTML=item.mode==='PAPER'?'📋 PAPER':'⚡ LIVE';
+  }
+  saveWatchlists();
+  renderAllWatchlists(); // refresh stats
+}
+
+function onWlHit(tab,idx){
+  const item=WATCHLISTS[tab][idx];
+  if(!item)return;
+  const entry=item.entryPrice;
+  const sl=item.sl;
+  const ltp=getQuote(item.inst);
+  const price=ltp?.last_price||ltp?.price||0;
+
+  if(!entry && !price){
+    showToast(`Set Entry Price for ${item.inst} first`, 'var(--orange)'); return;
+  }
+
+  const execPrice = entry ? parseFloat(entry) : price;
+  const execMode = item.mode; // PAPER or LIVE
+
+  // Send trade command to engine
+  if(ws && ws.readyState===WebSocket.OPEN){
+    ws.send(JSON.stringify({
+      command: 'execute_trade',
+      instrument: item.inst,
+      price: execPrice,
+      sl: sl ? parseFloat(sl) : null,
+      mode: execMode,
+      strategy: item.sysId,
+    }));
+    showToast(`⚡ ${execMode} HIT: ${item.inst} @ ₹${execPrice.toFixed(2)}${sl ? ' | SL ₹'+parseFloat(sl).toFixed(2) : ''}`, execMode==='LIVE'?'var(--red)':'var(--blue)');
+  } else {
+    showToast('Engine not connected — cannot hit trade', 'var(--red)');
+  }
+}
+
+function onWlRemove(tab,idx){
+  const item=WATCHLISTS[tab][idx];
+  if(!item)return;
+  const inst=item.inst;
+  const sysId=item.sysId;
+  WATCHLISTS[tab].splice(idx,1);
+  // Also uncheck strategy chip
+  if(selectedInstruments[inst]===sysId){
+    delete selectedInstruments[inst];
     refreshAllChips();
   }
   updateSegCount(tab);
+  saveWatchlists();
+  renderAllWatchlists();
   syncToEngine();
   showToast(`Removed ${inst}`,'var(--red)');
 }
 
+/* ════════════════════════════════════════
+   ADD INSTRUMENT FROM WATCHLIST FORM
+════════════════════════════════════════ */
 function wlAddInstrument(tab){
   const input=document.getElementById('wlAdd'+tab);
   if(!input)return;
   const val=input.value.trim().toUpperCase();
   if(!val)return;
+  if(WATCHLISTS[tab].find(x=>x.inst===val)){
+    showToast(`${val} already in watchlist`,'var(--orange)');return;
+  }
+  WATCHLISTS[tab].push({ inst:val, sysId:tab, entryPrice:'', sl:'', mode:'PAPER' });
   selectedInstruments[val]=tab;
-  WATCHLISTS[tab].add(val);
   input.value='';
-  renderAllWatchlists();
   updateSegCount(tab);
+  saveWatchlists();
+  renderAllWatchlists();
   syncToEngine();
   showToast(`Added ${val} to ${tab} watchlist`,'var(--green)');
 }
@@ -1103,19 +1377,20 @@ function wlAddInstrument(tab){
 ════════════════════════════════════════ */
 function syncToEngine(){
   if(ws&&ws.readyState===WebSocket.OPEN){
-    const allInsts=[...WATCHLISTS.CASH,...WATCHLISTS.FUTURE,...WATCHLISTS.OPTION];
-    ws.send(JSON.stringify({command:'apply_strategy',strategyName:'SAR_TOP_BOTTOM',instruments:allInsts}));
+    const allInsts=WATCHLISTS.CASH.concat(WATCHLISTS.FUTURE).map(x=>x.inst);
+    if(allInsts.length){
+      ws.send(JSON.stringify({command:'apply_strategy',strategyName:'SAR_TOP_BOTTOM',instruments:allInsts}));
+    }
   }
 }
 
 /* ════════════════════════════════════════
-   RENDER FUTURE SECTORS (called once)
+   RENDER FUTURE SECTORS
 ════════════════════════════════════════ */
 function renderFutureSectors(){
   const container=document.getElementById('futureSectorsBody');
   if(!container)return;
   container.innerHTML=Object.entries(FUT_SECTORS).map(([sector,stocks])=>{
-    // Initialize sector stock list
     if(!STRAT_STOCKS['SEC_'+sector])STRAT_STOCKS['SEC_'+sector]=[...stocks];
     const checked=stocks.filter(s=>selectedInstruments[s]&&selectedInstruments[s]==='SEC_'+sector).length;
     return `<div class="sector-row" id="sec_${sector}">
@@ -1141,13 +1416,23 @@ function renderFutureSectors(){
 function onSectorCheck(sector,checked){
   const stocks=FUT_SECTORS[sector]||[];
   if(checked){
-    stocks.forEach(s=>{selectedInstruments[s]='SEC_'+sector;WATCHLISTS.FUTURE.add(s);});
+    stocks.forEach(s=>{
+      selectedInstruments[s]='SEC_'+sector;
+      if(!WATCHLISTS.FUTURE.find(x=>x.inst===s)){
+        WATCHLISTS.FUTURE.push({ inst:s, sysId:'SEC_'+sector, entryPrice:'', sl:'', mode:'PAPER' });
+      }
+    });
   } else {
-    stocks.forEach(s=>{delete selectedInstruments[s];WATCHLISTS.FUTURE.delete(s);});
+    stocks.forEach(s=>{
+      delete selectedInstruments[s];
+      const wi=WATCHLISTS.FUTURE.findIndex(x=>x.inst===s);
+      if(wi!==-1)WATCHLISTS.FUTURE.splice(wi,1);
+    });
   }
-  renderSectorStocks(sector,sector);
-  renderAllWatchlists();
+  renderSectorStocks(sector);
   updateSegCount('FUTURE');
+  saveWatchlists();
+  renderAllWatchlists();
   syncToEngine();
 }
 
@@ -1160,9 +1445,9 @@ function showToast(msg,color){
   const t=document.createElement('div');
   t.className='toast-mavis';
   t.textContent=msg;
-  t.style.cssText=`position:fixed;bottom:20px;right:20px;z-index:99999;background:var(--bg-card);border:1px solid ${color||'var(--green)'};color:${color||'var(--green)'};padding:10px 18px;border-radius:8px;font-size:12px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,0.4);animation:fadeUp 0.3s ease`;
+  t.style.cssText=`position:fixed;bottom:24px;right:24px;z-index:99999;background:var(--bg-card);border:1px solid ${color||'var(--green)'};color:${color||'var(--green)'};padding:10px 18px;border-radius:8px;font-size:12px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,0.5);animation:fadeUp 0.3s ease;max-width:320px`;
   document.body.appendChild(t);
-  setTimeout(()=>t.remove(),3000);
+  setTimeout(()=>t.remove(),3500);
 }
 const style=document.createElement('style');
 style.textContent='@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}';
@@ -1173,15 +1458,14 @@ document.head.appendChild(style);
 ════════════════════════════════════════ */
 function init(){
   loadStratStocks();
-  // Ensure all keys exist
+  loadWatchlists();
   Object.keys(CASH_SYSTEMS).forEach(k=>{if(!STRAT_STOCKS[k])STRAT_STOCKS[k]=[...CASH_SYSTEMS[k].stocks];});
   Object.keys(FUTURE_SYSTEMS).forEach(k=>{if(!STRAT_STOCKS[k])STRAT_STOCKS[k]=[...FUTURE_SYSTEMS[k].stocks];});
   Object.keys(FUT_SECTORS).forEach(k=>{if(!STRAT_STOCKS['SEC_'+k])STRAT_STOCKS['SEC_'+k]=[...FUT_SECTORS[k]];});
-  // Render all systems
   Object.keys(CASH_SYSTEMS).forEach(k=>renderSystemStocks(k,'CASH'));
   Object.keys(FUTURE_SYSTEMS).forEach(k=>renderSystemStocks(k,'FUTURE'));
   renderFutureSectors();
-  // Clock
+  // Clocks
   setInterval(()=>{
     const el=document.getElementById('stratClock');
     if(el)el.textContent=new Date().toLocaleTimeString('en-IN',{hour12:true});
@@ -1189,6 +1473,8 @@ function init(){
     if(wl)wl.textContent=new Date().toLocaleTimeString('en-IN',{hour12:true});
   },1000);
   renderAllWatchlists();
+  Object.keys(CASH_SYSTEMS).forEach(k=>updateSegCount('CASH'));
+  Object.keys(FUTURE_SYSTEMS).forEach(k=>updateSegCount('FUTURE'));
   connectWS();
 }
 
