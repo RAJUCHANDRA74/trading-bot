@@ -507,6 +507,16 @@ table.full-width tr:hover td { background: var(--bg-card2); }
 .seg-toggle { font-size: 11px; color: var(--text-muted); transition: transform 0.2s; }
 .seg-body { padding: 8px 0; }
 
+/* Native <details> open/closed states */
+details > summary { list-style: none; -webkit-list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+
+/* When segment is open, rotate arrow to DOWN */
+details.strat-segment[open] .seg-toggle { transform: rotate(90deg); }
+
+/* When system is open, rotate arrow to DOWN */
+details.strat-system[open] .sys-toggle { transform: rotate(90deg); }
+
 /* Strategy system (ABCT, CUP, etc.) */
 .strat-system { border-bottom: 1px solid rgba(30,48,80,0.5); }
 .strat-system:last-child { border-bottom: none; }
@@ -916,190 +926,178 @@ table.full-width tr:hover td { background: var(--bg-card2); }
       <div class="strat-segments">
 
         <!-- SEGMENT 1: CASH STRATEGY -->
-        <div class="strat-segment">
-          <div class="seg-header" onclick="toggleSeg('segCash')">
+        <details class="strat-segment">
+          <summary class="seg-header">
             <div class="seg-title">
               <span class="seg-icon">💰</span>
               Cash Strategy
             </div>
-            <div class="seg-toggle" id="toggleSegCash">▼</div>
-          </div>
-          <div class="seg-body" id="bodySegCash" style="display:none">
+            <div class="seg-toggle">▶</div>
+          </summary>
+          <div class="seg-body">
 
-            <!-- ABCT System-1 -->
-            <div class="strat-system">
-              <div class="sys-header" onclick="toggleSys('sysABCT')">
+            <details class="strat-system">
+              <summary class="sys-header">
                 <input type="checkbox" class="sys-cb" id="cbABCT" onchange="sysCbChange('ABCT')">
                 <span class="sys-name">ABCT System-1</span>
                 <span class="sys-count" id="cntABCT">0 selected</span>
-                <div class="sys-toggle" id="toggleSysABCT">▼</div>
-              </div>
-              <div class="sys-body" id="bodySysABCT" style="display:none">
+                <div class="sys-toggle">▶</div>
+              </summary>
+              <div class="sys-body">
                 <div class="sys-stocks" id="stocksABCT"></div>
               </div>
-            </div>
+            </details>
 
-            <!-- CUP Strategy -->
-            <div class="strat-system">
-              <div class="sys-header" onclick="toggleSys('sysCUP')">
+            <details class="strat-system">
+              <summary class="sys-header">
                 <input type="checkbox" class="sys-cb" id="cbCUP" onchange="sysCbChange('CUP')">
                 <span class="sys-name">CUP Strategy</span>
                 <span class="sys-count" id="cntCUP">0 selected</span>
-                <div class="sys-toggle" id="toggleSysCUP">▼</div>
-              </div>
-              <div class="sys-body" id="bodySysCUP" style="display:none">
+                <div class="sys-toggle">▶</div>
+              </summary>
+              <div class="sys-body">
                 <div class="sys-stocks" id="stocksCUP"></div>
               </div>
-            </div>
+            </details>
 
-            <!-- Top-Bottom -->
-            <div class="strat-system">
-              <div class="sys-header" onclick="toggleSys('sysTOPBTM')">
+            <details class="strat-system">
+              <summary class="sys-header">
                 <input type="checkbox" class="sys-cb" id="cbTOPBTM" onchange="sysCbChange('TOPBTM')">
                 <span class="sys-name">Top-Bottom</span>
                 <span class="sys-count" id="cntTOPBTM">0 selected</span>
-                <div class="sys-toggle" id="toggleSysTOPBTM">▼</div>
-              </div>
-              <div class="sys-body" id="bodySysTOPBTM" style="display:none">
+                <div class="sys-toggle">▶</div>
+              </summary>
+              <div class="sys-body">
                 <div class="sys-stocks" id="stocksTOPBTM"></div>
               </div>
-            </div>
+            </details>
 
-            <!-- Value Buy -->
-            <div class="strat-system">
-              <div class="sys-header" onclick="toggleSys('sysVALUE')">
+            <details class="strat-system">
+              <summary class="sys-header">
                 <input type="checkbox" class="sys-cb" id="cbVALUE" onchange="sysCbChange('VALUE')">
                 <span class="sys-name">Value Buy</span>
                 <span class="sys-count" id="cntVALUE">0 selected</span>
-                <div class="sys-toggle" id="toggleSysVALUE">▼</div>
-              </div>
-              <div class="sys-body" id="bodySysVALUE" style="display:none">
+                <div class="sys-toggle">▶</div>
+              </summary>
+              <div class="sys-body">
                 <div class="sys-stocks" id="stocksVALUE"></div>
               </div>
-            </div>
+            </details>
 
-            <!-- Monster Move -->
-            <div class="strat-system">
-              <div class="sys-header" onclick="toggleSys('sysMONSTER')">
+            <details class="strat-system">
+              <summary class="sys-header">
                 <input type="checkbox" class="sys-cb" id="cbMONSTER" onchange="sysCbChange('MONSTER')">
                 <span class="sys-name">Monster Move</span>
                 <span class="sys-count" id="cntMONSTER">0 selected</span>
-                <div class="sys-toggle" id="toggleSysMONSTER">▼</div>
-              </div>
-              <div class="sys-body" id="bodySysMONSTER" style="display:none">
+                <div class="sys-toggle">▶</div>
+              </summary>
+              <div class="sys-body">
                 <div class="sys-stocks" id="stocksMONSTER"></div>
               </div>
-            </div>
+            </details>
 
           </div>
-        </div>
+        </details>
 
         <!-- SEGMENT 2: FUTURE STRATEGY -->
-        <div class="strat-segment">
-          <div class="seg-header" onclick="toggleSeg('segFuture')">
+        <details class="strat-segment">
+          <summary class="seg-header">
             <div class="seg-title">
               <span class="seg-icon">📈</span>
               Future Strategy
             </div>
-            <div class="seg-toggle" id="toggleSegFuture">▼</div>
-          </div>
-          <div class="seg-body" id="bodySegFuture" style="display:none">
+            <div class="seg-toggle">▶</div>
+          </summary>
+          <div class="seg-body">
 
-            <!-- Stock Futures -->
-            <div class="strat-system">
-              <div class="sys-header" onclick="toggleSys('sysStockFut')">
+            <details class="strat-system">
+              <summary class="sys-header">
                 <input type="checkbox" class="sys-cb" id="cbStockFut" onchange="sysCbChange('STOCKFUT')">
                 <span class="sys-name">Stock Futures</span>
                 <span class="sys-count" id="cntSTOCKFUT">0 selected</span>
-                <div class="sys-toggle" id="toggleSysStockFut">▼</div>
-              </div>
-              <div class="sys-body" id="bodySysStockFut" style="display:none">
-                <!-- Sectors will be populated by JS -->
+                <div class="sys-toggle">▶</div>
+              </summary>
+              <div class="sys-body">
                 <div id="futureSectors"></div>
               </div>
-            </div>
+            </details>
 
-            <!-- Index Futures -->
-            <div class="strat-system">
-              <div class="sys-header" onclick="toggleSys('sysIdxFut')">
+            <details class="strat-system">
+              <summary class="sys-header">
                 <input type="checkbox" class="sys-cb" id="cbIdxFut" onchange="sysCbChange('IDXFUT')">
                 <span class="sys-name">Index Futures</span>
                 <span class="sys-count" id="cntIDXFUT">0 selected</span>
-                <div class="sys-toggle" id="toggleSysIdxFut">▼</div>
-              </div>
-              <div class="sys-body" id="bodySysIdxFut" style="display:none">
+                <div class="sys-toggle">▶</div>
+              </summary>
+              <div class="sys-body">
                 <div class="sys-stocks" id="stocksIDXFUT"></div>
               </div>
-            </div>
+            </details>
 
-            <!-- Commodity Futures -->
-            <div class="strat-system">
-              <div class="sys-header" onclick="toggleSys('sysCommoFut')">
+            <details class="strat-system">
+              <summary class="sys-header">
                 <input type="checkbox" class="sys-cb" id="cbCommoFut" onchange="sysCbChange('COMMOFUT')">
                 <span class="sys-name">Commodity Futures</span>
                 <span class="sys-count" id="cntCOMMOFUT">0 selected</span>
-                <div class="sys-toggle" id="toggleSysCommoFut">▼</div>
-              </div>
-              <div class="sys-body" id="bodySysCommoFut" style="display:none">
+                <div class="sys-toggle">▶</div>
+              </summary>
+              <div class="sys-body">
                 <div class="sys-stocks" id="stocksCOMMOFUT"></div>
               </div>
-            </div>
+            </details>
 
           </div>
-        </div>
+        </details>
 
         <!-- SEGMENT 3: OPTION STRATEGY -->
-        <div class="strat-segment">
-          <div class="seg-header" onclick="toggleSeg('segOption')">
+        <details class="strat-segment">
+          <summary class="seg-header">
             <div class="seg-title">
               <span class="seg-icon">📊</span>
               Option Strategy
             </div>
-            <div class="seg-toggle" id="toggleSegOption">▼</div>
-          </div>
-          <div class="seg-body" id="bodySegOption" style="display:none">
+            <div class="seg-toggle">▶</div>
+          </summary>
+          <div class="seg-body">
 
-            <!-- Stock Options -->
-            <div class="strat-system">
-              <div class="sys-header" onclick="toggleSys('sysStockOpt')">
+            <details class="strat-system">
+              <summary class="sys-header">
                 <input type="checkbox" class="sys-cb" id="cbStockOpt" onchange="sysCbChange('STOCKOPT')">
                 <span class="sys-name">Stock Options</span>
                 <span class="sys-count" id="cntSTOCKOPT">0 selected</span>
-                <div class="sys-toggle" id="toggleSysStockOpt">▼</div>
-              </div>
-              <div class="sys-body" id="bodySysStockOpt" style="display:none">
+                <div class="sys-toggle">▶</div>
+              </summary>
+              <div class="sys-body">
                 <div class="sys-stocks" id="stocksSTOCKOPT"></div>
               </div>
-            </div>
+            </details>
 
-            <!-- Index Options -->
-            <div class="strat-system">
-              <div class="sys-header" onclick="toggleSys('sysIdxOpt')">
+            <details class="strat-system">
+              <summary class="sys-header">
                 <input type="checkbox" class="sys-cb" id="cbIdxOpt" onchange="sysCbChange('IDXOPT')">
                 <span class="sys-name">Index Options</span>
                 <span class="sys-count" id="cntIDXOPT">0 selected</span>
-                <div class="sys-toggle" id="toggleSysIdxOpt">▼</div>
-              </div>
-              <div class="sys-body" id="bodySysIdxOpt" style="display:none">
+                <div class="sys-toggle">▶</div>
+              </summary>
+              <div class="sys-body">
                 <div class="sys-stocks" id="stocksIDXOPT"></div>
               </div>
-            </div>
+            </details>
 
-            <!-- Commodity Options -->
-            <div class="strat-system">
-              <div class="sys-header" onclick="toggleSys('sysCommoOpt')">
+            <details class="strat-system">
+              <summary class="sys-header">
                 <input type="checkbox" class="sys-cb" id="cbCommoOpt" onchange="sysCbChange('COMMOOPT')">
                 <span class="sys-name">Commodity Options</span>
                 <span class="sys-count" id="cntCOMMOOPT">0 selected</span>
-                <div class="sys-toggle" id="toggleSysCommoOpt">▼</div>
-              </div>
-              <div class="sys-body" id="bodySysCommoOpt" style="display:none">
+                <div class="sys-toggle">▶</div>
+              </summary>
+              <div class="sys-body">
                 <div class="sys-stocks" id="stocksCOMMOOPT"></div>
               </div>
-            </div>
+            </details>
 
           </div>
-        </div>
+        </details>
 
       </div><!-- /strat-segments -->
 
