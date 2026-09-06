@@ -3,30 +3,39 @@
 mstock_broker.py — M-Stock Type B API Implementation
 =============================================================
 Implements AbstractBroker for Mirae Asset M-Stock.
-Uses the official mStock-TradingApi-B Python SDK.
+Uses the official mStock-TradingApi-B Python SDK
+(import name: tradingapi_b.MConnectB).
 
 Connection flow:
-  1. connect() → login() → verify_totp()
-  2. Access token stored for subsequent calls
-  3. Token expires at midnight → re-authenticate next trading day
+  1. connect() → login() → verify_totp() → set_access_token()
+  2. TOTP secret from M-Stock portal (regenerate if changed)
+  3. Access token valid till midnight — re-authenticate next day
 =============================================================
 """
 import time
 import logging
 import threading
-from typing import List, Optional, Dict
-from datetime import datetime, timezone
+from typing import List, Optional
 
 from sartrader.broker_interface import (
-    AbstractBroker, AccountInfo, Position, Quote, Order,
+    AbstractBroker, AccountInfo, Position, Quote,
     OHLC, OrderType, OrderSide, OrderStatus, PositionSide,
     register_broker,
 )
 
 logger = logging.getLogger(__name__)
 
-# ── Interval Mapping ─────────────────────────────────────────────────────────
+# ── Exchange code mapping ──────────────────────────────────────
+# M-Stock API uses numeric exchange codes
+_EXCHANGE_MAP = {
+    "NSE": "1",
+    "NFO": "2",
+    "CDS": "3",
+    "BSE": "4",
+    "BFO": "5",
+}
 
+# ── Interval mapping (M-Stock candle API) ─────────────────────
 _INTERVAL_MAP = {
     "1m":  "ONE_MINUTE",
     "3m":  "THREE_MINUTE",
@@ -39,23 +48,19 @@ _INTERVAL_MAP = {
 }
 
 
-# ── M-Stock Broker ────────────────────────────────────────────────────────────
-
 class MStockBroker(AbstractBroker):
 
     def __init__(self, api_key: str, client_code: str,
                  password: str, totp_secret: str, ip: str = ""):
-        self.api_key     = api_key
-        self.client_code = client_code
-        self.password    = password
-        self.totp_secret = totp_secret
+        self.api_key        = api_key
+        self.client_code    = client_code
+        self.password       = password
+        self.totp_secret    = totp_secret
         self.whitelisted_ip = ip
 
-        self._client     = None       # mStock SDK client
-        self._access_token = None
-        self._refresh_token = None
-        self._connected   = False
-        self._lock        = threading.Lock()
+        self._client: Optional["MConnectB"] = None
+        self._connected: bool = False
+        self._lock: threading.Lock = threading.Lock()
 
     # ── Properties ────────────────────────────────────────────────────────────
 
@@ -69,72 +74,64 @@ class MStockBroker(AbstractBroker):
     # ── Connection ────────────────────────────────────────────────────────────
 
     def connect(self) -> bool:
-        """Login to M-Stock and verify TOTP."""
+        """
+        Full flow: login → verify_totp → set_access_token
+        Returns True on success, False on failure.
+        """
         try:
-            import mStock
+            import pyotp
+            from tradingapi_b.mconnect import MConnectB
 
             logger.info("Connecting to M-Stock...")
-            client = mStock.connect(self.api_key)
 
-            login_resp = client.login(
-                clientCode=self.client_code,
+            # Step 1: Create client and login
+            self._client = MConnectB(api_key=self.api_key, disable_ssl=True)
+            login_resp = self._client.login(
+                user_id=self.client_code,
                 password=self.password,
-                ip=self.whitelisted_ip,
-                source="API",
             )
-            logger.info(f"M-Stock login response: {login_resp}")
+            login_data = self._get_json(login_resp)
+            logger.info(f"M-Stock login: {login_data.get('status')} — {login_data.get('message')}")
 
-            if not login_resp.get("status"):
-                msg = login_resp.get("message", "Login failed")
-                logger.error(f"M-Stock login failed: {msg}")
+            if not login_data.get("status"):
+                logger.error(f"M-Stock login failed: {login_data.get('message')}")
                 return False
 
-            refresh_token = login_resp.get("data", {}).get("refreshToken", "")
+            refresh_token = login_data.get("data", {}).get("refreshToken", "")
             if not refresh_token:
                 logger.error("No refreshToken in login response")
                 return False
 
-            self._refresh_token = refresh_token
+            # Step 2: Generate TOTP and verify
+            totp_code = pyotp.TOTP(self.totp_secret).now()
+            logger.info(f"TOTP generated: {totp_code}")
 
-            # Generate TOTP
-            try:
-                import pyotp
-                totp = pyotp.TOTP(self.totp_secret).now()
-                logger.info("TOTP generated successfully")
-            except ImportError:
-                logger.warning("pyotp not installed, using fallback TOTP")
-                totp = input("Enter 6-digit TOTP from your authenticator: ")
-
-            verify_resp = client.session.verifytotp(
-                totp=totp,
-                refreshToken=self._refresh_token,
+            vresp = self._client.verify_totp(
+                _api_key=self.api_key,
+                _request_token=refresh_token,
+                _tOtp=totp_code,
             )
-            logger.info(f"TOTP verify response: {verify_resp}")
+            vdata = self._get_json(vresp)
+            logger.info(f"TOTP verify: {vdata.get('status')} — {vdata.get('message')}")
 
-            if not verify_resp.get("status"):
-                msg = verify_resp.get("message", "TOTP verify failed")
-                logger.error(f"M-Stock TOTP failed: {msg}")
+            if not vdata.get("status"):
+                logger.error(f"TOTP verify failed: {vdata.get('message')}")
                 return False
 
-            token_data = verify_resp.get("data", {})
-            self._access_token = token_data.get("mconnect", {}).get(
-                "access_token", ""
-            )
-            if not self._access_token:
-                logger.error("No access_token in TOTP response")
+            # Step 3: Extract and set JWT
+            token_data = vdata.get("data", {})
+            jwt = token_data.get("jwtToken", "") if isinstance(token_data, dict) else ""
+            if not jwt:
+                logger.error("No jwtToken in verify_totp response")
                 return False
 
-            # Re-connect with token
-            client = mStock.connect(self.api_key, token=self._access_token)
-            self._client = client
+            self._client.set_access_token(jwt)
             self._connected = True
             logger.info("M-Stock connected successfully!")
             return True
 
         except ImportError as e:
-            logger.error(
-                "mStock SDK not installed. Run: pip install mStock-TradingApi-B"
-            )
+            logger.error(f"Missing dependency: {e}")
             return False
         except Exception as e:
             logger.error(f"M-Stock connection error: {e}")
@@ -142,39 +139,51 @@ class MStockBroker(AbstractBroker):
 
     def disconnect(self):
         with self._lock:
+            if self._client:
+                try:
+                    self._client.logout()
+                except Exception:
+                    pass
             self._connected = False
             self._client = None
-            self._access_token = None
         logger.info("M-Stock disconnected")
 
-    # ── Account ───────────────────────────────────────────────────────────────
+    # ── Helpers ──────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _get_json(resp) -> dict:
+        if hasattr(resp, 'json'):
+            return resp.json()
+        return resp if isinstance(resp, dict) else {}
+
+    def _resolve_exchange(self, exchange: str) -> str:
+        """Convert exchange name to M-Stock numeric code."""
+        return _EXCHANGE_MAP.get(exchange.upper(), exchange)
+
+    # ── Account ─────────────────────────────────────────────────────────────
 
     def get_account_info(self) -> AccountInfo:
         if not self._connected or self._client is None:
             return self._dummy_account("Not connected")
 
         try:
-            resp = self._client.portfolio.getHoldingPosition()
-            logger.debug(f"Holding response: {resp}")
-
-            # Get margins
-            resp2 = self._client.order.getMargin()
+            resp = self._client.get_fund_summary()
+            data = self._get_json(resp)
 
             balance = 0.0
             margin_used = 0.0
-            if resp2.get("status"):
-                data = resp2.get("data", {})
-                balance = float(data.get("availablecash", 0))
-                margin_used = float(data.get("utilisedmargin", 0))
 
-            equity = balance + margin_used
+            if data.get("status") and data.get("data"):
+                d = data["data"]
+                if isinstance(d, dict):
+                    balance = float(d.get("cash", d.get("availablecolateral", 0) or 0))
 
             return AccountInfo(
                 brokerage_name="M-Stock",
                 client_id=self.client_code,
                 balance=balance,
                 margin=margin_used,
-                equity=equity,
+                equity=balance,
                 currency="INR",
             )
         except Exception as e:
@@ -188,37 +197,60 @@ class MStockBroker(AbstractBroker):
             balance=0.0,
             margin=0.0,
             equity=0.0,
+            currency="INR",
         )
 
-    # ── Positions ─────────────────────────────────────────────────────────────
+    def get_nfo_instruments(self) -> List[str]:
+        """Return list of available NFO futures/option symbols."""
+        if not self._connected or self._client is None:
+            return []
+        try:
+            resp = self._client.get_instruments()
+            data = self._get_json(resp)
+            if not data.get("status"):
+                return []
+            symbols = []
+            for item in data.get("data", []) or []:
+                sym = item.get("symbol", "") or item.get("tradingsymbol", "")
+                exch = item.get("exchange", "")
+                if exch in ("NFO", "2") and sym:
+                    symbols.append(sym)
+            logger.info(f"M-Stock NFO instruments: {len(symbols)} symbols")
+            return list(set(symbols))
+        except Exception as e:
+            logger.error(f"get_nfo_instruments error: {e}")
+            return []
+
+    # ── Positions ───────────────────────────────────────────────────────────
 
     def get_positions(self) -> List[Position]:
         if not self._connected or self._client is None:
             return []
 
         try:
-            resp = self._client.portfolio.getPosition()
-            if not resp.get("status"):
+            resp = self._client.get_net_position()
+            data = self._get_json(resp)
+            if not data.get("status"):
                 return []
 
             positions = []
-            for item in resp.get("data", []):
-                qty = int(item.get("netqty", 0))
+            for item in data.get("data", []) or []:
+                qty = int(item.get("netqty", 0) or 0)
                 if qty == 0:
                     continue
-                avg = float(item.get("avgnetprice", 0))
-                ltp = float(item.get("ltp", 0))
-                inst = item.get("symbol", "")
 
-                pnl = (ltp - avg) * qty if qty > 0 else (avg - ltp) * abs(qty)
+                avg    = float(item.get("avgnetprice", 0) or 0)
+                # symbolname already has full name (e.g. "BANKINDIA-29Sep2026-150-CE")
+                inst   = item.get("symbolname", "") or item.get("tradingsymbol", "") or item.get("symbol", "")
+                inst_name = inst
+
                 side = PositionSide.LONG if qty > 0 else PositionSide.SHORT
-
                 positions.append(Position(
-                    instrument=inst,
+                    instrument=inst_name,
                     side=side,
                     quantity=abs(qty),
                     avg_price=avg,
-                    unrealized_pnl=pnl,
+                    unrealized_pnl=0.0,  # M-Stock net_position may not include live LTP
                 ))
             return positions
 
@@ -226,37 +258,41 @@ class MStockBroker(AbstractBroker):
             logger.error(f"Error fetching M-Stock positions: {e}")
             return []
 
-    # ── Quotes ────────────────────────────────────────────────────────────────
+    # ── Quotes ───────────────────────────────────────────────────────────────
 
     def get_quote(self, instrument: str) -> Quote:
+        """Fetch LTP for an instrument via intraday_chart (last candle close)."""
         if not self._connected or self._client is None:
             return self._dummy_quote(instrument, "Not connected")
 
-        try:
-            resp = self._client.scrip.getScripDetails(
-                exchange="NFO", symbol=instrument, token=""
-            )
-            if not resp.get("status"):
-                return self._dummy_quote(instrument, resp.get("message", ""))
+        # Try NFO first (futures/options), then NSE (cash)
+        for exchange in ["NFO", "NSE"]:
+            try:
+                exch_code = self._resolve_exchange(exchange)
+                resp = self._client.get_intraday_chart(
+                    _exchange=exch_code,
+                    _symboltoken=instrument,
+                    _interval="ONE_MINUTE",
+                )
+                cdata = self._get_json(resp)
+                if cdata.get("status") and cdata.get("data"):
+                    rows = cdata["data"].get("candles", []) or cdata["data"]
+                    if rows and isinstance(rows, list) and len(rows) > 0:
+                        last = rows[-1]
+                        if isinstance(last, list) and len(last) >= 5:
+                            ltp = float(last[4])  # close price
+                            return Quote(
+                                instrument=instrument,
+                                last_price=ltp,
+                                bid=ltp,
+                                ask=ltp,
+                                volume=0,
+                                timestamp=int(time.time()),
+                            )
+            except Exception:
+                continue
 
-            data = resp.get("data", [{}])[0]
-            ltp  = float(data.get("ltp", 0))
-            bp   = float(data.get("bp", 0))
-            sp   = float(data.get("sp", 0))
-            vol  = int(data.get("volume", 0))
-            ts   = int(time.time())
-
-            return Quote(
-                instrument=instrument,
-                last_price=ltp,
-                bid=bp,
-                ask=sp,
-                volume=vol,
-                timestamp=ts,
-            )
-        except Exception as e:
-            logger.error(f"Error fetching quote for {instrument}: {e}")
-            return self._dummy_quote(instrument, str(e))
+        return self._dummy_quote(instrument, "No quote available")
 
     def _dummy_quote(self, instrument: str, reason: str) -> Quote:
         return Quote(
@@ -268,7 +304,7 @@ class MStockBroker(AbstractBroker):
             timestamp=int(time.time()),
         )
 
-    # ── Candles ───────────────────────────────────────────────────────────────
+    # ── Candles ─────────────────────────────────────────────────────────────
 
     def get_candles(self, instrument: str, interval: str,
                     from_ts: int, to_ts: int) -> List[OHLC]:
@@ -277,230 +313,243 @@ class MStockBroker(AbstractBroker):
 
         interval_key = _INTERVAL_MAP.get(interval, "FIFTEEN_MINUTE")
 
-        try:
-            resp = self._client.scrip.getCandleData(
-                exchange="NFO",
-                symbol=instrument,
-                token="",
-                interval=interval_key,
-                fromDate=str(from_ts),
-                toDate=str(to_ts),
-            )
-            if not resp.get("status"):
-                logger.warning(f"Candle fetch failed: {resp.get('message', '')}")
-                return []
+        # Try NFO first, then NSE
+        for exchange in ["NFO", "NSE"]:
+            try:
+                exch_code = self._resolve_exchange(exchange)
+                resp = self._client.get_intraday_chart(
+                    _exchange=exch_code,
+                    _symboltoken=instrument,
+                    _interval=interval_key,
+                )
+                cdata = self._get_json(resp)
+                if not cdata.get("status"):
+                    continue
 
-            candles = []
-            for row in resp.get("data", []):
-                candles.append(OHLC(
-                    timestamp=int(row[0]),
-                    open=float(row[1]),
-                    high=float(row[2]),
-                    low=float(row[3]),
-                    close=float(row[4]),
-                    volume=int(row[5]) if len(row) > 5 else 0,
-                ))
-            return candles
+                rows = cdata.get("data", {}).get("candles", []) or cdata.get("data", [])
+                candles = []
 
-        except Exception as e:
-            logger.error(f"Error fetching candles for {instrument}: {e}")
-            return []
+                for row in rows:
+                    if isinstance(row, list) and len(row) >= 5:
+                        ts_str = row[0]
+                        o = float(row[1])
+                        h = float(row[2])
+                        l = float(row[3])
+                        c = float(row[4])
+                        v = int(row[5]) if len(row) > 5 else 0
 
-    # ── Orders ────────────────────────────────────────────────────────────────
+                        # Parse timestamp — M-Stock returns IST naive datetime
+                        try:
+                            from datetime import datetime, timezone, timedelta
+                            IST = timezone(timedelta(hours=5, minutes=30))
+                            dt = datetime.strptime(ts_str, "%Y-%m-%d %H:%M").replace(tzinfo=IST)
+                            ts = int(dt.timestamp())
+                        except Exception:
+                            ts = int(time.time())
+
+                        # Filter by time window
+                        if from_ts <= ts <= to_ts:
+                            candles.append(OHLC(
+                                timestamp=ts,
+                                open=o, high=h, low=l, close=c,
+                                volume=v,
+                            ))
+
+                if candles:
+                    logger.info(f"M-Stock candles for {instrument} on {exchange}: {len(candles)} bars")
+                    return candles
+
+            except Exception as e:
+                logger.debug(f"Candle fetch {instrument}@{exchange}: {e}")
+                continue
+
+        logger.warning(f"No M-Stock candles for {instrument}")
+        return []
+
+    # ── Orders ───────────────────────────────────────────────────────────────
 
     def place_order(self, instrument: str, side: OrderSide,
                     quantity: int, order_type: OrderType,
                     price: Optional[float] = None,
-                    trigger_price: Optional[float] = None) -> Order:
+                    trigger_price: Optional[float] = None) -> "Order":
         if not self._connected or self._client is None:
             return self._error_order(instrument, "Not connected")
 
-        exchange = "NFO"
+        exchange     = "NFO"
         product_type = "NRML"
-        side_str = "BUY" if side == OrderSide.BUY else "SELL"
+        side_str     = "BUY" if side == OrderSide.BUY else "SELL"
+
+        if order_type == OrderType.MARKET:
+            order_type_str = "MARKET"
+            order_price    = "0"
+            trig_price     = "0"
+        elif order_type == OrderType.SL:
+            order_type_str = "STOP_LOSS_LIMIT"
+            order_price    = str(price or 0)
+            trig_price     = str(trigger_price or 0)
+        else:
+            order_type_str = "LIMIT"
+            order_price    = str(price or 0)
+            trig_price     = "0"
 
         try:
-            if order_type == OrderType.MARKET:
-                resp = self._client.order.placeOrder(
-                    exchange=exchange,
-                    symbol=instrument,
-                    quantity=str(quantity),
-                    price="0",
-                    triggerPrice="0",
-                    productType=product_type,
-                    orderType="MARKET",
-                    side=side_str,
-                    source="API",
-                )
-            elif order_type == OrderType.SL:
-                resp = self._client.order.placeOrder(
-                    exchange=exchange,
-                    symbol=instrument,
-                    quantity=str(quantity),
-                    price=str(price or 0),
-                    triggerPrice=str(trigger_price or 0),
-                    productType=product_type,
-                    orderType="STOP_LOSS_LIMIT",
-                    side=side_str,
-                    source="API",
-                )
-            else:
-                resp = self._client.order.placeOrder(
-                    exchange=exchange,
-                    symbol=instrument,
-                    quantity=str(quantity),
-                    price=str(price or 0),
-                    triggerPrice="0",
-                    productType=product_type,
-                    orderType="LIMIT",
-                    side=side_str,
-                    source="API",
-                )
+            resp = self._client.place_order(
+                _variety="NORMAL",
+                _tradingsymbol=instrument,
+                _symboltoken=instrument,
+                _exchange=exchange,
+                _transactiontype=side_str,
+                _ordertype=order_type_str,
+                _quantity=str(quantity),
+                _producttype=product_type,
+                _price=order_price,
+                _triggerprice=trig_price,
+                _squareoff="0",
+                _stoploss="0",
+                _trailingStopLoss="0",
+                _disclosedquantity="0",
+                _duration="DAY",
+                _ordertag="sartrader",
+            )
+            data = self._get_json(resp)
+            logger.info(f"Order placed: {data}")
 
-            logger.info(f"Order placed: {resp}")
+            if not data.get("status"):
+                return self._error_order(instrument, data.get("message", "Failed"))
 
-            if not resp.get("status"):
-                return self._error_order(instrument, resp.get("message", "Failed"))
+            order_id  = data.get("data", {}).get("order_id", "UNKNOWN") if isinstance(data.get("data"), dict) else "UNKNOWN"
+            db_order_id = data.get("data", {}).get("orderid", order_id) if isinstance(data.get("data"), dict) else order_id
 
-            order_id = str(resp.get("data", {}).get("orderId", ""))
             return Order(
-                order_id=order_id,
+                order_id=str(db_order_id),
                 instrument=instrument,
                 side=side,
-                order_type=order_type,
                 quantity=quantity,
+                order_type=order_type,
                 price=price,
                 trigger_price=trigger_price,
-                status=OrderStatus.OPEN,
+                status=OrderStatus.SUBMITTED,
+                filled_qty=0,
+                avg_price=0.0,
+                timestamp=int(time.time()),
             )
 
         except Exception as e:
-            logger.error(f"Error placing order: {e}")
+            logger.error(f"Order placement error: {e}")
             return self._error_order(instrument, str(e))
 
     def cancel_order(self, order_id: str) -> bool:
         if not self._connected or self._client is None:
             return False
         try:
-            resp = self._client.order.cancelOrder(orderId=order_id, source="API")
-            return resp.get("status", False)
+            resp = self._client.cancel_order(order_id=order_id)
+            data = self._get_json(resp)
+            return data.get("status", False)
         except Exception as e:
-            logger.error(f"Error cancelling order {order_id}: {e}")
+            logger.error(f"Cancel order error: {e}")
             return False
 
-    def get_order_status(self, order_id: str) -> Order:
+    def modify_order(self, order_id: str, price: Optional[float] = None,
+                     quantity: Optional[int] = None) -> bool:
+        if not self._connected or self._client is None:
+            return False
+        try:
+            resp = self._client.modify_order(
+                order_id=order_id,
+                _price=str(price) if price else "0",
+                _quantity=str(quantity) if quantity else "0",
+            )
+            data = self._get_json(resp)
+            return data.get("status", False)
+        except Exception as e:
+            logger.error(f"Modify order error: {e}")
+            return False
+
+    def get_order_status(self, order_id: str) -> "Order":
         if not self._connected or self._client is None:
             return self._error_order("", "Not connected")
+
         try:
-            resp = self._client.order.getOrderBook()
-            for item in resp.get("data", []):
-                if str(item.get("orderId")) == order_id:
-                    status_map = {
-                        "OPEN": OrderStatus.OPEN,
-                        "COMPLETE": OrderStatus.FILLED,
-                        "CANCELLED": OrderStatus.CANCELLED,
-                        "REJECTED": OrderStatus.REJECTED,
-                    }
-                    return Order(
-                        order_id=order_id,
-                        instrument=item.get("symbol", ""),
-                        side=OrderSide.BUY if item.get("side") == "BUY" else OrderSide.SELL,
-                        order_type=OrderType.MARKET,
-                        quantity=int(item.get("qty", 0)),
-                        price=float(item.get("price", 0)),
-                        filled_qty=int(item.get("filledQty", 0)),
-                        average_price=float(item.get("averagePrice", 0)),
-                        status=status_map.get(item.get("status", ""), OrderStatus.PENDING),
-                        timestamp=int(item.get("time", 0)),
-                    )
-            return self._error_order("", f"Order {order_id} not found")
+            resp = self._client.get_order_details(order_id=order_id)
+            data = self._get_json(resp)
+            if not data.get("status") or not data.get("data"):
+                return self._error_order("", f"Order not found: {order_id}")
+
+            o = data["data"]
+            if isinstance(o, list):
+                o = o[0] if o else {}
+
+            side_str = o.get("transactiontype", "BUY")
+            side = OrderSide.BUY if side_str == "BUY" else OrderSide.SELL
+
+            status_map = {
+                "COMPLETE": OrderStatus.FILLED,
+                "REJECTED": OrderStatus.REJECTED,
+                "CANCELLED": OrderStatus.CANCELLED,
+                "OPEN": OrderStatus.SUBMITTED,
+                "PENDING": OrderStatus.SUBMITTED,
+            }
+            mapped = status_map.get(o.get("status", "").upper(), OrderStatus.SUBMITTED)
+
+            return Order(
+                order_id=str(o.get("order_id", order_id)),
+                instrument=o.get("tradingsymbol", ""),
+                side=side,
+                quantity=int(o.get("quantity", 0) or 0),
+                order_type=OrderType.MARKET,
+                price=None,
+                trigger_price=None,
+                status=mapped,
+                filled_qty=int(o.get("filledshares", 0) or 0),
+                avg_price=float(o.get("averageprice", 0) or 0),
+                timestamp=int(time.time()),
+            )
         except Exception as e:
+            logger.error(f"get_order_status error: {e}")
             return self._error_order("", str(e))
 
-    def close_position(self, instrument: str) -> Order:
-        positions = self.get_positions()
-        for pos in positions:
-            if pos.instrument == instrument:
-                side = OrderSide.SELL if pos.side == PositionSide.LONG else OrderSide.BUY
-                return self.place_order(
-                    instrument, side, pos.quantity, OrderType.MARKET
-                )
-        return self._error_order(instrument, "No open position")
+    def close_position(self, instrument: str) -> "Order":
+        """Close entire position by placing opposite MARKET order."""
+        if not self._connected or self._client is None:
+            return self._error_order(instrument, "Not connected")
 
-    def _error_order(self, instrument: str, message: str) -> Order:
+        # Find current position
+        positions = self.get_positions()
+        target = None
+        for p in positions:
+            if instrument in p.instrument or p.instrument in instrument:
+                target = p
+                break
+
+        if not target:
+            return self._error_order(instrument, f"No open position for {instrument}")
+
+        # Opposite side to close
+        close_side = OrderSide.SELL if target.side == PositionSide.LONG else OrderSide.BUY
+
+        return self.place_order(
+            instrument=instrument,
+            side=close_side,
+            quantity=target.quantity,
+            order_type=OrderType.MARKET,
+        )
+
+    def _error_order(self, instrument: str, reason: str) -> "Order":
         return Order(
             order_id="ERROR",
             instrument=instrument,
             side=OrderSide.BUY,
-            order_type=OrderType.MARKET,
             quantity=0,
+            order_type=OrderType.MARKET,
             price=None,
-            status=OrderStatus.ERROR,
-            message=message,
+            trigger_price=None,
+            status=OrderStatus.REJECTED,
+            filled_qty=0,
+            avg_price=0.0,
+            timestamp=int(time.time()),
+            message=reason,
         )
 
-    # ── NFO Instrument List ─────────────────────────────────────────────────
 
-    def get_nfo_instruments(self) -> List[str]:
-        """
-        Fetch all available NSE F&O futures contract symbols from M-Stock.
-        Returns a list like ['SBIN26SEPFUT', 'BANKBARODA26SEPFUT', ...]
-        Falls back to a hardcoded list if the API call fails.
-        """
-        if not self._connected or self._client is None:
-            logger.warning("M-Stock not connected — cannot fetch NFO instrument list")
-            return []
-
-        try:
-            # M-Stock: try to fetch scrip list for NFO exchange
-            resp = self._client.scrip.getScripData(exchange="NFO", productType="FUT")
-            if resp.get("status"):
-                data = resp.get("data", [])
-                futures = [
-                    item.get("symbol", "")
-                    for item in data
-                    if item.get("instrumentType", "").upper() in ("FUTSTK", "FUTIDX")
-                       and item.get("symbol", "")
-                ]
-                logger.info(f"M-Stock: fetched {len(futures)} futures from NFO")
-                return futures
-        except Exception as e:
-            logger.warning(f"M-Stock get_nfo_instruments error: {e}")
-
-        # Fallback: return empty list (broker API not fully implemented)
-        # The hardcoded dashboard stock list will be shown as-is
-        logger.info("M-Stock: using fallback empty instrument list")
-        return []
-
-    def get_available_futures_for_symbols(self, base_symbols: List[str]) -> List[str]:
-        """
-        Given a list of base symbols (e.g. ['SBIN','BANKBARODA']),
-        return which ones are available as futures in the current expiry cycle.
-        """
-        available = set(self.get_nfo_instruments())
-        if not available:
-            # No broker data — optimistically return all requested symbols with current expiry
-            from datetime import datetime
-            month_map = {
-                1: "JAN", 2: "FEB", 3: "MAR", 4: "APR",
-                5: "MAY", 6: "JUN", 7: "JUL", 8: "AUG",
-                9: "SEP", 10: "OCT", 11: "NOV", 12: "DEC",
-            }
-            now = datetime.now()
-            yr  = str(now.year)[2:]
-            expiry_suffix = f"{yr}{month_map[now.month]}FUT"
-            return [f"{sym}{expiry_suffix}" for sym in base_symbols]
-
-        matched = []
-        for sym in base_symbols:
-            for expiry in ["26SEPFUT", "26OCTFUT", "26DECFUT",
-                           "27JANFUT", "27FEBFUT", "27MARFUT"]:
-                inst = f"{sym}{expiry}"
-                if inst in available:
-                    matched.append(inst)
-                    break
-        return matched
-
-
-# ── Register ──────────────────────────────────────────────────────────────────
+# ── Register ───────────────────────────────────────────────────────────────
 register_broker("MSTOCK", MStockBroker)

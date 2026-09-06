@@ -45,7 +45,7 @@ body{font-family:var(--font);font-size:13px;line-height:1.5;background:var(--bg-
 .nav-item .nav-icon{font-size:14px}
 
 /* PORTFOLIO */
-.portfolio-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
+.portfolio-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 .pbox{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;text-align:center}
 .pbox-num{font-size:22px;font-weight:800;line-height:1}
 .pbox-sub{font-size:10px;color:var(--text-muted);margin-top:4px}
@@ -53,6 +53,41 @@ body{font-family:var(--font);font-size:13px;line-height:1.5;background:var(--bg-
 .pbox.red .pbox-num{color:var(--red)}
 .pbox.green{border-color:rgba(0,200,150,0.2)}
 .pbox.red{border-color:rgba(255,77,106,0.2)}
+
+/* STRATEGY OPTIONS */
+.strat-opt{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;min-width:140px;background:var(--bg-card);transition:all 0.15s}
+.strat-opt:hover{border-color:var(--blue)}
+.strat-opt.active{border-color:var(--green);background:var(--green-dim)}
+.strat-opt-radio{font-size:14px;color:var(--text-muted);width:18px;text-align:center}
+.strat-opt.active .strat-opt-radio{color:var(--green)}
+
+/* SEGMENT TABS */
+.seg-tab{padding:5px 12px;border-radius:6px;font-size:12px;background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);cursor:pointer;transition:all 0.15s}
+.seg-tab.active{background:var(--blue-dim);color:var(--blue);border-color:rgba(59,130,246,0.3)}
+.seg-header{font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:8px;padding:4px 0}
+
+/* SUMMARY BLOCKS */
+.summary-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.summary-block{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:16px}
+.summary-title{font-size:13px;font-weight:700;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.summary-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:12px}
+.summary-row span:first-child{color:var(--text-secondary)}
+.summary-row span:last-child{font-weight:700;color:var(--text-primary)}
+.summary-pnl-pos{color:var(--green)!important}
+.summary-pnl-neg{color:var(--red)!important}
+
+/* JOURNAL */
+.journal-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px}
+.journal-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.journal-inst{font-weight:700;font-size:13px}
+.journal-date{font-size:11px;color:var(--text-muted)}
+.journal-pnl{font-weight:700;font-size:13px}
+.journal-note{font-size:12px;color:var(--text-secondary);line-height:1.6;margin:8px 0}
+.journal-note textarea{width:100%;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text-primary);font-size:12px;resize:vertical;min-height:60px;font-family:var(--font)}
+.journal-note textarea:focus{outline:none;border-color:var(--green)}
+.journal-actions{display:flex;justify-content:flex-end;gap:8px}
+.journal-save{background:var(--green);color:#000;border:none;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer}
+.journal-del{background:var(--bg-card2);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer}
 
 /* TICKER */
 .ticker-bar{display:flex;gap:0;overflow:hidden;flex:1}
@@ -300,12 +335,27 @@ table .empty-state{text-align:center;padding:30px;color:var(--text-muted);font-s
           <div class="breadcrumb">SARTrader / <span>Dashboard</span></div>
         </div>
         <div class="portfolio-grid">
-          <div class="pbox green"><div class="pbox-num" id="snapTotalPnl">₹0</div><div class="pbox-sub" id="snapTotalPnlSub">total P&L</div></div>
+          <div class="pbox"><div class="pbox-num" id="snapTotalPnl">₹0</div><div class="pbox-sub" id="snapTotalPnlSub">total P&L</div></div>
           <div class="pbox"><div class="pbox-num" id="snapTodayPnl">₹0</div><div class="pbox-sub" id="snapTodaySub">today</div></div>
-          <div class="pbox"><div class="pbox-num" id="snapRunning">0</div><div class="pbox-sub">running</div></div>
-          <div class="pbox"><div class="pbox-num" id="snapLongs" style="color:var(--green)">0</div><div class="pbox-sub">longs</div></div>
-          <div class="pbox"><div class="pbox-num" id="snapShorts" style="color:var(--red)">0</div><div class="pbox-sub">shorts</div></div>
+          <div class="pbox" id="snapRunningBox">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">Running</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <div style="flex:1;text-align:center">
+                <div class="pbox-num" style="font-size:16px;color:var(--green)" id="snapLongs">0</div>
+                <div class="pbox-sub">Longs</div>
+              </div>
+              <div style="width:1px;height:28px;background:var(--border)"></div>
+              <div style="flex:1;text-align:center">
+                <div class="pbox-num" style="font-size:16px;color:var(--red)" id="snapShorts">0</div>
+                <div class="pbox-sub">Shorts</div>
+              </div>
+            </div>
+          </div>
           <div class="pbox"><div class="pbox-num" id="snapFutPnl">₹0</div><div class="pbox-sub">futures</div></div>
+          <div class="pbox"><div class="pbox-num" id="snapCashPnl">₹0</div><div class="pbox-sub">cash</div></div>
+          <div class="pbox"><div class="pbox-num" id="snapOptPnl">₹0</div><div class="pbox-sub">options</div></div>
+          <div class="pbox"><div class="pbox-num" id="snapWinRate">—</div><div class="pbox-sub">win rate</div></div>
+          <div class="pbox"><div class="pbox-num" id="snapClosedPnl">₹0</div><div class="pbox-sub">closed P&L</div></div>
         </div>
         <div style="margin-top:16px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
@@ -349,6 +399,20 @@ table .empty-state{text-align:center;padding:30px;color:var(--text-muted);font-s
               <span class="strat-seg-arrow">▶</span>
             </div>
             <div class="strat-seg-body">
+              <!-- RSI Strategy selector for Cash (more suited for cash/stock trading) -->
+              <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px">
+                <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:1px">Select Strategy for Cash</div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+                  <div class="strat-opt active" id="cashStratRSI" onclick="selectCashStrat('RSI')">
+                    <div class="strat-opt-radio">●</div>
+                    <div>
+                      <div style="font-weight:700;font-size:13px">RSI Reversal</div>
+                      <div style="font-size:10px;color:var(--text-muted)">RSI oversold/overbought</div>
+                    </div>
+                  </div>
+                </div>
+                <button class="wl-add-btn" style="width:100%;font-size:12px;padding:8px" onclick="applyCashStrategy()">Apply Strategy →</button>
+              </div>
               <div class="sys-row open" id="sysABCT">
                 <div class="sys-row-header" onclick="toggleSys('ABCT')">
                   <input type="checkbox" class="sys-cb" id="cbABCT" onchange="onSysCheckChange('ABCT')">
@@ -379,21 +443,7 @@ table .empty-state{text-align:center;padding:30px;color:var(--text-muted);font-s
                   </div>
                 </div>
               </div>
-              <div class="sys-row" id="sysTOPBTM">
-                <div class="sys-row-header" onclick="toggleSys('TOPBTM')">
-                  <input type="checkbox" class="sys-cb" id="cbTOPBTM" onchange="onSysCheckChange('TOPBTM')">
-                  <span class="sys-label">Top-Bottom</span>
-                  <span class="sys-meta" id="cntTOPBTM">0 stocks</span>
-                  <span class="sys-arrow">▶</span>
-                </div>
-                <div class="sys-row-body">
-                  <div class="sys-stocks" id="stocksTOPBTM"></div>
-                  <div class="sys-row-actions">
-                    <button class="btn-add" onclick="addStockPrompt('TOPBTM')">+ Add Stock</button>
-                    <button class="btn-remove" onclick="removeStockPrompt('TOPBTM')">− Remove Stock</button>
-                  </div>
-                </div>
-              </div>
+
               <div class="sys-row" id="sysVALUE">
                 <div class="sys-row-header" onclick="toggleSys('VALUE')">
                   <input type="checkbox" class="sys-cb" id="cbVALUE" onchange="onSysCheckChange('VALUE')">
@@ -615,20 +665,19 @@ table .empty-state{text-align:center;padding:30px;color:var(--text-muted);font-s
               <table class="wl-table">
                 <thead>
                   <tr>
-                    <th style="width:36px">#</th>
+                    <th style="width:36px">Sr.</th>
                     <th>Instrument</th>
+                    <th>Sector</th>
                     <th>Strategy</th>
                     <th>LTP</th>
                     <th>Change</th>
-                    <th>Entry Price</th>
-                    <th>Stop Loss</th>
                     <th>Mode</th>
                     <th style="width:60px">Action</th>
                     <th style="width:36px"></th>
                   </tr>
                 </thead>
                 <tbody id="wlTbodyFUTURE">
-                  <tr class="wl-empty-row"><td colspan="10">No instruments in Futures Watchlist. Add from the Strategies page.</td></tr>
+                  <tr class="wl-empty-row"><td colspan="9">No instruments in Futures Watchlist. Add from the Strategies page.</td></tr>
                 </tbody>
               </table>
             </div>
@@ -682,8 +731,154 @@ table .empty-state{text-align:center;padding:30px;color:var(--text-muted);font-s
       <div class="view" id="viewOrders">
         <div class="content-header">
           <div class="breadcrumb">SARTrader / <span>Trade Log</span></div>
+          <div style="display:flex;gap:8px">
+            <button onclick="exportTradesCSV()" style="padding:6px 14px;font-size:12px;background:var(--bg-card2);border:1px solid var(--border);color:var(--text-primary);border-radius:8px;cursor:pointer">📥 Export</button>
+            <button onclick="switchOrdersTab('Summary')" style="padding:6px 14px;font-size:12px;background:var(--bg-card2);border:1px solid var(--border);color:var(--text-primary);border-radius:8px;cursor:pointer">📊 Summary</button>
+            <button onclick="switchOrdersTab('Journal')" style="padding:6px 14px;font-size:12px;background:var(--bg-card2);border:1px solid var(--border);color:var(--text-primary);border-radius:8px;cursor:pointer">📝 Journal</button>
+          </div>
         </div>
-        <div style="text-align:center;padding:60px;color:var(--text-muted)">Trade Log — Paper & Live sections coming soon...</div>
+
+        <!-- Main tabs: Live / Paper -->
+        <div style="display:flex;gap:8px;margin:12px 0">
+          <div class="wl-tab active" id="ordersTabLive" onclick="switchOrdersTab('Live')" style="cursor:pointer;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600">⚡ LIVE Trades</div>
+          <div class="wl-tab" id="ordersTabPaper" onclick="switchOrdersTab('Paper')" style="cursor:pointer;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600">📋 Paper Trades</div>
+        </div>
+
+        <!-- LIVE TRADES PANEL -->
+        <div id="ordersPanelLive">
+          <!-- Segment sub-tabs -->
+          <div style="display:flex;gap:6px;margin-bottom:12px">
+            <div class="seg-tab active" id="liveSegCash" onclick="switchLiveSeg('CASH')">💰 Cash</div>
+            <div class="seg-tab" id="liveSegFutures" onclick="switchLiveSeg('FUTURES')">📈 Futures</div>
+            <div class="seg-tab" id="liveSegOptions" onclick="switchLiveSeg('OPTIONS')">📊 Options</div>
+          </div>
+
+          <!-- Cash live trades -->
+          <div id="livePanelCASH">
+            <div class="seg-header">💰 Cash — Live Trades</div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>#</th><th>Date</th><th>Instrument</th><th>Dir</th><th>Entry ₹</th><th>LTP ₹</th><th>P&L</th><th>Qty</th><th>Status</th><th>Action</th></tr></thead>
+                <tbody id="liveCashBody"><tr><td colspan="10" class="empty-state">No cash trades...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Futures live trades -->
+          <div id="livePanelFUTURES" style="display:none">
+            <div class="seg-header">📈 Futures — Live Trades</div>
+            <div id="liveFuturesSummary" style="display:flex;gap:10px;margin-bottom:10px;font-size:12px;color:var(--text-secondary)">
+              <span>📦 Stock Futures: <b id="liveSFCount">0</b></span>
+              <span>📊 Index Futures: <b id="liveIFCount">0</b></span>
+              <span>🥇 Commodity: <b id="liveCFCount">0</b></span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>#</th><th>Date</th><th>Instrument</th><th>Type</th><th>Dir</th><th>Entry ₹</th><th>LTP ₹</th><th>P&L</th><th>Qty</th><th>Status</th><th>Action</th></tr></thead>
+                <tbody id="liveFuturesBody"><tr><td colspan="11" class="empty-state">No futures trades...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Options live trades -->
+          <div id="livePanelOPTIONS" style="display:none">
+            <div class="seg-header">📊 Options — Live Trades</div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>#</th><th>Date</th><th>Instrument</th><th>Dir</th><th>Entry ₹</th><th>LTP ₹</th><th>P&L</th><th>Qty</th><th>Status</th><th>Action</th></tr></thead>
+                <tbody id="liveOptionsBody"><tr><td colspan="10" class="empty-state">No options trades...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- PAPER TRADES PANEL -->
+        <div id="ordersPanelPaper" style="display:none">
+          <!-- Segment sub-tabs -->
+          <div style="display:flex;gap:6px;margin-bottom:12px">
+            <div class="seg-tab active" id="paperSegCash" onclick="switchPaperSeg('CASH')">💰 Cash</div>
+            <div class="seg-tab" id="paperSegFutures" onclick="switchPaperSeg('FUTURES')">📈 Futures</div>
+            <div class="seg-tab" id="paperSegOptions" onclick="switchPaperSeg('OPTIONS')">📊 Options</div>
+          </div>
+
+          <!-- Cash paper trades -->
+          <div id="paperPanelCASH">
+            <div class="seg-header">💰 Cash — Paper Trades</div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>#</th><th>Date</th><th>Instrument</th><th>Dir</th><th>Entry ₹</th><th>Exit ₹</th><th>P&L</th><th>Qty</th><th>Status</th><th>Action</th></tr></thead>
+                <tbody id="paperCashBody"><tr><td colspan="10" class="empty-state">No cash trades...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Futures paper trades -->
+          <div id="paperPanelFUTURES" style="display:none">
+            <div class="seg-header">📈 Futures — Paper Trades</div>
+            <div id="paperFuturesSummary" style="display:flex;gap:10px;margin-bottom:10px;font-size:12px;color:var(--text-secondary)">
+              <span>📦 Stock: <b id="paperSFCount">0</b></span>
+              <span>📊 Index: <b id="paperIFCount">0</b></span>
+              <span>🥇 Commodity: <b id="paperCFCount">0</b></span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>#</th><th>Date</th><th>Instrument</th><th>Type</th><th>Dir</th><th>Entry ₹</th><th>Exit ₹</th><th>P&L</th><th>Qty</th><th>Status</th><th>Action</th></tr></thead>
+                <tbody id="paperFuturesBody"><tr><td colspan="11" class="empty-state">No futures trades...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Options paper trades -->
+          <div id="paperPanelOPTIONS" style="display:none">
+            <div class="seg-header">📊 Options — Paper Trades</div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>#</th><th>Date</th><th>Instrument</th><th>Dir</th><th>Entry ₹</th><th>Exit ₹</th><th>P&L</th><th>Qty</th><th>Status</th><th>Action</th></tr></thead>
+                <tbody id="paperOptionsBody"><tr><td colspan="10" class="empty-state">No options trades...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- DAILY SUMMARY PANEL -->
+        <div id="ordersPanelSummary" style="display:none">
+          <div class="summary-grid">
+            <div class="summary-block"><div class="summary-title">📅 Today</div>
+              <div class="summary-row"><span>Trades</span><span id="sumTodayCount">0</span></div>
+              <div class="summary-row"><span>Wins</span><span id="sumTodayWins">0</span></div>
+              <div class="summary-row"><span>Losses</span><span id="sumTodayLoss">0</span></div>
+              <div class="summary-row"><span>Win Rate</span><span id="sumTodayWr">—</span></div>
+              <div class="summary-row"><span>P&L</span><span id="sumTodayPnl">₹0</span></div>
+            </div>
+            <div class="summary-block"><div class="summary-title">📆 This Week</div>
+              <div class="summary-row"><span>Trades</span><span id="sumWeekCount">0</span></div>
+              <div class="summary-row"><span>Wins</span><span id="sumWeekWins">0</span></div>
+              <div class="summary-row"><span>Losses</span><span id="sumWeekLoss">0</span></div>
+              <div class="summary-row"><span>Win Rate</span><span id="sumWeekWr">—</span></div>
+              <div class="summary-row"><span>P&L</span><span id="sumWeekPnl">₹0</span></div>
+            </div>
+            <div class="summary-block"><div class="summary-title">🗓️ This Month</div>
+              <div class="summary-row"><span>Trades</span><span id="sumMonthCount">0</span></div>
+              <div class="summary-row"><span>Wins</span><span id="sumMonthWins">0</span></div>
+              <div class="summary-row"><span>Losses</span><span id="sumMonthLoss">0</span></div>
+              <div class="summary-row"><span>Win Rate</span><span id="sumMonthWr">—</span></div>
+              <div class="summary-row"><span>P&L</span><span id="sumMonthPnl">₹0</span></div>
+            </div>
+            <div class="summary-block"><div class="summary-title">🏆 All Time</div>
+              <div class="summary-row"><span>Total Trades</span><span id="sumAllCount">0</span></div>
+              <div class="summary-row"><span>Wins</span><span id="sumAllWins">0</span></div>
+              <div class="summary-row"><span>Losses</span><span id="sumAllLoss">0</span></div>
+              <div class="summary-row"><span>Win Rate</span><span id="sumAllWr">—</span></div>
+              <div class="summary-row"><span>Total P&L</span><span id="sumAllPnl">₹0</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- JOURNAL PANEL -->
+        <div id="ordersPanelJournal" style="display:none">
+          <div id="journalEmpty" style="text-align:center;padding:40px;color:var(--text-muted)">Click "Journal" on any closed trade to add notes.</div>
+          <div id="journalEntries"></div>
+        </div>
       </div>
 
       <!-- PORTFOLIO -->
@@ -699,7 +894,62 @@ table .empty-state{text-align:center;padding:30px;color:var(--text-muted);font-s
         <div class="content-header">
           <div class="breadcrumb">SARTrader / <span>Brokers</span></div>
         </div>
-        <div style="text-align:center;padding:60px;color:var(--text-muted)">Broker connections coming soon...</div>
+
+        <!-- M-Stock Card -->
+        <div id="brokerMStock" style="max-width:600px;margin:20px auto">
+          <div class="section-title" style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+            <span style="font-size:24px">M</span>
+            <div>
+              <div style="font-size:16px;font-weight:700">M-Stock</div>
+              <div style="font-size:12px;color:var(--text-muted)">Mirae Asset</div>
+            </div>
+            <div id="mstockStatusBadge" style="margin-left:auto;font-size:12px;padding:4px 10px;border-radius:20px;font-weight:600">Checking...</div>
+          </div>
+
+          <!-- Connect Section -->
+          <div id="mstockConnectSection" style="background:var(--bg-card2);border-radius:12px;padding:20px;margin-bottom:16px;border:1px solid var(--border)">
+            <div id="mstockConnectForm" style="display:none">
+              <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px">
+                Auto-TOTP enabled. Just click Connect — no manual entry needed.
+              </div>
+              <button onclick="connectBroker('MSTOCK')" class="btn-primary" style="width:100%;padding:10px;font-size:14px;font-weight:700">
+                Connect M-Stock
+              </button>
+            </div>
+            <div id="mstockConnectedSection" style="display:none">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+                <span style="color:var(--green);font-size:18px">&#10003;</span>
+                <span style="font-weight:600;color:var(--green)">Connected</span>
+                <span id="mstockExpiry" style="margin-left:auto;font-size:11px;color:var(--text-muted)"></span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+                <div style="background:var(--bg-card);border-radius:8px;padding:12px">
+                  <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Client ID</div>
+                  <div id="mstockClient" style="font-weight:600;font-size:14px">—</div>
+                </div>
+                <div style="background:var(--bg-card);border-radius:8px;padding:12px">
+                  <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Balance</div>
+                  <div id="mstockBalance" style="font-weight:600;font-size:14px;color:var(--green)">—</div>
+                </div>
+              </div>
+              <button onclick="disconnectBroker('MSTOCK')" style="width:100%;padding:8px;background:var(--bg-card);border:1px solid var(--red);color:var(--red);border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">
+                Disconnect
+              </button>
+            </div>
+          </div>
+
+          <!-- Positions Section -->
+          <div id="mstockPositionsSection" style="background:var(--bg-card2);border-radius:12px;padding:16px;border:1px solid var(--border)">
+            <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text-muted)">Live Positions</div>
+            <div id="mstockPositionsList">
+              <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px">No open positions</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="text-align:center;padding:16px;font-size:12px;color:var(--text-muted)">
+          M-Stock auth token expires at midnight. Reconnect daily.
+        </div>
       </div>
 
     </div><!-- /content-area -->
@@ -713,13 +963,16 @@ table .empty-state{text-align:center;padding:30px;color:var(--text-muted);font-s
 const CASH_SYSTEMS = {
   ABCT:    { label: 'ABCT System-1',  stocks: ['RELIANCE','TCS','HDFCBANK','ICICIBANK','SBIN','KOTAKBANK','BAJFINANCE','HDFC','LT','SUNPHARMA'], category: 'CASH' },
   CUP:     { label: 'CUP Strategy',   stocks: ['RELIANCE','HDFCBANK','TCS','BAJFINANCE','HINDUNILVR','TITAN','MARUTI','M&M'], category: 'CASH' },
-  TOPBTM:  { label: 'Top-Bottom',     stocks: ['RELIANCE','TCS','HDFCBANK','ICICIBANK','SBIN','KOTAKBANK','BAJFINANCE','HDFC','LT','SUNPHARMA','AXISBANK','INDUSINDBK'], category: 'CASH' },
+  TOPBTM:  { label: 'Top Bottom-1',   stocks: ['RELIANCE','TCS','HDFCBANK','ICICIBANK','SBIN','KOTAKBANK','BAJFINANCE','HDFC','LT','SUNPHARMA','AXISBANK','INDUSINDBK'], category: 'CASH' },
+  TOPBTM2: { label: 'Top Bottom-2',   stocks: [], category: 'CASH' },
   VALUE:   { label: 'Value Buy',      stocks: ['RELIANCE','TCS','HDFCBANK','SBIN','TATASTEEL','JSWSTEEL','COALINDIA','ONGC','NTPC','POWERGRID'], category: 'CASH' },
   MONSTER: { label: 'Monster Move',   stocks: ['RELIANCE','TCS','INFY','HDFCBANK','ICICIBANK','BAJFINANCE','HINDUNILVR'], category: 'CASH' },
 };
 const FUTURE_SYSTEMS = {
   IDXFUT:    { label: 'Index Futures',    stocks: ['NIFTY','BANKNIFTY','SENSEX','FINNIFTY'], category: 'FUTURE', type: 'INDEX' },
   COMMOFUT:  { label: 'Commodity Futures', stocks: ['GOLD','SILVER','CRUDEOIL','NATURALGAS'], category: 'FUTURE', type: 'COMMO' },
+  TOPBTM:    { label: 'Top Bottom-1',   stocks: [], category: 'FUTURE' },
+  TOPBTM2:   { label: 'Top Bottom-2',   stocks: [], category: 'FUTURE' },
 };
 const FUT_SECTORS = {
   'Auto':              ['MARUTI','M&M','TATAMOTORS','BAJAJ-AUTO','HEROMOTOCO','EICHERMOT','TVSMOTOR','ASHOKLEY','BALKRISIND'],
@@ -798,7 +1051,7 @@ function attemptLogin() {
   if (pw === DASHBOARD_PASSWORD) {
     document.getElementById('loginOverlay').style.display = 'none';
     document.querySelector('.layout').style.display = 'flex';
-    initClock(); initParticles();
+    init(); // Initialize dashboard (watchlist, WebSocket, clocks)
   } else {
     err.style.display = 'block';
     document.getElementById('loginPassword').value = '';
@@ -848,15 +1101,97 @@ function switchView(name){
    WEBSOCKET
 ════════════════════════════════════════ */
 let ws=null;
+
+/* ════════════════════════════════════════
+   BROKER CONNECTION
+════════════════════════════════════════ */
+function connectBroker(name){
+  if(!ws||ws.readyState!==WebSocket.OPEN){
+    showToast('Engine not connected','var(--red)'); return;
+  }
+  ws.send(JSON.stringify({command:'connect_broker',broker:name}));
+  showToast(`Connecting ${name}...`, 'var(--blue)');
+}
+
+function disconnectBroker(name){
+  if(!ws||ws.readyState!==WebSocket.OPEN){
+    showToast('Engine not connected','var(--red)'); return;
+  }
+  ws.send(JSON.stringify({command:'disconnect_broker',broker:name}));
+}
+
+function renderBrokerStatus(brokers){
+  const ms = brokers && brokers['MSTOCK'];
+  const connected = ms && ms.connected;
+
+  const badge = document.getElementById('mstockStatusBadge');
+  const form = document.getElementById('mstockConnectForm');
+  const connSec = document.getElementById('mstockConnectedSection');
+  const posSec = document.getElementById('mstockPositionsList');
+
+  if(connected && ms.account){
+    badge.textContent = 'Connected';
+    badge.style.background = 'rgba(0,200,100,0.15)';
+    badge.style.color = 'var(--green)';
+    form.style.display = 'none';
+    connSec.style.display = 'block';
+
+    document.getElementById('mstockClient').textContent = ms.account.client_id || '—';
+    const bal = ms.account.balance || 0;
+    document.getElementById('mstockBalance').textContent = 'Rs.' + Number(bal).toLocaleString('en-IN',{minimumFractionDigits:2});
+
+    // Show positions
+    if(ms.positions && ms.positions.length){
+      posSec.innerHTML = '<table style="width:100%;font-size:12px"><tr style="color:var(--text-muted)"><td>Instrument</td><td>Side</td><td>Qty</td><td>Avg Price</td></tr>' +
+        ms.positions.map(p=>`<tr style="border-top:1px solid var(--border)">
+          <td style="padding:6px 4px">${p.instrument||'—'}</td>
+          <td style="padding:6px 4px;color:${p.side==='LONG'?'var(--green)':'var(--red)'}">${p.side||'—'}</td>
+          <td style="padding:6px 4px">${p.quantity||0}</td>
+          <td style="padding:6px 4px">Rs.${Number(p.avg_price||0).toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
+        </tr>`).join('') + '</table>';
+    } else {
+      posSec.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px">No open positions</div>';
+    }
+  } else {
+    badge.textContent = 'Disconnected';
+    badge.style.background = 'rgba(255,80,80,0.12)';
+    badge.style.color = 'var(--red)';
+    form.style.display = 'block';
+    connSec.style.display = 'none';
+    posSec.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px">Connect broker to see positions</div>';
+  }
+}
+
 function connectWS(){
-  const httpHost=location.host||'157.230.47.84:8765';
+  // Always use localhost for WebSocket (engine runs on same machine as browser)
+  const httpHost=location.host||'localhost:8765';
   const [host,port]=httpHost.includes(':')?httpHost.split(':'):[httpHost,'8765'];
-  ws=new WebSocket(`ws://${host}:${Number(port)+1}`);
+  // Fallback to localhost if host looks like an IP (avoids cross-origin WS issues)
+  const wsHost = (host === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(host)) ? host : 'localhost';
+  ws=new WebSocket(`ws://${wsHost}:${Number(port)+1}`);
   ws.onopen=()=>{ ws.send(JSON.stringify({command:'get_state'})); };
   ws.onmessage=(evt)=>{
     try{
       const msg=JSON.parse(evt.data);
-      if(msg.type==='state') updateAll(msg.data);
+      if(msg.type==='state'){
+        // Populate WATCHLISTS from engine state (engine is source of truth)
+        updateAll(msg.data);
+      } else if(msg.type==='notification'){
+        // Show engine notifications (trade results, errors, etc.)
+        const n=msg;
+        const color=n.success?'var(--green)':'var(--red)';
+        showToast(n.message||'Done',color);
+        // Play sound for trade events
+        if(n.message&&n.message.includes('PAPER')&&n.success) playBuyAlert();
+        if(n.message&&n.message.includes('LIVE')&&n.success) playSellAlert();
+      } else if(msg.type==='trade_event'){
+        // Real-time trade event toast
+        const e=msg;
+        const icon=e.event==='ENTRY'?'📋':e.event==='EXIT'?'✅':e.event==='REVERSAL'?'🔄':'📊';
+        showToast(`${icon} ${e.event}: ${e.instrument} — ${e.signal_type||''}`, e.event==='ENTRY'?'var(--blue)':e.event==='EXIT'?'var(--green)':'var(--orange)');
+        if(e.event==='ENTRY') playBuyAlert();
+        if(e.event==='EXIT') playSellAlert();
+      }
     }catch(e){}
   };
   ws.onerror=()=>{ const f=document.getElementById('footerMode'); if(f) f.textContent='WS ERROR'; };
@@ -868,6 +1203,9 @@ function connectWS(){
 ════════════════════════════════════════ */
 function updateAll(state){
   window._quotes=state.quotes||{};
+  window._segmentPnl=state.segment_pnl||{CASH:0,FUTURES:0,OPTIONS:0};
+  const prevSignalCount=window._prevSignalCount||0;
+  window._prevSignalCount=state.signals?.length||0;
   document.getElementById('topModeBadge').textContent=`● ${state.mode||'PAPER'}`;
   document.getElementById('topModeBadge').className=`live-badge ${(state.mode||'PAPER').toLowerCase()}`;
   const fmode=document.getElementById('footerMode'); if(fmode) fmode.textContent=`${state.mode||'PAPER'} MODE`;
@@ -876,9 +1214,15 @@ function updateAll(state){
   updateTicker('tkGold',state.quotes['GC=F']);
   updateTicker('tkSilver',state.quotes['SI=F']);
   updateTrades(state.trades||[]);
-  updateSignals(state.signals||[]);
+  window._allTrades=state.trades||[];
+  updateSignals(state.signals||[],prevSignalCount);
   refreshAllChips();
   renderAllWatchlists();
+  // Render Live & Paper trades
+  renderLiveTrades(state.live_trades||[]);
+  renderPaperTrades(state.trades||[]);
+  // Render broker status
+  renderBrokerStatus(state.brokers||{});
 }
 function updateTicker(id,q){
   const el=document.getElementById(id); if(!el||!q)return;
@@ -899,28 +1243,410 @@ function updateTrades(trades){
     const status=t.exit_price?'Closed':'Open';
     return`<tr>
       <td>${trades.length-i}</td>
-      <td>${(t.entry_time||'').split('T')[0]||'—'}</td>
+      <td>${(t.entry_date||'').split('T')[0]||'—'}</td>
       <td>${t.instrument||'—'}</td>
       <td><span class="${t.direction==='LONG'?'badge-green':'badge-red'}">${t.direction||'—'}</span></td>
       <td>₹${(t.entry_price||0).toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
-      <td>${t.exit_price?'₹'+t.exit_price.toLocaleString('en-IN',{minimumFractionDigits:2}):'—'}</td>
+      <td>${t.exit_price?'₹'+Number(t.exit_price).toLocaleString('en-IN',{minimumFractionDigits:2}):'—'}</td>
       <td><span class="${cls}">${pnl>=0?'+':''}₹${pnl.toFixed(0)}</span></td>
       <td>${status}</td>
     </tr>`;
   }).join('');
-  const longs=trades.filter(t=>!t.exit_price&&t.direction==='LONG').length;
-  const shorts=trades.filter(t=>!t.exit_price&&t.direction==='SHORT').length;
-  const totalPnl=trades.reduce((s,t)=>s+(t.pnl||0),0);
-  const sPnl=document.getElementById('snapTotalPnl');
-  if(sPnl){sPnl.textContent=`${totalPnl>=0?'+':''}₹${Math.abs(totalPnl).toLocaleString('en-IN')}`;sPnl.style.color=totalPnl>=0?'var(--green)':'var(--red)';}
-  document.getElementById('snapRunning').textContent=longs+shorts;
-  document.getElementById('snapLongs').textContent=longs;
-  document.getElementById('snapShorts').textContent=shorts;
+
+  // ── Portfolio box calculations ──────────────────────────────────
+  const today=new Date().toISOString().split('T')[0];
+  const closedTrades=trades.filter(t=>t.exit_price!=null);
+  const runningTrades=trades.filter(t=>!t.exit_price);
+  const longs=runningTrades.filter(t=>t.direction==='LONG').length;
+  const shorts=runningTrades.filter(t=>t.direction==='SHORT').length;
+
+  // Win rate (closed trades only)
+  const wins=closedTrades.filter(t=>t.pnl>0).length;
+  const winRate=closedTrades.length>0?Math.round((wins/closedTrades.length)*100):null;
+
+  // Closed P&L (only closed trades)
+  const closedPnl=closedTrades.reduce((s,t)=>s+(t.pnl||0),0);
+
+  // Today P&L (closed trades today)
+  const todayPnl=closedTrades
+    .filter(t=>(t.exit_date||'').startsWith(today))
+    .reduce((s,t)=>s+(t.pnl||0),0);
+
+  // Total P&L (running + closed)
+  const runningPnl=runningTrades.reduce((s,t)=>{
+    const q=getQuote(t.instrument);
+    if(!q)return s;
+    const ltp=q.last_price||q.price||0;
+    const mult=(t.direction==='LONG')?1:-1;
+    return s+mult*(ltp-t.entry_price)*t.quantity;
+  },0);
+  const totalPnl=closedPnl+runningPnl;
+
+  // Segment P&L from engine state
+  const segPnl=window._segmentPnl||{CASH:0,FUTURES:0,OPTIONS:0};
+
+  // ── Update boxes ───────────────────────────────────────────────
+  const setPnl=(id,val,subId)=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    el.textContent=`${val>=0?'+':''}₹${Math.abs(val).toLocaleString('en-IN')}`;
+    el.style.color=val>=0?'var(--green)':'var(--red)';
+    if(subId){const s=document.getElementById(subId);if(s)s.style.color=val>=0?'var(--green)':'var(--red)';}
+  };
+  const setNum=(id,val,color)=>{
+    const el=document.getElementById(id);if(el){el.textContent=val;if(color)el.style.color=color;}
+  };
+  const setWinRate=(val)=>{
+    const el=document.getElementById('snapWinRate');
+    if(el)el.textContent=val!=null?`${val}%`:'—';
+  };
+
+  setPnl('snapTotalPnl',totalPnl);
+  setPnl('snapTodayPnl',todayPnl);
+  setNum('snapLongs',longs,'var(--green)');
+  setNum('snapShorts',shorts,'var(--red)');
+  setPnl('snapFutPnl',segPnl.FUTURES||0);
+  setPnl('snapCashPnl',segPnl.CASH||0);
+  setPnl('snapOptPnl',segPnl.OPTIONS||0);
+  setWinRate(winRate);
+  setPnl('snapClosedPnl',closedPnl);
+
+  // Also update full trade log in Orders view
+  updateFullTradeLog(trades);
+  updateDailySummary(trades);
 }
-function updateSignals(signals){
+
+/* ════════════════════════════════════════
+   FULL TRADE LOG
+════════════════════════════════════════ */
+function updateFullTradeLog(trades){
+  const tb=document.getElementById('fullTradesBody');
+  if(!tb)return;
+  if(!trades.length){tb.innerHTML='<tr><td colspan="11" class="empty-state">No trades yet...</td></tr>';return;}
+  tb.innerHTML=trades.slice().reverse().map((t,i)=>{
+    const pnl=t.pnl||0;
+    const cls=pnl>=0?'badge-green':'badge-red';
+    const status=t.exit_price?'Closed':'Open';
+    const seg=t.segment||'FUTURES';
+    const jn=loadJournalEntry(t.trade_id);
+    return`<tr>
+      <td>${trades.length-i}</td>
+      <td>${(t.entry_date||'').split('T')[0]||'—'}</td>
+      <td>${t.instrument||'—'}</td>
+      <td><span style="font-size:11px;padding:2px 6px;background:var(--bg-card2);border-radius:4px">${seg}</span></td>
+      <td><span class="${t.direction==='LONG'?'badge-green':'badge-red'}">${t.direction||'—'}</span></td>
+      <td>₹${(t.entry_price||0).toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
+      <td>${t.exit_price?'₹'+Number(t.exit_price).toLocaleString('en-IN',{minimumFractionDigits:2}):'—'}</td>
+      <td>${t.quantity||'—'}</td>
+      <td><span class="${cls}">${pnl>=0?'+':''}₹${pnl.toFixed(0)}</span></td>
+      <td><span class="badge-gold">${status}</span></td>
+      <td>
+        ${t.exit_price?'<button onclick="openJournal(\''+t.trade_id+'\',\''+t.instrument+'\','+pnl+',\''+(t.entry_date||'')+'\')" style="background:var(--bg-card2);border:1px solid var(--border);color:var(--text-secondary);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer">'+(jn?'📝':'📒 Add')+'</button>':'—'}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+/* ════════════════════════════════════════
+   DAILY SUMMARY
+════════════════════════════════════════ */
+function calcPeriod(trades,startDate,endDate){
+  const ct=trades.filter(t=>{const d=(t.exit_date||'').split('T')[0];return d>=startDate&&d<=endDate&&t.exit_price!=null;});
+  const wins=ct.filter(t=>t.pnl>0).length;
+  const loss=ct.filter(t=>t.pnl<0).length;
+  const pnl=ct.reduce((s,t)=>s+(t.pnl||0),0);
+  const wr=ct.length>0?Math.round((wins/ct.length)*100):null;
+  return{count:ct.length,wins,loss,wr,pnl};
+}
+function updateDailySummary(trades){
+  const today=new Date();
+  const fmt=d=>d.toISOString().split('T')[0];
+  const todayStr=fmt(today);
+  const weekStart=new Date(today);weekStart.setDate(today.getDate()-today.getDay());
+  const monthStart=new Date(today.getFullYear(),today.getMonth(),1);
+  const allStart='2020-01-01';
+
+  const periods=[
+    {ids:['sumToday'],start:todayStr,end:todayStr},
+    {ids:['sumWeek'],start:fmt(weekStart),end:todayStr},
+    {ids:['sumMonth'],start:fmt(monthStart),end:todayStr},
+    {ids:['sumAll'],start:allStart,end:todayStr},
+  ];
+  periods.forEach(p=>{
+    const r=calcPeriod(trades,p.start,p.end);
+    const set=(id,val,pnl=false)=>{
+      const el=document.getElementById(p.ids[0]+id);
+      if(!el)return;
+      if(pnl){el.textContent=`${val>=0?'+':''}₹${Math.abs(val).toLocaleString('en-IN')}`;el.style.color=val>=0?'var(--green)':'var(--red)';}
+      else{el.textContent=val!=null?val:'—';el.style.color='';}
+    };
+    set('Count',r.count);
+    set('Wins',r.wins);
+    set('Loss',r.loss);
+    set('Wr',r.wr!=null?`${r.wr}%`:'—');
+    set('Pnl',r.pnl,true);
+  });
+}
+
+/* ════════════════════════════════════════
+   TRADE JOURNAL
+════════════════════════════════════════ */
+let _journalDraft={};
+function loadJournal(){
+  try{return JSON.parse(localStorage.getItem('tradeJournal')||'{}');}catch(e){return{};}
+}
+function saveJournal(data){
+  try{localStorage.setItem('tradeJournal',JSON.stringify(data));}catch(e){}
+}
+function loadJournalEntry(tid){
+  const j=loadJournal();return j[tid]||'';
+}
+function openJournal(tid,inst,pnl,entryDate){
+  const existing=loadJournalEntry(tid);
+  _journalDraft[tid]={tid,inst,pnl,entryDate,note:existing};
+  const note=prompt(`Trade Journal — ${inst}\n\nP&L: ${pnl>=0?'+':''}₹${pnl.toFixed(0)}\n\nEnter your trade notes (what went right/wrong, lessons learned):`,existing||'');
+  if(note!==null){
+    const j=loadJournal();j[tid]=note;saveJournal(j);
+    showToast('Journal saved for '+inst,'var(--green)');
+  }
+  renderJournal();
+}
+function renderJournal(){
+  const el=document.getElementById('journalEntries');
+  const empty=document.getElementById('journalEmpty');
+  if(!el)return;
+  const j=loadJournal();
+  const entries=Object.entries(j).filter(([k,v])=>v&&v.trim()).reverse();
+  if(!entries.length){if(empty)empty.style.display='';el.innerHTML='';return;}
+  if(empty)empty.style.display='none';
+  el.innerHTML=entries.map(([tid,note])=>{
+    const parts=tid.split('_');
+    const inst=parts[0]||tid;
+    return`<div class="journal-card">
+      <div class="journal-card-header">
+        <div>
+          <div class="journal-inst">${inst}</div>
+          <div class="journal-date">${parts[1]||''}</div>
+        </div>
+      </div>
+      <div class="journal-note"><div style="margin-bottom:6px;font-size:11px;color:var(--text-muted)">Notes:</div>${note.replace(/\n/g,'<br>')}</div>
+      <div class="journal-actions">
+        <button class="journal-del" onclick="deleteJournalEntry('${tid}')">🗑 Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function deleteJournalEntry(tid){
+  if(!confirm('Delete this journal entry?'))return;
+  const j=loadJournal();delete j[tid];saveJournal(j);renderJournal();
+  showToast('Journal entry deleted','var(--orange)');
+}
+
+/* ════════════════════════════════════════
+   EXPORT CSV
+════════════════════════════════════════ */
+function exportTradesCSV(){
+  const trades=window._allTrades||[];
+  if(!trades.length){showToast('No trades to export','var(--orange)');return;}
+  const headers=['TradeID','Date','Instrument','Segment','Direction','Entry Price','Exit Price','Qty','P&L','Reason'];
+  const rows=trades.map(t=>[
+    t.trade_id||'',
+    (t.entry_date||'').split('T')[0],
+    t.instrument||'',
+    t.segment||'FUTURES',
+    t.direction||'',
+    t.entry_price||0,
+    t.exit_price||'',
+    t.quantity||'',
+    t.pnl||0,
+    (t.reason||'').replace(/,/g,';')
+  ]);
+  const csv=[headers.join(','),...rows.map(r=>r.join(','))].join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`sartrader_trades_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();showToast('CSV exported!','var(--green)');
+}
+
+/* ════════════════════════════════════════
+   LIVE & PAPER TRADE RENDERING
+════════════════════════════════════════ */
+function _fmtDate(d){
+  if(!d)return'—';
+  return d.includes('T')?d.split('T')[0]:d;
+}
+function _fmtPrice(v){
+  if(v==null||v==='')return'—';
+  return'₹'+Number(v).toLocaleString('en-IN',{minimumFractionDigits:2});
+}
+function _fmtPnl(v){
+  if(v==null)return'<span style="color:var(--gold)">Running</span>';
+  const cls=v>=0?'var(--green)':'var(--red)';
+  return`<span style="color:${cls};font-weight:700">${v>=0?'+':''}₹${v.toFixed(0)}</span>`;
+}
+function _dirBadge(d){
+  return`<span class="${d==='LONG'?'badge-green':'badge-red'}">${d||'—'}</span>`;
+}
+function _exitBtn(trade_id,inst,mode){
+  return`<button onclick="exitTrade('${trade_id}','${inst}','${mode}')" style="background:var(--red-dim);border:1px solid rgba(255,77,106,0.3);color:var(--red);border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer">EXIT</button>`;
+}
+function _journalBtn(trade_id,inst,pnl){
+  if(pnl==null)return'—';
+  const jn=loadJournalEntry(trade_id);
+  return`<button onclick="openJournal('${trade_id}','${inst}',${pnl},'')" style="background:var(--bg-card2);border:1px solid var(--border);color:var(--text-secondary);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer">${jn?'📝':'📒'}</button>`;
+}
+function _subsegLabel(seg){
+  if(seg==='STOCK_FUTURES')return'<span style="font-size:10px;padding:1px 5px;background:var(--blue-dim);color:var(--blue);border-radius:3px">Stock</span>';
+  if(seg==='INDEX_FUTURES')return'<span style="font-size:10px;padding:1px 5px;background:var(--purple-dim);color:var(--purple)">Index</span>';
+  if(seg==='COMMODITY_FUTURES')return'<span style="font-size:10px;padding:1px 5px;background:var(--gold-dim);color:var(--gold)">Commodity</span>';
+  return'<span style="font-size:10px;padding:1px 5px;background:var(--bg-card2);color:var(--text-muted)">Stock</span>';
+}
+function _calcLtpPnl(trade){
+  const q=getQuote(trade.instrument);
+  if(!q)return{ltp:'—',pnl:null};
+  const ltp=q.last_price||q.price||0;
+  const mult=(trade.direction==='LONG')?1:-1;
+  const pnl=mult*(ltp-trade.entry_price)*trade.quantity;
+  return{ltp,lpnl:pnl};
+}
+function _renderTradeRow(t,i,showLtp,mode){
+  const {ltp,lpnl}=_calcLtpPnl(t);
+  const status=t.exit_price?'Closed':'Open';
+  const seg=t.segment||'CASH';
+  const pnlVal=t.pnl??lpnl;
+  const hasLtp=ltp!=='—'&&ltp!==0;
+  const statusCls=t.exit_price?'badge-gold':'badge-green';
+  return`<tr>
+    <td>${i+1}</td>
+    <td>${_fmtDate(t.entry_date)}</td>
+    <td><b>${t.instrument||'—'}</b></td>
+    ${seg==='FUTURES'||seg==='STOCK_FUTURES'||seg==='INDEX_FUTURES'||seg==='COMMODITY_FUTURES'?'<td>'+_subsegLabel(t.segment||seg)+'</td>':''}
+    <td>${_dirBadge(t.direction)}</td>
+    <td>${_fmtPrice(t.entry_price)}</td>
+    <td>${showLtp&&hasLtp?'₹'+Number(ltp).toLocaleString('en-IN',{minimumFractionDigits:2}):_fmtPrice(t.exit_price)}</td>
+    <td>${pnlVal!=null?_fmtPnl(pnlVal):'<span style="color:var(--gold)">—</span>'}</td>
+    <td>${t.quantity||'—'}</td>
+    <td><span class="${statusCls}">${status}</span></td>
+    <td>${t.exit_price?_journalBtn(t.trade_id,t.instrument,pnlVal):_exitBtn(t.trade_id,t.instrument,mode)}</td>
+  </tr>`;
+}
+function _filterSeg(trades,seg){
+  if(seg==='CASH')return trades.filter(t=>{const s=(t.segment||'CASH');return s==='CASH'||s==='CASH';});
+  if(seg==='FUTURES')return trades.filter(t=>{const s=(t.segment||'FUTURES');return s==='FUTURES'||s==='STOCK_FUTURES'||s==='INDEX_FUTURES'||s==='COMMODITY_FUTURES';});
+  if(seg==='OPTIONS')return trades.filter(t=>(t.segment||'')==='OPTIONS');
+  return trades;
+}
+function renderLiveTrades(liveTrades){
+  ['CASH','FUTURES','OPTIONS'].forEach(seg=>{
+    const body=document.getElementById('live'+seg.charAt(0)+seg.slice(1)+'Body');
+    if(!body)return;
+    const filtered=_filterSeg(liveTrades,seg);
+    if(!filtered.length){body.innerHTML=`<tr><td colspan="${seg==='FUTURES'?'11':'10'}" class="empty-state">No ${seg.toLowerCase()} trades...</td></tr>`;return;}
+    body.innerHTML=filtered.map((t,i)=>_renderTradeRow(t,i,true,'LIVE')).join('');
+  });
+  // Update futures sub-counts
+  const futTrades=liveTrades.filter(t=>['FUTURES','STOCK_FUTURES','INDEX_FUTURES','COMMODITY_FUTURES'].includes(t.segment||''));
+  const sf=futTrades.filter(t=>(t.segment||'')==='STOCK_FUTURES').length;
+  const iff=futTrades.filter(t=>(t.segment||'')==='INDEX_FUTURES').length;
+  const cf=futTrades.filter(t=>(t.segment||'')==='COMMODITY_FUTURES').length;
+  const sf2=document.getElementById('liveSFCount');if(sf2)sf2.textContent=sf;
+  const iff2=document.getElementById('liveIFCount');if(iff2)iff2.textContent=iff;
+  const cf2=document.getElementById('liveCFCount');if(cf2)cf2.textContent=cf;
+}
+function renderPaperTrades(paperTrades){
+  ['CASH','FUTURES','OPTIONS'].forEach(seg=>{
+    const body=document.getElementById('paper'+seg.charAt(0)+seg.slice(1)+'Body');
+    if(!body)return;
+    const filtered=_filterSeg(paperTrades,seg);
+    if(!filtered.length){body.innerHTML=`<tr><td colspan="${seg==='FUTURES'?'11':'10'}" class="empty-state">No ${seg.toLowerCase()} trades...</td></tr>`;return;}
+    body.innerHTML=filtered.map((t,i)=>_renderTradeRow(t,i,false,'PAPER')).join('');
+  });
+  const futTrades=paperTrades.filter(t=>['FUTURES','STOCK_FUTURES','INDEX_FUTURES','COMMODITY_FUTURES'].includes(t.segment||''));
+  const sf=futTrades.filter(t=>(t.segment||'')==='STOCK_FUTURES').length;
+  const iff=futTrades.filter(t=>(t.segment||'')==='INDEX_FUTURES').length;
+  const cf=futTrades.filter(t=>(t.segment||'')==='COMMODITY_FUTURES').length;
+  const sf2=document.getElementById('paperSFCount');if(sf2)sf2.textContent=sf;
+  const iff2=document.getElementById('paperIFCount');if(iff2)iff2.textContent=iff;
+  const cf2=document.getElementById('paperCFCount');if(cf2)cf2.textContent=cf;
+}
+function exitTrade(trade_id,inst,mode){
+  if(!confirm(`Exit ${inst} (${mode})?`))return;
+  if(ws&&ws.readyState===WebSocket.OPEN){
+    ws.send(JSON.stringify({command:'exit_trade',trade_id,instrument:inst,mode}));
+  }
+}
+
+/* ════════════════════════════════════════
+   ORDERS TAB SWITCHER
+════════════════════════════════════════ */
+let _ordersTab='Live';
+function switchOrdersTab(tab){
+  _ordersTab=tab;
+  ['Live','Paper','Summary','Journal'].forEach(t=>{
+    const te=document.getElementById('ordersTab'+t);
+    const pe=document.getElementById('ordersPanel'+t);
+    if(te)te.classList.toggle('active',t===tab);
+    if(pe)pe.style.display=t===tab?'':'none';
+  });
+  if(tab==='Journal')renderJournal();
+  if(tab==='Live'){switchLiveSeg('FUTURES');}
+  if(tab==='Paper'){switchPaperSeg('FUTURES');}
+}
+function switchLiveSeg(seg){
+  ['CASH','FUTURES','OPTIONS'].forEach(s=>{
+    const te=document.getElementById('liveSeg'+s);
+    const pe=document.getElementById('livePanel'+s);
+    if(te)te.classList.toggle('active',s===seg);
+    if(pe)pe.style.display=s===seg?'':'none';
+  });
+}
+function switchPaperSeg(seg){
+  ['CASH','FUTURES','OPTIONS'].forEach(s=>{
+    const te=document.getElementById('paperSeg'+s);
+    const pe=document.getElementById('paperPanel'+s);
+    if(te)te.classList.toggle('active',s===seg);
+    if(pe)pe.style.display=s===seg?'':'none';
+  });
+}
+
+/* ════════════════════════════════════════
+   ALERT SOUNDS
+════════════════════════════════════════ */
+let _audioCtx=null;
+function _getAudioCtx(){
+  if(!_audioCtx)_audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  return _audioCtx;
+}
+function playTone(freq,dur,type='sine'){
+  try{
+    const ctx=_getAudioCtx();
+    const osc=ctx.createOscillator();
+    const gain=ctx.createGain();
+    osc.connect(gain);gain.connect(ctx.destination);
+    osc.type=type;osc.frequency.value=freq;
+    gain.gain.setValueAtTime(0.3,ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dur);
+    osc.start();osc.stop(ctx.currentTime+dur);
+  }catch(e){}
+}
+function playBuyAlert(){playTone(880,0.15);setTimeout(()=>playTone(1100,0.2),180);}
+function playSellAlert(){playTone(440,0.2);setTimeout(()=>playTone(330,0.25),250);}
+function playSignalAlert(type){
+  if(type==='BUY')playBuyAlert();
+  else if(type==='SELL')playSellAlert();
+  else{playTone(660,0.1);setTimeout(()=>playTone(660,0.1),130);}
+}
+function updateSignals(signals, prevCount=0){
   const sb=document.getElementById('signalsBody');
   if(!sb)return;
   if(!signals.length){sb.innerHTML='<tr><td colspan="6" class="empty-state">No signals yet...</td></tr>';return;}
+
+  // Play alert sound for NEW signals only
+  if(signals.length>prevCount){
+    const latest=signals[signals.length-1];
+    if(latest?.type)playSignalAlert(latest.type);
+  }
+
   sb.innerHTML=signals.slice(-10).reverse().map((s,i)=>{
     const cls=s.type==='BUY'?'badge-green':s.type==='SELL'?'badge-red':'badge-gold';
     return`<tr>
@@ -953,6 +1679,15 @@ function toggleSector(sectorId){
 /* ════════════════════════════════════════
    QUOTE LOOKUP
 ════════════════════════════════════════ */
+function _inferSegment(inst){
+  const u=inst.toUpperCase();
+  if(/(CE|PE)\d+$/.test(u))return'OPTIONS'; // NIFTYCE35000, RELIANCEPE2500
+  if(u.endsWith('FUT'))return'STOCK_FUTURES';
+  if(/\b(SEP|OCT|NOV|DEC|JAN|AUG|JUL)(26|27)\b/.test(u))return'STOCK_FUTURES';
+  if(/^(NIFTY|BANKNIFTY|FINNIFTY|SENSEX|MIDCPNIFTY)/.test(u))return'INDEX_FUTURES';
+  if(/^(GOLD|SILVER|CRUDEOIL|NATURALGAS)/.test(u))return'COMMODITY_FUTURES';
+  return'CASH';
+}
 function getQuote(inst){
   const q=window._quotes||{};
   // Try direct key
@@ -975,6 +1710,95 @@ function getLtpDisplay(inst){
     change: `${chg>=0?'+':''}${pct.toFixed(2)}%`,
     cls
   };
+}
+
+/* ════════════════════════════════════════
+   FUTURES STRATEGY DROPDOWN
+════════════════════════════════════════ */
+let _futStratKey = 'SAR_TOP_BOTTOM';  // Default selected futures strategy
+
+function selectFutStrat(stratKey){
+  _futStratKey = stratKey;
+  // Update UI: highlight selected, dim others
+  ['SAR','Other'].forEach(suffix => {
+    const el = document.getElementById('futStrat'+suffix);
+    if(!el) return;
+    const isActive = suffix === 'SAR' && stratKey === 'SAR_TOP_BOTTOM'
+                  || suffix === 'Other' && stratKey === 'OTHER';
+    el.classList.toggle('active', isActive);
+    el.querySelector('.strat-opt-radio').textContent = isActive ? '●' : '○';
+  });
+}
+
+function applyFuturesStrategy(){
+  // Get all checked futures instruments from watchlist
+  const instruments = WATCHLISTS.FUTURE.map(x => x.inst);
+  if(!instruments.length){
+    showToast('No futures instruments in watchlist to apply strategy','var(--orange)');
+    return;
+  }
+  const stratKey = 'FUTURE-' + _futStratKey;  // e.g. "FUTURE-SAR_TOP_BOTTOM"
+  if(ws && ws.readyState === WebSocket.OPEN){
+    ws.send(JSON.stringify({
+      command: 'apply_strategy',
+      strategy: _futStratKey,
+      strategyName: _futStratKey === 'SAR_TOP_BOTTOM' ? 'SAR Top-Bottom' : 'Other',
+      instruments: instruments,
+      direction: 'LONGSHORT',
+      pyramiding: 'ADD',
+      lotSize: 30,
+      capital: 100000,
+      category: 'Future',
+    }));
+    showToast(`Applying SAR Top-Bottom to ${instruments.length} futures...`, 'var(--green)');
+  } else {
+    showToast('Engine not connected','var(--red)');
+  }
+}
+
+/* ════════════════════════════════════════
+   CASH STRATEGY DROPDOWN
+════════════════════════════════════════ */
+let _cashStratKey = 'RSI';  // Default selected cash strategy (RSI Reversal)
+
+function selectCashStrat(stratKey){
+  _cashStratKey = stratKey;
+  // Map stratKey to the option element id
+  const idMap = { RSI: 'cashStratRSI' };
+  Object.entries(idMap).forEach(([key, elId]) => {
+    const el = document.getElementById(elId);
+    if(!el) return;
+    const isActive = (key === stratKey);
+    el.classList.toggle('active', isActive);
+    el.querySelector('.strat-opt-radio').textContent = isActive ? '●' : '○';
+  });
+}
+
+function applyCashStrategy(){
+  // Get all cash instruments from watchlist
+  const instruments = WATCHLISTS.CASH.map(x => x.inst);
+  if(!instruments.length){
+    showToast('No cash instruments in watchlist to apply strategy','var(--orange)');
+    return;
+  }
+  const stratKey = 'CASH-' + _cashStratKey;  // e.g. "CASH-RSI"
+  const stratLabel = 'RSI Reversal';
+  if(ws && ws.readyState === WebSocket.OPEN){
+    ws.send(JSON.stringify({
+      command: 'apply_strategy',
+      strategy: stratKey,
+      strategyName: stratLabel,
+      instruments: instruments,
+      direction: 'LONGSHORT',
+      pyramiding: 'ADD',
+      lotSize: 30,
+      capital: 100000,
+      category: 'Cash',
+    }));
+    showToast(`Applying ${stratLabel} to ${instruments.length} cash stocks...`, 'var(--green)');
+  } else {
+    showToast('Engine not connected','var(--red)');
+  }
 }
 
 /* ════════════════════════════════════════
@@ -1225,27 +2049,32 @@ function renderWatchlistTable(tab){
 
   if(!items.length){
     const icons={CASH:'💰',FUTURE:'📈',OPTION:'📊'};
-    tbody.innerHTML=`<tr class="wl-empty-row"><td colspan="10">No instruments in ${tab} Watchlist.<br><span style="font-size:11px">Add from the Strategies page or use the form below.</span></td></tr>`;
+    const colspan=tab==='FUTURE'?'9':'10';
+    tbody.innerHTML=`<tr class="wl-empty-row"><td colspan="${colspan}">No instruments in ${tab} Watchlist.<br><span style="font-size:11px">Add from the Strategies page or use the form below.</span></td></tr>`;
     return;
   }
 
   tbody.innerHTML=items.map((item,idx)=>{
     const ltp=getLtpDisplay(item.inst);
+    const secKey=item.sysId.replace('SEC_','');
     const sysLabel=CASH_SYSTEMS[item.sysId]?.label
       ||FUTURE_SYSTEMS[item.sysId]?.label
-      ||FUT_SECTORS[item.sysId.replace('SEC_','')] ? item.sysId.replace('SEC_','')+' Sector'
-      ||item.sysId;
+      ||(FUT_SECTORS[secKey] ? secKey+' Sector' : item.sysId);
     const id=`${tab}_${idx}`;
     const isPaper=item.mode==='PAPER';
     const modeCls=isPaper?'paper':'live';
     const modeLbl=isPaper?'PAPER':'LIVE';
 
-    return `<tr data-idx="${idx}" data-tab="${tab}">
-      <td class="wl-sr">${idx+1}</td>
-      <td class="wl-inst">${item.inst}</td>
-      <td class="wl-sys">${sysLabel}</td>
-      <td class="wl-ltp ${ltp.cls}">${ltp.price}</td>
-      <td class="wl-change ${ltp.cls}">${ltp.change}</td>
+    // Sector label — extract from FUT_SECTORS if available
+    let sectorLabel='—';
+    if(tab==='FUTURE'){
+      Object.entries(FUT_SECTORS).forEach(([sector,stocks])=>{
+        if(stocks.includes(item.inst)) sectorLabel=sector;
+      });
+    }
+
+    // Entry / SL columns — only for CASH
+    const entrySlCols=tab==='CASH' ? `
       <td class="wl-entry">
         <input type="number" class="wl-edit" id="wlEntry_${id}"
           value="${item.entryPrice}"
@@ -1259,7 +2088,16 @@ function renderWatchlistTable(tab){
           placeholder="SL"
           onclick="this.select()"
           onchange="onWlSlChange('${tab}',${idx},this.value)">
-      </td>
+      </td>` : '';
+
+    return `<tr data-idx="${idx}" data-tab="${tab}">
+      <td class="wl-sr">${idx+1}</td>
+      <td class="wl-inst">${item.inst}</td>
+      <td class="wl-sector">${tab==='FUTURE' ? sectorLabel : '—'}</td>
+      <td class="wl-sys">${sysLabel}</td>
+      <td class="wl-ltp ${ltp.cls}">${ltp.price}</td>
+      <td class="wl-change ${ltp.cls}">${ltp.change}</td>
+      ${entrySlCols}
       <td>
         <div class="wl-mode ${modeCls}" id="wlMode_${id}"
           onclick="onWlModeToggle('${tab}',${idx})"
@@ -1305,31 +2143,29 @@ function onWlModeToggle(tab,idx){
 function onWlHit(tab,idx){
   const item=WATCHLISTS[tab][idx];
   if(!item)return;
-  const entry=item.entryPrice;
-  const sl=item.sl;
-  const ltp=getQuote(item.inst);
-  const price=ltp?.last_price||ltp?.price||0;
 
-  if(!entry && !price){
-    showToast(`Set Entry Price for ${item.inst} first`, 'var(--orange)'); return;
+  if(!(ws && ws.readyState===WebSocket.OPEN)){
+    showToast('Engine not connected — cannot hit trade', 'var(--red)');
+    return;
   }
 
-  const execPrice = entry ? parseFloat(entry) : price;
-  const execMode = item.mode; // PAPER or LIVE
-
-  // Send trade command to engine
-  if(ws && ws.readyState===WebSocket.OPEN){
+  if(tab==='FUTURE'){
+    // HIT for futures — auto-detect direction, no signal check, resolve to current month contract
     ws.send(JSON.stringify({
-      command: 'execute_trade',
+      command: 'hit_trade',
       instrument: item.inst,
-      price: execPrice,
-      sl: sl ? parseFloat(sl) : null,
-      mode: execMode,
+      mode: item.mode,  // PAPER or LIVE
+    }));
+    showToast(`⚡ HIT — ${item.inst}: auto-detecting direction & entering...`, item.mode==='LIVE'?'var(--red)':'var(--blue)');
+  } else {
+    // CASH / OPTION — fire strategy signal as before
+    ws.send(JSON.stringify({
+      command: 'signal_trade',
+      instrument: item.inst,
+      mode: item.mode,
       strategy: item.sysId,
     }));
-    showToast(`⚡ ${execMode} HIT: ${item.inst} @ ₹${execPrice.toFixed(2)}${sl ? ' | SL ₹'+parseFloat(sl).toFixed(2) : ''}`, execMode==='LIVE'?'var(--red)':'var(--blue)');
-  } else {
-    showToast('Engine not connected — cannot hit trade', 'var(--red)');
+    showToast(`🎯 ${item.inst} — firing signal...`, item.mode==='LIVE'?'var(--red)':'var(--blue)');
   }
 }
 
@@ -1377,10 +2213,9 @@ function wlAddInstrument(tab){
 ════════════════════════════════════════ */
 function syncToEngine(){
   if(ws&&ws.readyState===WebSocket.OPEN){
-    const allInsts=WATCHLISTS.CASH.concat(WATCHLISTS.FUTURE).map(x=>x.inst);
-    if(allInsts.length){
-      ws.send(JSON.stringify({command:'apply_strategy',strategyName:'SAR_TOP_BOTTOM',instruments:allInsts}));
-    }
+    // Sync ALL segments: CASH, FUTURES, and OPTIONS
+    const allInsts=WATCHLISTS.CASH.concat(WATCHLISTS.FUTURE,WATCHLISTS.OPTION).map(x=>x.inst);
+    ws.send(JSON.stringify({command:'sync_watchlist',instruments:allInsts}));
   }
 }
 
@@ -1475,6 +2310,8 @@ function init(){
   renderAllWatchlists();
   Object.keys(CASH_SYSTEMS).forEach(k=>updateSegCount('CASH'));
   Object.keys(FUTURE_SYSTEMS).forEach(k=>updateSegCount('FUTURE'));
+  switchOrdersTab('Live'); // Default to Live Trades tab
+  switchLiveSeg('FUTURES');
   connectWS();
 }
 

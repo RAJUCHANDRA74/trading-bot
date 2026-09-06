@@ -166,7 +166,7 @@ class PaperEngine:
     # ── Entry ────────────────────────────────────────────────────────────────
 
     def enter(self, signal: Signal, idx: int = 0) -> Optional[PaperTrade]:
-        """Simulate entry order from a signal."""
+        """Simulate entry order from a signal. Returns PaperTrade object (open position)."""
         with self._lock:
             if self.position is not None:
                 logger.warning(
@@ -202,10 +202,28 @@ class PaperEngine:
             )
 
             trade_id = self._tick()
+
+            # Create PaperTrade object for the open position
+            trade = PaperTrade(
+                trade_id=trade_id,
+                instrument=signal.instrument,
+                direction=side,
+                entry_date=now,
+                entry_price=fill_price,
+                exit_date=None,
+                exit_price=None,
+                quantity=self.position.quantity,
+                pnl=None,          # Unrealized until closed
+                pyramids=0,
+                reason=signal.reason or "signal_entry",
+                capital_after=round(self.capital, 2),
+            )
+            self.trades.append(trade)
+
             logger.info(
                 f"[PAPER] Entry: {side} {self.position.quantity} lots @ "
                 f"{fill_price:.2f} | Capital: Rs.{self.capital:,.2f} "
-                f"| Reason: {signal.reason}"
+                f"| Reason: {signal.reason} | TradeID: {trade_id}"
             )
 
             # Log to DB
@@ -217,7 +235,7 @@ class PaperEngine:
             conn.commit()
             conn.close()
 
-            return trade_id
+            return trade
 
     # ── Exit ─────────────────────────────────────────────────────────────────
 
@@ -350,6 +368,7 @@ class PaperEngine:
             {
                 "trade_id":   t.trade_id,
                 "instrument": t.instrument,
+                "segment":    _infer_segment(t.instrument),
                 "direction":  t.direction,
                 "entry_date": t.entry_date,
                 "entry_price":t.entry_price,
@@ -363,3 +382,27 @@ class PaperEngine:
             }
             for t in self.trades
         ]
+
+    def get_segment_pnl(self) -> dict:
+        """Return P&L breakdown by segment (Cash, Futures, Options)."""
+        result = {"CASH": 0.0, "FUTURES": 0.0, "OPTIONS": 0.0}
+        for t in self.trades:
+            seg = _infer_segment(t.instrument)
+            result[seg] = round(result.get(seg, 0) + (t.pnl or 0), 2)
+        return result
+
+
+def _infer_segment(inst: str) -> str:
+    """Infer trade segment from instrument name."""
+    import re
+    inst_upper = inst.upper()
+    # Options: CE/PE before a number (e.g. NIFTYCE35000, RELIANCEPE2500)
+    if re.search(r'(CE|PE)\d+$', inst_upper):
+        return "OPTIONS"
+    if inst_upper.endswith("FUT"):
+        return "FUTURES"
+    if re.search(r'(SEP|OCT|NOV|DEC|JAN|AUG|JUL)(26|27)FUT$', inst_upper):
+        return "FUTURES"
+    if re.search(r'(SEP|OCT|NOV|DEC|JAN|AUG|JUL)(26|27)$', inst_upper):
+        return "FUTURES"
+    return "CASH"

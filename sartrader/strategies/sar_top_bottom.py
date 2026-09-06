@@ -101,11 +101,18 @@ class SARTopBottomStrategy(AbstractStrategy):
         # Most recent swing points
         last_top = self._recent_tops[-1]
         last_bot = self._recent_bots[-1]
+        top_price = last_top[1]
+        bot_price = last_bot[1]
 
         # ── ATR Filter ───────────────────────────────────────────────────────
         atr_pct = self.get_atr_pct(14)
         if atr_pct is not None and atr_pct >= self._atr_threshold:
             # Market too volatile — skip entry, but still manage position
+            logger.info(
+                f"[{self.instrument}] ATR filter blocked | close={close:.2f} "
+                f"| top={top_price:.2f} bot={bot_price:.2f} "
+                f"| ATR%={atr_pct:.2f}% >= threshold={self._atr_threshold}%"
+            )
             if not self._position_open:
                 return None
             return self._manage_position(close, high, low, i, last_top, last_bot)
@@ -114,13 +121,12 @@ class SARTopBottomStrategy(AbstractStrategy):
         if not self._position_open:
             sig = self._find_entry(close, i, last_top, last_bot, candles)
             if sig is None:
-                atr = self.get_atr_pct(14)
-                if atr:
-                    logger.info(
-                        f"[{self.instrument}] No signal | close={close:.2f} "
-                        f"| top={top_price:.2f} bot={bot_price:.2f} "
-                        f"| ATR%={atr:.2f}% (threshold={self._atr_threshold}%)"
-                    )
+                logger.info(
+                    f"[{self.instrument}] No signal | close={close:.2f} "
+                    f"| top={top_price:.2f} bot={bot_price:.2f} "
+                    f"| ATR%={atr_pct:.2f}% < threshold={self._atr_threshold}% | "
+                    f"(needs close > {top_price:.2f} for LONG, or close < {bot_price:.2f} for SHORT)"
+                )
             return sig
 
         # ── Have position → manage it ───────────────────────────────────────

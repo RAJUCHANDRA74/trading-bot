@@ -38,6 +38,8 @@ from sartrader.broker_interface import (
 )
 from sartrader.paper_engine import PaperEngine
 from sartrader.strategies.sar_top_bottom import SARTopBottomStrategy
+from sartrader.strategies.top_bottom_2 import TopBottom2Strategy
+from sartrader.strategies.base import Signal, SignalType
 from sartrader.strategies.base import SignalType
 
 # Import broker modules to trigger registration
@@ -109,6 +111,7 @@ class TradingEngine:
             db_path=str(BASE_DIR / "data" / "paper_trades.db"),
         )
         self._running   = False
+        self._live_trades: List[dict] = []   # Live trade history
         self._tick_thread: Optional[threading.Thread] = None
         self._tick_interval = 30     # seconds between ticks
 
@@ -131,6 +134,10 @@ class TradingEngine:
         # NSE F&O futures cache — synced from broker API
         # Set of available stock futures symbols, e.g. {'SBIN26SEPFUT', ...}
         self._available_futures: set = set()
+
+        # In-memory watchlist: instrument -> {strategy, strategy_params, ...}
+        # Persisted to data/watchlist.json
+        self._watchlist: Dict[str, dict] = {}
 
         # Load strategies from config
         self._init_strategies()
@@ -221,6 +228,68 @@ class TradingEngine:
             return True  # No data — optimistically allow (fallback to hardcoded list)
         return instrument in self._available_futures
 
+    # ── Segment Classification ──────────────────────────────────────────────────
+
+    INDEX_FUTURES = {"NIFTY", "BANKNIFTY", "FINNIFTY", "SENSEX", "MIDCPNIFTY"}
+    COMMODITY_FUTURES = {"GOLD", "SILVER", "CRUDEOIL", "NATURALGAS", "GOLD-M", "SILVER-M"}
+
+    def _infer_segment(self, inst: str) -> str:
+        """Classify instrument into a segment."""
+        import re
+        inst_upper = inst.upper()
+        # Options: CE/PE before a number (e.g. NIFTYCE35000, RELIANCEPE2500)
+        if re.search(r'(CE|PE)\d+$', inst_upper):
+            return "OPTIONS"
+        if any(inst_upper.startswith(f) and len(inst_upper) > len(f)
+               for f in self.INDEX_FUTURES):
+            return "INDEX_FUTURES"
+        if any(inst_upper.startswith(c) and len(inst_upper) > len(c)
+               for c in self.COMMODITY_FUTURES):
+            return "COMMODITY_FUTURES"
+        # Stock futures: ends with FUT (standard) OR has month+YY pattern at end (NSE format)
+        if inst_upper.endswith("FUT"):
+            return "STOCK_FUTURES"
+        if re.search(r'(SEP|OCT|NOV|DEC|JAN|AUG|JUL)(26|27)FUT$', inst_upper):
+            return "STOCK_FUTURES"
+        if re.search(r'(SEP|OCT|NOV|DEC|JAN|AUG|JUL)(26|27)$', inst_upper):
+            return "STOCK_FUTURES"
+        return "CASH"
+
+    def _resolve_futures(self, inst: str) -> str:
+        """
+        Convert base symbol to current month futures contract.
+        e.g. 'ICICIBANK' -> 'ICICIBANKSEP26', 'NIFTY' -> 'NIFTY26SEPFUT'
+        """
+        inst_upper = inst.upper()
+        exp = self.current_expiry
+        # Already a full contract
+        if any(x in inst_upper for x in ["SEP26", "OCT26", "NOV26", "DEC26",
+                                          "JAN27", "AUG26", "JUL26", "FUT"]):
+            return inst.upper()
+        # Index futures: NIFTY -> NIFTY26SEPFUT
+        for idx in self.INDEX_FUTURES:
+            if inst_upper.startswith(idx):
+                yr = exp[-2:]
+                month = exp[:3]
+                return f"{idx.upper()}{yr}{month}FUT"
+        # Commodity futures: GOLD -> GOLD26SEPFUT
+        for c in self.COMMODITY_FUTURES:
+            if inst_upper.startswith(c):
+                yr = exp[-2:]
+                month = exp[:3]
+                return f"{c.upper()}{yr}{month}FUT"
+        # Stock futures: ICICIBANK -> ICICIBANKSEP26
+        yr = exp[-2:]
+        month = exp[:3]
+        return f"{inst_upper}{month}{yr}FUT"
+
+    # ── Live Trade Tracking ────────────────────────────────────────────────────
+
+    def _add_live_trade(self, order: dict):
+        """Add a live trade to the tracking list."""
+        self._live_trades.append(order)
+        logger.info(f"[LIVE] Trade recorded: {order.get('instrument')} {order.get('side')} {order.get('quantity')}lots @ {order.get('entry_price')}")
+
     def connect_broker(self, name: str) -> bool:
         """Manually connect a broker by name."""
         if name not in self.brokers:
@@ -290,12 +359,44 @@ class TradingEngine:
                     "broker_name": info.get("broker_name", "MSTOCK"),
                     "enabled":     info.get("enabled", True),
                 }
+                # Also register in the in-memory watchlist registry
+                self._watchlist[inst] = info
                 loaded += 1
                 logger.info(f"[PERSIST] Restored watchlist instrument: {inst}")
             if loaded:
                 logger.info(f"[PERSIST] Loaded {loaded} instrument(s) from watchlist file")
         except Exception as e:
             logger.error(f"[PERSIST] Failed to load watchlist: {e}")
+
+    def _apply_strategy(self, inst: str, strategy_name: str, params: dict):
+        """Apply a strategy to an instrument (internal helper)."""
+        strategy_type = strategy_name  # "SAR_TOP_BOTTOM" or "TOP_BOTTOM_2"
+        if strategy_type == "SAR_TOP_BOTTOM":
+            strat = SARTopBottomStrategy(inst, params)
+        elif strategy_type == "TOP_BOTTOM_2":
+            strat = TopBottom2Strategy(inst, params)
+        else:
+            # Default to SAR Top-Bottom
+            strat = SARTopBottomStrategy(inst, params)
+
+        self.strategies[inst] = {
+            "strategy":      strat,
+            "config": {
+                "strategy":         strategy_type,
+                "strategy_params":  params,
+                "broker":          "MSTOCK",
+                "data_source":     "yahoo",
+            },
+            "broker_name": "MSTOCK",
+            "enabled":     params.get("enabled", True),
+        }
+        logger.info(f"[WATCHLIST] Applied {strategy_type} to {inst}")
+
+    def _remove_strategy(self, inst: str):
+        """Remove strategy for an instrument."""
+        if inst in self.strategies:
+            del self.strategies[inst]
+            logger.info(f"[WATCHLIST] Removed strategy for {inst}")
 
     def _init_strategies(self):
         # Load from config first
@@ -392,7 +493,7 @@ class TradingEngine:
                         timestamp=int(ts), open=float(o), high=float(h),
                         low=float(l), close=float(c), volume=int(v or 0),
                     ))
-            return candles[-50:]
+            return candles[-500:]   # Last 500 candles (covers ~2 days of 5m candles)
         except Exception as e:
             logger.debug(f"Yahoo Finance failed for {instrument}: {e}")
             return []
@@ -430,8 +531,8 @@ class TradingEngine:
                 if not candles:
                     continue
 
-                # Feed candles to strategy
-                for candle in candles[-20:]:
+                # Feed candles to strategy (last 100 to ensure sufficient lookback)
+                for candle in candles[-100:]:
                     strat.add_candle(candle)
 
                 # Run strategy
@@ -731,14 +832,22 @@ class TradingEngine:
     def _build_state(self) -> dict:
         """Build the full state object for the dashboard."""
         paper_status = self.paper.get_status()
-        broker_status = {
-            name: {
-                "connected": b.is_connected(),
-                "account": asdict(b.get_account_info())
-                               if b.is_connected() else {},
-            }
-            for name, b in self.brokers.items()
-        }
+        broker_status = {}
+        for name, b in self.brokers.items():
+            status = {"connected": b.is_connected()}
+            if b.is_connected():
+                status["account"] = asdict(b.get_account_info())
+                try:
+                    positions = b.get_positions()
+                    status["positions"] = [
+                        {"instrument": p.instrument, "side": p.side.value,
+                         "quantity": p.quantity, "avg_price": p.avg_price,
+                         "unrealized_pnl": p.unrealized_pnl}
+                        for p in positions
+                    ]
+                except Exception:
+                    status["positions"] = []
+            broker_status[name] = status
 
         # Get live quotes — from broker, or Yahoo Finance fallback
         # Merge config instruments + dashboard-added strategies so LTP works for all watchlist entries
@@ -868,9 +977,12 @@ class TradingEngine:
             },
             "positions":       positions_state,
             "signals":         self._signals[-20:],
-            "trades":          self.paper.get_trade_history()[-20:],
+            "trades":          self.paper.get_trade_history()[-50:],
+            "segment_pnl":     self.paper.get_segment_pnl(),
+            "live_trades":     self._live_trades[-50:],
             "available_futures": list(self._available_futures),
             "current_expiry":  self.current_expiry,
+            "watchlist":       list(self._watchlist.keys()),
         }
 
     async def handle_dashboard_message(self, data: dict, ws):
@@ -883,6 +995,426 @@ class TradingEngine:
                 "data": self._build_state()
             }))
 
+        elif cmd == "execute_trade":
+            # Manual HIT from watchlist — PAPER or LIVE execution
+            instrument = data.get("instrument", "")
+            exec_price = float(data.get("price", 0))
+            sl = data.get("sl")
+            sl_price = float(sl) if sl else None
+            exec_mode = data.get("mode", "PAPER")
+            strategy = data.get("strategy", "MANUAL")
+            quantity = int(data.get("quantity", 1))
+
+            # Resolve futures contract to current month
+            inst = self._resolve_futures(instrument)
+            # Determine direction from price
+            quote = None
+            for bname, broker in self.brokers.items():
+                if broker.is_connected():
+                    try: quote = broker.get_quote(inst); break
+                    except: pass
+
+            ltp = quote.last_price if quote else exec_price
+            direction = "LONG" if ltp >= exec_price else "SHORT"
+
+            result = {"success": False, "mode": exec_mode, "instrument": inst,
+                      "direction": direction, "message": ""}
+
+            if exec_mode == "PAPER":
+                # Paper trade via paper engine
+                sig = Signal(
+                    type=SignalType.LONG_ENTRY if direction == "LONG" else SignalType.SHORT_ENTRY,
+                    instrument=inst,
+                    strategy_name=strategy,
+                    price=exec_price,
+                    stop_loss=sl_price,
+                    quantity=quantity,
+                    reason="Manual HIT from watchlist",
+                )
+                trade_id = self.paper.enter(sig)
+                if trade_id:
+                    result["success"] = True
+                    result["message"] = f"PAPER {direction} @ ₹{exec_price:.2f}"
+                    result["trade_id"] = trade_id
+                else:
+                    result["message"] = "Entry failed — position already open"
+            else:
+                # LIVE trade via broker
+                broker = None
+                for bname, b in self.brokers.items():
+                    if b.is_connected():
+                        broker = b; break
+
+                if not broker:
+                    result["message"] = "No broker connected for LIVE trading"
+                else:
+                    order_side = OrderSide.BUY if direction == "LONG" else OrderSide.SELL
+                    order_type = OrderType.LIMIT if exec_price else OrderType.MARKET
+                    try:
+                        order = broker.place_order(
+                            instrument=inst,
+                            side=order_side,
+                            quantity=quantity,
+                            order_type=order_type,
+                            price=exec_price if exec_price else None,
+                        )
+                        if order.status == OrderStatus.FILLED or order.average_price:
+                            self._add_live_trade({
+                                "trade_id": order.order_id,
+                                "instrument": inst,
+                                "segment": self._infer_segment(inst),
+                                "direction": direction,
+                                "entry_date": _dt.now().isoformat(),
+                                "entry_price": order.average_price or exec_price,
+                                "exit_price": None,
+                                "quantity": quantity,
+                                "pnl": None,
+                                "reason": "Manual HIT from watchlist",
+                                "status": "OPEN",
+                                "sl": sl_price,
+                            })
+                            result["success"] = True
+                            result["message"] = f"LIVE {direction} {inst} @ ₹{order.average_price or exec_price:.2f} | Order: {order.order_id}"
+                        else:
+                            result["message"] = f"Order placed: {order.order_id} | Status: {order.status.value}"
+                    except Exception as e:
+                        result["message"] = f"Order error: {str(e)}"
+
+            await self.broadcast_state()
+            await ws.send(json.dumps({"type": "notification", **result}))
+
+        elif cmd == "signal_trade":
+            # HIT from watchlist → fire strategy signal and auto-enter
+            instrument = data.get("instrument", "")
+            mode = data.get("mode", "PAPER")
+            inst = self._resolve_futures(instrument)
+            result = {"success": False, "instrument": inst, "mode": mode, "message": ""}
+
+            # Find strategy by instrument name (not watchlist sysId)
+            strat_entry = None
+            actual_inst = inst
+            for k in self.strategies:
+                if inst.upper() == k.upper() or instrument.upper() in k.upper():
+                    strat_entry = self.strategies[k]
+                    actual_inst = k
+                    break
+
+            if not strat_entry:
+                result["message"] = f"No strategy found for {inst} — apply strategy first"
+                await ws.send(json.dumps({"type": "notification", **result}))
+                return
+
+            # Fetch latest candles for this instrument
+            strat = strat_entry["strategy"]
+            candles = []
+            broker = next((b for b in self.brokers.values() if b.is_connected()), None)
+            if broker:
+                try:
+                    to_ts   = int(_dt.now().timestamp())
+                    from_ts = to_ts - (300 * 15 * 60)  # last 300 x 15m candles (~75 hrs)
+                    candles = broker.get_candles(actual_inst, "15m", from_ts, to_ts)
+                except Exception as e:
+                    logger.warning(f"[signal_trade] candle fetch error: {e}")
+            if not candles:
+                # Yahoo gives 5-min candles — fetch 5 days for ample lookback
+                candles = self._fetch_yahoo_candles(actual_inst)
+                if candles:
+                    logger.info(f"[signal_trade] Using {len(candles)} Yahoo candles for {actual_inst}")
+
+            if not candles:
+                result["message"] = f"Could not fetch candles for {inst}"
+                await ws.send(json.dumps({"type": "notification", **result}))
+                return
+
+            # Load candles into strategy so compute() has data to work with
+            for candle in candles:
+                strat.add_candle(candle)
+
+            # Sync strategy position state from engine before computing
+            engine_pos = self._positions.get(actual_inst)
+            if engine_pos:
+                strat.set_position(engine_pos["direction"], engine_pos["entry_price"])
+            else:
+                strat.clear_position()
+
+            signal = None
+            try:
+                signal = strat.compute()
+            except Exception as e:
+                logger.warning(f"[signal_trade] compute error for {actual_inst}: {e}")
+
+            if not signal or signal.type.name in ("NO_SIGNAL", "LONG_EXIT", "SHORT_EXIT"):
+                result["message"] = f"No signal for {inst} — rules not triggered yet"
+                await ws.send(json.dumps({"type": "notification", **result}))
+                return
+
+            entry_price = signal.price
+            sl_price = signal.stop_loss
+            direction = "LONG" if signal.type.name in ("LONG_ENTRY", "REVERSE_LONG") else "SHORT"
+            sig_type_label = "BUY" if direction == "LONG" else "SELL"
+
+            if mode == "PAPER":
+                trade = self.paper.enter(signal)
+                if trade:
+                    # Sync engine position state so dashboard shows the open position
+                    self._positions[actual_inst] = {
+                        "side":            trade.direction,
+                        "entry_price":      trade.entry_price,
+                        "entry_condition":  trade.reason or signal.reason,
+                        "entry_time":       trade.entry_date,
+                        "qty":              trade.quantity,
+                        "sl_mode":          "auto",
+                        "sl_pct":           signal.metadata.get("sl_pct", 3.0),
+                        "sl_manual_type":   "price",
+                        "sl_manual_pct":    None,
+                        "sl_manual_price":  None,
+                        "current_sl":       signal.stop_loss or (trade.entry_price * (0.97 if direction == "LONG" else 1.03)),
+                        "be_pct":           signal.metadata.get("be_pct", 2.5),
+                        "pyramiding_mode":  "auto",
+                        "pyramiding_on":    False,
+                        "pyramiding_lots":  1,
+                        "exit_mode":        "auto",
+                        "exit_manual_type": "price",
+                        "exit_manual_val":  0,
+                        "rollover":         True,
+                        "realized_pnl":     0.0,
+                        "be_done":          False,
+                        "pyramids":         0,
+                    }
+                    # Sync strategy position state
+                    strat.set_position(direction, trade.entry_price)
+                    result["success"] = True
+                    result["message"] = f"📋 PAPER {sig_type_label} {inst} @ ₹{trade.entry_price:.2f}"
+                    result["trade_id"] = trade.trade_id
+                    self._push_trade_event("ENTRY", signal, trade.trade_id)
+                else:
+                    result["message"] = "PAPER entry failed — position already open"
+            else:
+                broker = next((b for b in self.brokers.values() if b.is_connected()), None)
+                if not broker:
+                    result["message"] = "No broker connected for LIVE trading"
+                else:
+                    try:
+                        order_side = OrderSide.BUY if direction == "LONG" else OrderSide.SELL
+                        order = broker.place_order(
+                            instrument=actual_inst, side=order_side,
+                            quantity=signal.quantity or 1,
+                            order_type=OrderType.MARKET,
+                        )
+                        fill_price = order.average_price or entry_price
+                        self._add_live_trade({
+                            "trade_id": order.order_id,
+                            "instrument": actual_inst,
+                            "segment": self._infer_segment(actual_inst),
+                            "direction": direction,
+                            "entry_date": _dt.now().isoformat(),
+                            "entry_price": fill_price,
+                            "exit_price": None,
+                            "quantity": signal.quantity or 1,
+                            "pnl": None,
+                            "reason": f"Signal: {sig_type_label} by {signal.strategy_name}",
+                            "status": "OPEN",
+                            "sl": sl_price,
+                        })
+                        # Also sync engine position for dashboard display
+                        self._positions[actual_inst] = {
+                            "side": direction, "entry_price": fill_price,
+                            "entry_condition": f"Signal: {sig_type_label}", "entry_time": _dt.now().isoformat(),
+                            "qty": signal.quantity or 1, "sl_mode": "auto",
+                            "sl_pct": signal.metadata.get("sl_pct", 3.0),
+                            "sl_manual_type": "price", "sl_manual_pct": None,
+                            "sl_manual_price": None,
+                            "current_sl": sl_price or (fill_price * (0.97 if direction == "LONG" else 1.03)),
+                            "be_pct": signal.metadata.get("be_pct", 2.5),
+                            "pyramiding_mode": "auto", "pyramiding_on": False,
+                            "pyramiding_lots": 1, "exit_mode": "auto",
+                            "exit_manual_type": "price", "exit_manual_val": 0,
+                            "rollover": True, "realized_pnl": 0.0,
+                            "be_done": False, "pyramids": 0,
+                        }
+                        strat.set_position(direction, fill_price)
+                        result["success"] = True
+                        result["message"] = f"⚡ LIVE {sig_type_label} {actual_inst} @ ₹{fill_price:.2f}"
+                    except Exception as e:
+                        result["message"] = f"Order error: {str(e)}"
+
+            await self.broadcast_state()
+            await ws.send(json.dumps({"type": "notification", **result}))
+
+        elif cmd == "hit_trade":
+            # HIT from futures watchlist → auto-detect direction → enter immediately
+            # No strategy rules, no signal check — pure price action entry
+            instrument = data.get("instrument", "")
+            mode = data.get("mode", "PAPER")
+            strat_name = data.get("strategy_name", "HIT")
+            quantity = int(data.get("quantity", 1))
+
+            inst = self._resolve_futures(instrument)
+            result = {"success": False, "instrument": inst, "mode": mode, "message": ""}
+
+            # ── Step 1: Fetch candles for direction detection ─────────────────────
+            candles = []
+            broker = next((b for b in self.brokers.values() if b.is_connected()), None)
+            if broker:
+                try:
+                    to_ts = int(_dt.now().timestamp())
+                    from_ts = to_ts - (300 * 15 * 60)
+                    candles = broker.get_candles(inst, "15m", from_ts, to_ts)
+                except Exception as e:
+                    logger.debug(f"[hit_trade] broker candle error: {e}")
+            if not candles:
+                candles = self._fetch_yahoo_candles(inst)
+
+            if len(candles) < 5:
+                result["message"] = f"Not enough candle data for {inst}"
+                await ws.send(json.dumps({"type": "notification", **result}))
+                return
+
+            # ── Step 2: Auto-detect direction ────────────────────────────────────
+            # Use last 20 candles to find swing high/low
+            lookback = min(20, len(candles))
+            recent = candles[-lookback:]
+            highs = [c.high for c in recent]
+            lows  = [c.low  for c in recent]
+            swing_high = max(highs)
+            swing_low  = min(lows)
+            current_close = candles[-1].close
+
+            # Direction: LONG if breaking above swing high, SHORT if below swing low
+            direction = None
+            if current_close > swing_high:
+                direction = "LONG"
+            elif current_close < swing_low:
+                direction = "SHORT"
+
+            if not direction:
+                result["message"] = f"No hit — {inst} in range (H:₹{swing_high:.0f} L:₹{swing_low:.0f} C:₹{current_close:.0f})"
+                await ws.send(json.dumps({"type": "notification", **result}))
+                return
+
+            # ── Step 3: Get entry price (LTP) ───────────────────────────────────
+            entry_price = current_close  # MARKET order — use current LTP
+
+            # ── Step 4: Execute trade ───────────────────────────────────────────
+            sig_type = SignalType.LONG_ENTRY if direction == "LONG" else SignalType.SHORT_ENTRY
+
+            if mode == "PAPER":
+                sig = Signal(
+                    type=sig_type,
+                    instrument=inst,
+                    strategy_name=strat_name,
+                    price=entry_price,
+                    stop_loss=None,
+                    quantity=quantity,
+                    reason=f"HIT auto-entry: {direction} @ ₹{entry_price:.2f}",
+                )
+                trade = self.paper.enter(sig)
+                if trade:
+                    self._positions[inst] = {
+                        "side": trade.direction, "entry_price": trade.entry_price,
+                        "entry_condition": sig.reason, "entry_time": trade.entry_date,
+                        "qty": trade.quantity, "sl_mode": "auto", "sl_pct": 3.0,
+                        "sl_manual_type": "price", "sl_manual_pct": None,
+                        "sl_manual_price": None,
+                        "current_sl": entry_price * (0.97 if direction == "LONG" else 1.03),
+                        "be_pct": 2.5, "pyramiding_mode": "auto", "pyramiding_on": False,
+                        "pyramiding_lots": 1, "exit_mode": "auto",
+                        "exit_manual_type": "price", "exit_manual_val": 0,
+                        "rollover": True, "realized_pnl": 0.0, "be_done": False, "pyramids": 0,
+                    }
+                    result["success"] = True
+                    result["message"] = f"PAPER {direction} {inst} @ ₹{entry_price:.2f}"
+                    result["trade_id"] = trade.trade_id
+                    self._push_trade_event("ENTRY", sig, trade.trade_id)
+                else:
+                    result["message"] = f"PAPER entry failed — position already open for {inst}"
+            else:
+                broker = next((b for b in self.brokers.values() if b.is_connected()), None)
+                if not broker:
+                    result["message"] = "No broker connected for LIVE trading"
+                else:
+                    try:
+                        order = broker.place_order(
+                            instrument=inst,
+                            side=OrderSide.BUY if direction == "LONG" else OrderSide.SELL,
+                            quantity=quantity,
+                            order_type=OrderType.MARKET,
+                        )
+                        fill_price = order.average_price or entry_price
+                        self._add_live_trade({
+                            "trade_id": order.order_id,
+                            "instrument": inst, "segment": self._infer_segment(inst),
+                            "direction": direction,
+                            "entry_date": _dt.now().isoformat(),
+                            "entry_price": fill_price,
+                            "exit_price": None, "quantity": quantity,
+                            "pnl": None,
+                            "reason": f"HIT auto-entry: {direction} by {strat_name}",
+                            "status": "OPEN", "sl": None,
+                        })
+                        result["success"] = True
+                        result["message"] = f"LIVE {direction} {inst} @ ₹{fill_price:.2f}"
+                        self._push_trade_event("ENTRY", Signal(type=sig_type, instrument=inst,
+                            strategy_name=strat_name, price=fill_price, stop_loss=None,
+                            quantity=quantity, reason=f"HIT {direction}"), order.order_id)
+                    except Exception as e:
+                        result["message"] = f"Order error: {str(e)}"
+
+            await self.broadcast_state()
+            await ws.send(json.dumps({"type": "notification", **result}))
+
+        elif cmd == "exit_trade":
+            # Exit a specific live or paper trade
+            trade_id = data.get("trade_id", "")
+            mode = data.get("mode", "PAPER")
+            instrument = data.get("instrument", "")
+
+            result = {"success": False, "message": ""}
+            if mode == "PAPER":
+                t = self.paper.exit(reason="manual_exit")
+                if t:
+                    result["success"] = True
+                    result["message"] = f"PAPER exit: {t.instrument} | P&L: ₹{t.pnl:.2f}"
+            else:
+                broker = None
+                for bname, b in self.brokers.items():
+                    if b.is_connected(): broker = b; break
+                if broker:
+                    try:
+                        order = broker.close_position(instrument)
+                        result["success"] = True
+                        result["message"] = f"LIVE exit: {order.order_id} | Status: {order.status.value}"
+                    except Exception as e:
+                        result["message"] = f"Exit error: {str(e)}"
+                else:
+                    result["message"] = "No broker connected"
+
+            await self.broadcast_state()
+            await ws.send(json.dumps({"type": "notification", **result}))
+
+        elif cmd == "sync_watchlist":
+            # Dashboard sends full watchlist; DASHBOARD is source of truth
+            # Engine replaces its internal watchlist with whatever dashboard sends
+            incoming = data.get("instruments", [])
+
+            # Remove instruments no longer in dashboard's list
+            for inst in list(self._watchlist.keys()):
+                if inst not in incoming:
+                    self._remove_strategy(inst)
+                    del self._watchlist[inst]
+
+            # Keep existing instruments, add new ones from dashboard
+            for inst in incoming:
+                if inst not in self._watchlist:
+                    self._apply_strategy(inst, "SAR_TOP_BOTTOM", {})
+                    self._watchlist[inst] = {
+                        "strategy":        "SAR_TOP_BOTTOM",
+                        "strategy_params":  {},
+                    }
+
+            self._save_watchlist()
+            await self.broadcast_state()
+
         elif cmd == "connect_broker":
             name = data.get("broker", "")
             ok   = self.connect_broker(name)
@@ -892,6 +1424,23 @@ class TradingEngine:
                 "message": f"{name} {'connected' if ok else 'failed'}",
                 "success": ok,
             }))
+
+        elif cmd == "disconnect_broker":
+            name = data.get("broker", "")
+            if name in self.brokers:
+                self.brokers[name].disconnect()
+                await self.broadcast_state()
+                await ws.send(json.dumps({
+                    "type": "notification",
+                    "message": f"{name} disconnected",
+                    "success": True,
+                }))
+            else:
+                await ws.send(json.dumps({
+                    "type": "notification",
+                    "message": f"Unknown broker: {name}",
+                    "success": False,
+                }))
 
         elif cmd == "set_mode":
             self.mode = data.get("mode", self.mode)
@@ -954,15 +1503,30 @@ class TradingEngine:
 
             # ── Resolve strategy type ──────────────────────────────────────────
             SAR_STRATS = {
-                "CASH-TOPBTM", "FUTURE-TOPBTM", "DISC-GFS", "DISC-ADV",
+                "TOPBTM", "CASH-TOPBTM", "FUTURE-TOPBTM", "DISC-GFS", "DISC-ADV",
                 "DISC-PRD", "DISC-DIV", "DISC-DIVP"
             }
+            TB2_STRATS = {"TOPBTM2", "CASH-TOPBTM2", "FUTURE-TOPBTM2"}
             CUP_STRATS = {"CASH-CUP", "FUTURE-CUP"}
+            # CASH-RSI: recognized but rules not yet defined — logged, acknowledged
+            RSI_STRATS = {"CASH-RSI", "FUTURE-RSI"}
             strategy_type = "SAR_TOP_BOTTOM"
             if strat_key in SAR_STRATS:
                 strategy_type = "SAR_TOP_BOTTOM"
+            elif strat_key in TB2_STRATS:
+                strategy_type = "TOP_BOTTOM_2"
             elif strat_key in CUP_STRATS:
                 strategy_type = "CUP_STRATEGY"
+            elif strat_key in RSI_STRATS:
+                strategy_type = "RSI_STRATEGY"
+            elif strat_key.startswith("CASH-") or strat_key.startswith("FUTURE-"):
+                logger.warning(f"[apply_strategy] Unknown strategy '{strat_key}' — ignored")
+                await ws.send(json.dumps({
+                    "type": "error",
+                    "message": f"Strategy '{strat_name}' is not yet available. Coming soon!",
+                    "success": False,
+                }))
+                return
 
             # ── Build strategy params ─────────────────────────────────────────
             direction_map = {
@@ -980,18 +1544,17 @@ class TradingEngine:
                 "trend_filter":    False,
                 "enabled":         True,
                 "lot_size":        lot_size,
-                "strategy_name":   strat_name,
+                "strategy_name":   "Top Bottom-1" if strategy_type == "SAR_TOP_BOTTOM" else ("Top Bottom-2" if strategy_type == "TOP_BOTTOM_2" else strat_name),
             }
 
             # ── Create and register strategy for EACH instrument ───────────────
+            # Force-replace: user's explicit strategy selection ALWAYS wins over
+            # the auto-applied SAR_TOP_BOTTOM from sync_watchlist
             loaded = []
             skipped = []
             for inst in instruments:
                 inst = inst.strip()
                 if not inst:
-                    continue
-                if inst in self.strategies:
-                    skipped.append(inst)
                     continue
 
                 if strategy_type == "SAR_TOP_BOTTOM":
@@ -1007,8 +1570,33 @@ class TradingEngine:
                         "broker_name":  "MSTOCK",
                         "enabled":      True,
                     }
-                    logger.info(f"[DASHBOARD] SAR Top-Bottom strategy loaded for {inst}")
+                    # Keep in-memory registry in sync
+                    self._watchlist[inst] = {"strategy": "SAR_TOP_BOTTOM", "strategy_params": strat_params}
+                    logger.info(f"[DASHBOARD] Top Bottom-1 strategy loaded for {inst}")
                     loaded.append(inst)
+
+                elif strategy_type == "TOP_BOTTOM_2":
+                    strat = TopBottom2Strategy(inst, strat_params)
+                    self.strategies[inst] = {
+                        "strategy":      strat,
+                        "config": {
+                            "strategy":         "TOP_BOTTOM_2",
+                            "strategy_params":  strat_params,
+                            "broker":          "MSTOCK",
+                            "data_source":     "yahoo",
+                        },
+                        "broker_name":  "MSTOCK",
+                        "enabled":      True,
+                    }
+                    # Keep in-memory registry in sync
+                    self._watchlist[inst] = {"strategy": "TOP_BOTTOM_2", "strategy_params": strat_params}
+                    logger.info(f"[DASHBOARD] Top Bottom-2 strategy loaded for {inst}")
+                    loaded.append(inst)
+
+                elif strategy_type == "RSI_STRATEGY":
+                    # RSI rules not yet defined — acknowledge but don't create strategy
+                    logger.info(f"[DASHBOARD] RSI strategy acknowledged for {inst} — rules coming soon")
+                    skipped.append(inst)
 
             # ── Update paper engine settings ───────────────────────────────────
             self.paper.lot_size    = lot_size
@@ -1018,9 +1606,12 @@ class TradingEngine:
 
             await self.broadcast_state()
             self._save_watchlist()
-            msg = f"'{strat_name}' applied on {len(loaded)} instrument(s)!"
-            if skipped:
-                msg += f" ({len(skipped)} already existed - skipped)"
+            if strategy_type == "RSI_STRATEGY":
+                msg = f"'{strat_name}' — rules coming soon! You'll be the first to know."
+            else:
+                msg = f"'{strat_name}' applied on {len(loaded)} instrument(s)!"
+                if skipped:
+                    msg += f" ({len(skipped)} already existed - skipped)"
             await ws.send(json.dumps({
                 "type":    "notification",
                 "message": msg,
@@ -1031,20 +1622,16 @@ class TradingEngine:
             inst = data.get("instrument", "")
             if inst in self.strategies:
                 del self.strategies[inst]
-                logger.info(f"[DASHBOARD] Removed strategy for {inst}")
-                self._save_watchlist()
-                await self.broadcast_state()
-                await ws.send(json.dumps({
-                    "type":    "notification",
-                    "message": f"Removed {inst} from watchlist",
-                    "success": True,
-                }))
-            else:
-                await ws.send(json.dumps({
-                    "type":    "error",
-                    "message": f"Instrument {inst} not found in watchlist",
-                    "success": False,
-                }))
+            if inst in self._watchlist:
+                del self._watchlist[inst]
+            logger.info(f"[DASHBOARD] Removed strategy for {inst}")
+            self._save_watchlist()
+            await self.broadcast_state()
+            await ws.send(json.dumps({
+                "type":    "notification",
+                "message": f"Removed {inst} from watchlist",
+                "success": True,
+            }))
 
         elif cmd == "add_to_watchlist":
             """
@@ -1079,7 +1666,7 @@ class TradingEngine:
                 "trend_filter":    False,
                 "enabled":         True,
                 "lot_size":        self.paper.lot_size,
-                "strategy_name":   "SAR Top-Bottom",
+                "strategy_name":   "Top Bottom-1",
             }
             strat = SARTopBottomStrategy(inst, strat_params)
             self.strategies[inst] = {
