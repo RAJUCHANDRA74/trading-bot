@@ -1216,6 +1216,25 @@ function updateAll(state){
   updateTrades(state.trades||[]);
   window._allTrades=state.trades||[];
   updateSignals(state.signals||[],prevSignalCount);
+  // Sync WATCHLISTS from engine state — engine is source of truth for watchlist data
+  // This ensures watchlist instruments have live LTP from the engine's quote cache
+  if(state.watchlist_data){
+    const wd = state.watchlist_data;
+    // Merge engine watchlist into local WATCHLISTS (engine has base symbols as keys)
+    Object.entries(wd).forEach(([inst, data])=>{
+      const cat = data.strategy?.startsWith('SEC_') ? 'FUTURE' : (data.strategy?.category || 'CASH');
+      if(!WATCHLISTS[cat]) WATCHLISTS[cat]=[];
+      if(!WATCHLISTS[cat].find(x=>x.inst===inst)){
+        WATCHLISTS[cat].push({
+          inst,
+          sysId: data.strategy || cat,
+          mode: 'PAPER',
+          entryPrice: '',
+          sl: ''
+        });
+      }
+    });
+  }
   refreshAllChips();
   renderAllWatchlists();
   // Render Live & Paper trades

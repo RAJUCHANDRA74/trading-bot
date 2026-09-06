@@ -62,6 +62,15 @@ class MStockBroker(AbstractBroker):
         self._connected: bool = False
         self._lock: threading.Lock = threading.Lock()
 
+        # ── Live Quote Streaming ──────────────────────────────────────────────
+        self._instruments_cache: List[dict] = []        # All NFO/NSE instruments
+        self._token_map: dict = {}                      # "SYMBOL:EXPIRY" → token (for futures)
+        self._cash_token_map: dict = {}                 # "SYMBOL" → token (for NSE cash)
+        self._live_quotes: dict = {}                    # symbol → {ltp, timestamp}
+        self._poll_thread: Optional[threading.Thread] = None
+        self._poll_running: bool = False
+        self._poll_interval: int = 5                    # seconds
+
     # ── Properties ────────────────────────────────────────────────────────────
 
     @property
@@ -128,6 +137,10 @@ class MStockBroker(AbstractBroker):
             self._client.set_access_token(jwt)
             self._connected = True
             logger.info("M-Stock connected successfully!")
+
+            # Build instrument → token cache for live quote streaming
+            self._fetch_instruments()
+
             return True
 
         except ImportError as e:
@@ -138,6 +151,7 @@ class MStockBroker(AbstractBroker):
             return False
 
     def disconnect(self):
+        self.stop_streaming()
         with self._lock:
             if self._client:
                 try:
@@ -148,7 +162,250 @@ class MStockBroker(AbstractBroker):
             self._client = None
         logger.info("M-Stock disconnected")
 
-    # ── Helpers ──────────────────────────────────────────────────────────────
+    # ═══════════════════════════════════════════════════════════════════════════
+    #  LIVE QUOTE STREAMING  (REST polling — M-Stock has no WebSocket feed)
+    # ═══════════════════════════════════════════════════════════════════════════
+
+    def _fetch_instruments(self):
+        """
+        Fetch all instruments once on connect and build the token cache.
+        Builds two maps:
+          _cash_token_map:  "RELIANCE" → token (NSE equity)
+          _token_map:        "ASHOKLEY:29Sep2026" → token (NFO futures)
+        """
+        try:
+            resp = self._client.get_instruments()
+            instruments = resp.json()
+            if not isinstance(instruments, list):
+                logger.warning(f"[MStock] get_instruments returned {type(instruments)}, skipping cache")
+                return
+
+            self._instruments_cache = instruments
+
+            for inst in instruments:
+                sym   = inst.get("symbol", "").strip().upper()
+                token = inst.get("token", "")
+                seg   = inst.get("exch_seg", "")
+                inst_type = inst.get("instrumenttype", "")
+                expiry = inst.get("expiry", "").strip()
+
+                if not sym or not token:
+                    continue
+
+                if seg == "NSE" and inst_type in ("EQ", "SM"):
+                    # Cash equity
+                    self._cash_token_map[sym] = token
+
+                elif seg == "NFO" and expiry:
+                    # NFO: store by symbol+expiry+type to distinguish FUT from OPT
+                    # For options: include strike so different strikes get unique keys
+                    strike = inst.get("strike", "").strip()
+                    if inst_type in ("OPTSTK", "OPTIDX") and strike:
+                        key = f"{sym}:{expiry}:{strike}:{inst_type}"
+                    else:
+                        key = f"{sym}:{expiry}:{inst_type}"
+                    self._token_map[key] = token
+
+            logger.info(f"[MStock] Instrument cache built: {len(self._cash_token_map)} cash, "
+                        f"{len(self._token_map)} NFO entries")
+
+        except Exception as e:
+            logger.warning(f"[MStock] Failed to fetch instruments: {e}")
+
+    # ── Token resolution ──────────────────────────────────────────────────────
+
+    def _resolve_token(self, instrument: str) -> tuple:
+        """
+        Resolve an instrument name to (exchange, token).
+        Returns ("", "") if not found.
+
+        Handles:
+          - NFO futures: "ASHOKLEYSEP26FUT" → FUTSTK/FUTIDX token by expiry
+          - NFO options:  "ASHOKLEYSEP26150CE" → OPTSTK token by strike
+          - Cash equities: "RELIANCE" → NSE token
+          - Index futures: "BANKNIFTY" → latest NFO expiry
+        """
+        inst = instrument.strip().upper()
+
+        # Direct key lookup (exact match)
+        if inst in self._token_map:
+            return ("NFO", self._token_map[inst])
+        if inst in self._cash_token_map:
+            return ("NSE", self._cash_token_map[inst])
+
+        # Strip common suffixes to get base symbol and extract strike/ce-pe
+        # e.g. ASHOKLEYSEP26FUT → ASHOKLEY, BANKNIFTYSEP26FUT → BANKNIFTY
+        base = inst
+        for suffix in ["FUT", "FUTURES"]:
+            base = base.replace(suffix, "")
+        for m in ["SEP26", "OCT26", "NOV26", "DEC26"]:
+            base = base.replace(m, "")
+
+        # Determine what type to look for based on original instrument name
+        want_types = None
+        if "FUT" in inst.upper():
+            want_types = {"FUTIDX", "FUTSTK"}
+        elif "CE" in inst.upper() or "PE" in inst.upper():
+            want_types = {"OPTSTK", "OPTIDX"}
+
+        # For options: try to extract strike from the remaining string
+        # e.g. ASHOKLEY150CE → base=ASHOKLEY, strike=150
+        # After stripping SEP26/OCT26/etc., the remaining digits before CE/PE = strike
+        strike = None
+        if want_types and (inst.endswith("CE") or inst.endswith("PE")):
+            # Try to find numeric digits before CE/PE
+            import re
+            m = re.search(r'(\d+)(CE|PE)$', base)
+            if m:
+                strike = m.group(1)
+                base = base[:m.start()]  # Remove "150CE" from base
+
+        # Find matching entries for this base symbol
+        from datetime import datetime
+        matching = []
+        for key, token in self._token_map.items():
+            parts = key.split(":")
+            key_base = parts[0]
+            key_expiry = parts[1] if len(parts) > 1 else ""
+            key_type = parts[-1]  # Last part is always type
+            if key_base != base:
+                continue
+            if want_types and key_type not in want_types:
+                continue
+            # For options, also check strike match
+            if want_types and strike:
+                key_strike = parts[2] if len(parts) == 4 else None
+                if key_strike != strike:
+                    continue
+            try:
+                exp_dt = datetime.strptime(key_expiry, "%d%b%Y")
+            except Exception:
+                exp_dt = datetime.max
+            matching.append((exp_dt, key, token))
+
+        if matching:
+            # Sort by expiry date — pick earliest (current month)
+            matching.sort(key=lambda x: x[0])
+            _, _, token = matching[0]
+            return ("NFO", token)
+
+        # Cash lookup (fallback)
+        if base in self._cash_token_map:
+            return ("NSE", self._cash_token_map[base])
+
+        return ("", "")
+
+    # ── Quote polling ─────────────────────────────────────────────────────────
+
+    def _poll_live_quotes(self):
+        """Background thread: polls get_market_quote every _poll_interval seconds."""
+        while self._poll_running:
+            try:
+                if not self._live_quotes:
+                    time.sleep(self._poll_interval)
+                    continue
+
+                # Group by exchange
+                nfo_tokens, nse_tokens = [], []
+                symbol_to_key = {}
+                for sym in self._live_quotes:
+                    exch, token = self._resolve_token(sym)
+                    if exch == "NFO" and token:
+                        nfo_tokens.append(token)
+                        symbol_to_key[token] = sym
+                    elif exch == "NSE" and token:
+                        nse_tokens.append(token)
+                        symbol_to_key[token] = sym
+
+                fetched = []
+                if nfo_tokens:
+                    try:
+                        resp = self._client.get_market_quote("LTP", {"NFO": nfo_tokens[:100]})
+                        data = resp.json()
+                        for item in (data.get("data", {}).get("fetched", []) if isinstance(data, dict) else []):
+                            token = item.get("symbolToken", "")
+                            sym = symbol_to_key.get(token)
+                            if sym and item.get("ltp", 0) > 0:
+                                self._live_quotes[sym] = {
+                                    "last_price": float(item["ltp"]),
+                                    "bid": float(item["ltp"]),
+                                    "ask": float(item["ltp"]),
+                                    "volume": 0,
+                                    "timestamp": int(time.time()),
+                                }
+                                fetched.append(sym)
+                    except Exception as e:
+                        logger.debug(f"[MStock] NFO quote poll error: {e}")
+
+                if nse_tokens:
+                    try:
+                        resp = self._client.get_market_quote("LTP", {"NSE": nse_tokens[:100]})
+                        data = resp.json()
+                        for item in (data.get("data", {}).get("fetched", []) if isinstance(data, dict) else []):
+                            token = item.get("symbolToken", "")
+                            sym = symbol_to_key.get(token)
+                            if sym and item.get("ltp", 0) > 0:
+                                self._live_quotes[sym] = {
+                                    "last_price": float(item["ltp"]),
+                                    "bid": float(item["ltp"]),
+                                    "ask": float(item["ltp"]),
+                                    "volume": 0,
+                                    "timestamp": int(time.time()),
+                                }
+                                fetched.append(sym)
+                    except Exception as e:
+                        logger.debug(f"[MStock] NSE quote poll error: {e}")
+
+                if fetched:
+                    logger.debug(f"[MStock] Live quotes updated: {', '.join(fetched[:5])}")
+
+            except Exception as e:
+                logger.warning(f"[MStock] Quote poll error: {e}")
+
+            time.sleep(self._poll_interval)
+
+    def subscribe(self, instruments: List[str]):
+        """
+        Register instruments for live quote streaming.
+        Starts background polling if not already running.
+        """
+        for inst in instruments:
+            inst_upper = inst.strip().upper()
+            if inst_upper not in self._live_quotes:
+                self._live_quotes[inst_upper] = {
+                    "last_price": 0.0, "bid": 0.0, "ask": 0.0,
+                    "volume": 0, "timestamp": 0,
+                }
+
+        if self._poll_thread is None or not self._poll_thread.is_alive():
+            self._poll_running = True
+            self._poll_thread = threading.Thread(target=self._poll_live_quotes, daemon=True)
+            self._poll_thread.start()
+            logger.info(f"[MStock] Live quote streaming started for {len(instruments)} instruments")
+
+    def unsubscribe(self, instruments: List[str]):
+        """Remove instruments from live quote streaming."""
+        for inst in instruments:
+            self._live_quotes.pop(inst.strip().upper(), None)
+
+    def stop_streaming(self):
+        """Stop the polling thread."""
+        self._poll_running = False
+        if self._poll_thread and self._poll_thread.is_alive():
+            self._poll_thread.join(timeout=5)
+        self._poll_thread = None
+
+    def get_live_quote(self, instrument: str) -> Optional[dict]:
+        """
+        Get the latest cached LTP for an instrument.
+        Returns dict with last_price, bid, ask, volume, timestamp or None.
+        """
+        inst = instrument.strip().upper()
+        return self._live_quotes.get(inst)
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    #  HELPERS & OVERRIDDEN BROKER METHODS
+    # ═══════════════════════════════════════════════════════════════════════════
 
     @staticmethod
     def _get_json(resp) -> dict:
@@ -201,25 +458,68 @@ class MStockBroker(AbstractBroker):
         )
 
     def get_nfo_instruments(self) -> List[str]:
-        """Return list of available NFO futures/option symbols."""
+        """
+        Return list of available NFO futures symbols.
+        Format matches engine's _resolve_futures expectation:
+          Index futures: NIFTY → NIFTYSEPFUT26
+          Stock futures: ASHOKLEY → ASHOKLEYSEPFUT26
+        The engine extracts month+year from this format.
+        """
         if not self._connected or self._client is None:
             return []
+
+        # Use cache if already built
+        if self._instruments_cache:
+            return self._build_nfo_futures_list(self._instruments_cache)
+
+        # Fallback: fetch directly
         try:
             resp = self._client.get_instruments()
-            data = self._get_json(resp)
-            if not data.get("status"):
+            data = resp.json()
+            if not isinstance(data, list):
                 return []
-            symbols = []
-            for item in data.get("data", []) or []:
-                sym = item.get("symbol", "") or item.get("tradingsymbol", "")
-                exch = item.get("exchange", "")
-                if exch in ("NFO", "2") and sym:
-                    symbols.append(sym)
-            logger.info(f"M-Stock NFO instruments: {len(symbols)} symbols")
-            return list(set(symbols))
+            result = self._build_nfo_futures_list(data)
+            logger.info(f"[MStock] NFO futures: {len(result)} unique symbols")
+            return result
         except Exception as e:
             logger.error(f"get_nfo_instruments error: {e}")
             return []
+
+    def _build_nfo_futures_list(self, instruments: List[dict]) -> List[str]:
+        """Build futures symbol list from raw instrument data.
+        Format matches engine's _resolve_futures:
+          Index futures:  NIFTY → "NIFTY26SEPFUT"  (yr+month+FUT)
+          Stock futures: ASHOKLEY → "ASHOKLEYSEPFUT26" (month+FUT+yr)
+        Uses instrumenttype="FUTIDX" to identify true index futures.
+        """
+        # Map M-Stock's internal symbol names to the names used by engine
+        INDEX_SYM_MAP = {
+            "NIFTY": "NIFTY", "NIFTYFPI": "FINNIFTY",
+            "MIDCPNIFTY": "MIDCPNIFTY", "SENSEX": "SENSEX",
+            # Note: BANKNIFTY uses symbol "BANKNIFTY" directly
+        }
+        symbols = []
+        for item in instruments:
+            sym = item.get("symbol", "").strip().upper()
+            inst_type = item.get("instrumenttype", "")
+            expiry = item.get("expiry", "").strip()
+            seg = item.get("exch_seg", "")
+            if seg != "NFO" or not sym or not expiry:
+                continue
+            if inst_type == "FUTIDX":
+                # True index futures (NIFTY, BANKNIFTY, FINNIFTY, etc.)
+                eng_name = INDEX_SYM_MAP.get(sym, sym)  # NIFTYFPI → FINNIFTY
+                month = expiry[2:5]   # "Sep" from "29Sep2026"
+                yr = expiry[-2:]      # "26" from "29Sep2026"
+                name = f"{eng_name}{yr}{month}FUT"
+                symbols.append(name)
+            elif inst_type == "FUTSTK":
+                # Stock futures
+                month = expiry[2:5]   # "Sep" from "29Sep2026"
+                yr = expiry[-2:]      # "26" from "29Sep2026"
+                name = f"{sym}{month}FUT{yr}"
+                symbols.append(name)
+        return list(set(symbols))
 
     # ── Positions ───────────────────────────────────────────────────────────
 
@@ -261,38 +561,50 @@ class MStockBroker(AbstractBroker):
     # ── Quotes ───────────────────────────────────────────────────────────────
 
     def get_quote(self, instrument: str) -> Quote:
-        """Fetch LTP for an instrument via intraday_chart (last candle close)."""
+        """
+        Fetch LTP — first from live quote cache, then via get_market_quote REST API.
+        """
         if not self._connected or self._client is None:
             return self._dummy_quote(instrument, "Not connected")
 
-        # Try NFO first (futures/options), then NSE (cash)
-        for exchange in ["NFO", "NSE"]:
-            try:
-                exch_code = self._resolve_exchange(exchange)
-                resp = self._client.get_intraday_chart(
-                    _exchange=exch_code,
-                    _symboltoken=instrument,
-                    _interval="ONE_MINUTE",
-                )
-                cdata = self._get_json(resp)
-                if cdata.get("status") and cdata.get("data"):
-                    rows = cdata["data"].get("candles", []) or cdata["data"]
-                    if rows and isinstance(rows, list) and len(rows) > 0:
-                        last = rows[-1]
-                        if isinstance(last, list) and len(last) >= 5:
-                            ltp = float(last[4])  # close price
-                            return Quote(
-                                instrument=instrument,
-                                last_price=ltp,
-                                bid=ltp,
-                                ask=ltp,
-                                volume=0,
-                                timestamp=int(time.time()),
-                            )
-            except Exception:
-                continue
+        inst = instrument.strip().upper()
 
-        return self._dummy_quote(instrument, "No quote available")
+        # 1. Try live quote cache (fastest — updated every 5 seconds)
+        live = self._live_quotes.get(inst)
+        if live and live.get("last_price", 0) > 0:
+            return Quote(
+                instrument=inst,
+                last_price=live["last_price"],
+                bid=live["bid"],
+                ask=live["ask"],
+                volume=live.get("volume", 0),
+                timestamp=live.get("timestamp", int(time.time())),
+            )
+
+        # 2. Fall back: resolve token and call get_market_quote directly
+        exch, token = self._resolve_token(inst)
+        if not exch or not token:
+            return self._dummy_quote(inst, f"No token for {inst}")
+
+        try:
+            resp = self._client.get_market_quote("LTP", {exch: [token]})
+            data = resp.json()
+            if data.get("status"):
+                for item in data.get("data", {}).get("fetched", []):
+                    ltp = float(item.get("ltp", 0))
+                    if ltp > 0:
+                        return Quote(
+                            instrument=inst,
+                            last_price=ltp,
+                            bid=ltp,
+                            ask=ltp,
+                            volume=0,
+                            timestamp=int(time.time()),
+                        )
+        except Exception as e:
+            logger.debug(f"[MStock] get_quote {inst} error: {e}")
+
+        return self._dummy_quote(inst, "No quote available")
 
     def _dummy_quote(self, instrument: str, reason: str) -> Quote:
         return Quote(
@@ -312,58 +624,62 @@ class MStockBroker(AbstractBroker):
             return []
 
         interval_key = _INTERVAL_MAP.get(interval, "FIFTEEN_MINUTE")
+        inst = instrument.strip().upper()
 
-        # Try NFO first, then NSE
-        for exchange in ["NFO", "NSE"]:
-            try:
-                exch_code = self._resolve_exchange(exchange)
-                resp = self._client.get_intraday_chart(
-                    _exchange=exch_code,
-                    _symboltoken=instrument,
-                    _interval=interval_key,
-                )
-                cdata = self._get_json(resp)
-                if not cdata.get("status"):
-                    continue
+        # Resolve token — get_market_quote and get_intraday_chart need numeric tokens
+        exch, token = self._resolve_token(inst)
+        if not exch or not token:
+            return []
 
-                rows = cdata.get("data", {}).get("candles", []) or cdata.get("data", [])
-                candles = []
+        try:
+            exch_code = self._resolve_exchange(exch)
+            resp = self._client.get_intraday_chart(
+                _exchange=exch_code,
+                _symboltoken=token,
+                _interval=interval_key,
+            )
+            cdata = self._get_json(resp)
+            if not cdata.get("status"):
+                return []
 
-                for row in rows:
-                    if isinstance(row, list) and len(row) >= 5:
-                        ts_str = row[0]
-                        o = float(row[1])
-                        h = float(row[2])
-                        l = float(row[3])
-                        c = float(row[4])
-                        v = int(row[5]) if len(row) > 5 else 0
+            rows = cdata.get("data", {}).get("candles", []) or cdata.get("data", []) or []
 
-                        # Parse timestamp — M-Stock returns IST naive datetime
-                        try:
-                            from datetime import datetime, timezone, timedelta
-                            IST = timezone(timedelta(hours=5, minutes=30))
-                            dt = datetime.strptime(ts_str, "%Y-%m-%d %H:%M").replace(tzinfo=IST)
-                            ts = int(dt.timestamp())
-                        except Exception:
-                            ts = int(time.time())
+            from datetime import datetime, timezone, timedelta
+            IST = timezone(timedelta(hours=5, minutes=30))
 
-                        # Filter by time window
-                        if from_ts <= ts <= to_ts:
-                            candles.append(OHLC(
-                                timestamp=ts,
-                                open=o, high=h, low=l, close=c,
-                                volume=v,
-                            ))
+            candles = []
+            for row in rows:
+                if isinstance(row, list) and len(row) >= 5:
+                    ts_str = row[0]
+                    o = float(row[1])
+                    h = float(row[2])
+                    l = float(row[3])
+                    c = float(row[4])
+                    v = int(row[5]) if len(row) > 5 else 0
 
-                if candles:
-                    logger.info(f"M-Stock candles for {instrument} on {exchange}: {len(candles)} bars")
-                    return candles
+                    # Parse timestamp — M-Stock returns IST naive datetime "YYYY-MM-DD HH:MM"
+                    try:
+                        dt = datetime.strptime(ts_str, "%Y-%m-%d %H:%M").replace(tzinfo=IST)
+                        ts = int(dt.timestamp())
+                    except Exception:
+                        ts = int(time.time())
 
-            except Exception as e:
-                logger.debug(f"Candle fetch {instrument}@{exchange}: {e}")
-                continue
+                    # M-Stock intraday_chart returns last session only — no time filtering needed
+                    candles.append(OHLC(
+                        timestamp=ts,
+                        open=o, high=h, low=l, close=c,
+                        volume=v,
+                    ))
 
-        logger.warning(f"No M-Stock candles for {instrument}")
+            if candles:
+                logger.info(f"[MStock] Candles for {inst}: {len(candles)} bars (last session)")
+
+        except Exception as e:
+            logger.debug(f"[MStock] Candle fetch error for {inst}: {e}")
+
+        if candles:
+            return candles
+        logger.warning(f"[MStock] No candles for {inst}")
         return []
 
     # ── Orders ───────────────────────────────────────────────────────────────

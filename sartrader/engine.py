@@ -195,7 +195,8 @@ class TradingEngine:
             try:
                 futures = broker.get_nfo_instruments()
                 if futures:
-                    self._available_futures = set(futures)
+                    # Store in UPPERCASE so lookups in _resolve_futures work (case-insensitive)
+                    self._available_futures = {f.upper() for f in futures}
                     logger.info(
                         f"Synced {len(self._available_futures)} NSE stock futures "
                         f"from {name} broker | Expiry: {self._current_expiry}"
@@ -205,22 +206,60 @@ class TradingEngine:
                 logger.warning(f"Failed to sync NFO instruments from {name}: {e}")
 
     def _detect_expiry(self) -> str:
-        """Detect current NSE monthly futures expiry (e.g. 'SEP26')."""
-        # NSE futures expire on last Thursday of each month
-        # Map: detect which month + year suffix
-        now = _dt.now()
-        month_map = {
-            1: "JAN", 2: "FEB", 3: "MAR", 4: "APR",
-            5: "MAY", 6: "JUN", 7: "JUL", 8: "AUG",
-            9: "SEP", 10: "OCT", 11: "NOV", 12: "DEC",
+        """
+        Detect current futures expiry in M-Stock format (e.g. '29Sep2026').
+        Extracts actual expiry date from the broker's available futures data,
+        which contains real M-Stock expiry dates.
+        Falls back to computing from calendar if no futures data is available.
+        """
+        # Extract actual expiry from the available futures list (real M-Stock data)
+        # Available futures format: "ASHOKLEYSepFUT26" (stocks) or "NIFTY26SepFUT" (indexes)
+        # The month in these names (Sep, Oct, Nov) tells us the current series
+        MStock_MONTH_MAP = {
+            "JAN": "Jan", "FEB": "Feb", "MAR": "Mar", "APR": "Apr",
+            "MAY": "May", "JUN": "Jun", "JUL": "Jul", "AUG": "Aug",
+            "SEP": "Sep", "OCT": "Oct", "NOV": "Nov", "DEC": "Dec",
         }
-        yr = str(now.year)[2:]   # e.g. "26"
-        return f"{month_map[now.month]}{yr}"
+        # M-Stock expiry day by month (based on actual NSE data)
+        # Sep 2026: 29 (Tue), Oct 2026: 30 (Thu), Nov 2026: 27 (Thu)
+        MSTOCK_EXPIRY_DAY = {
+            1: 29, 2: 26, 3: 26, 4: 29, 5: 28, 6: 25,
+            7: 29, 8: 27, 9: 29, 10: 30, 11: 27, 12: 29,
+        }
+
+        now = _dt.now()
+        yr = str(now.year)  # "2026"
+
+        # Find which month abbreviations appear in available futures
+        current_month_abbr = None
+        if self._available_futures:
+            sample = list(self._available_futures)[:200]
+            for entry in sample:
+                e = entry.upper()
+                for abbr_upper in MStock_MONTH_MAP:
+                    # Stock format: "...SepFUT..." or "...OctFUT..."
+                    if f"{abbr_upper}FUT" in e:
+                        if current_month_abbr is None or \
+                           list(MStock_MONTH_MAP.keys()).index(abbr_upper) < \
+                           list(MStock_MONTH_MAP.keys()).index(current_month_abbr.upper()[:3]):
+                            current_month_abbr = MStock_MONTH_MAP[abbr_upper]
+                        break
+
+        if current_month_abbr:
+            mon_num = [k for k, v in MStock_MONTH_MAP.items() if v == current_month_abbr][0]
+            mon_num = int(list(MStock_MONTH_MAP.keys())[list(MStock_MONTH_MAP.values()).index(current_month_abbr)])
+            day = MSTOCK_EXPIRY_DAY.get(mon_num, 28)
+            return f"{day}{current_month_abbr}{yr}"
+
+        # Fallback: use M-Stock expiry day for current month
+        mon_num = now.month
+        day = MSTOCK_EXPIRY_DAY.get(mon_num, 28)
+        return f"{day}{MStock_MONTH_MAP.get(now.strftime('%b').upper(), 'Sep')}{yr}"
 
     @property
     def current_expiry(self) -> str:
-        """Current NSE futures expiry string, e.g. 'SEP26'."""
-        return getattr(self, "_current_expiry", "SEP26")
+        """Current NSE futures expiry string in M-Stock format, e.g. '29Sep2026'."""
+        return getattr(self, "_current_expiry", "29Sep2026")
 
     def is_futures_available(self, instrument: str) -> bool:
         """Check if an instrument is in the broker's available futures list."""
@@ -257,31 +296,32 @@ class TradingEngine:
 
     def _resolve_futures(self, inst: str) -> str:
         """
-        Convert base symbol to current month futures contract.
-        e.g. 'ICICIBANK' -> 'ICICIBANKSEP26', 'NIFTY' -> 'NIFTY26SEPFUT'
+        Convert base symbol to current month futures contract (UPPERCASE).
+        Stock: 'ASHOKLEY' -> 'ASHOKLEYSEPFUT26'
+        Index: 'NIFTY'    -> 'NIFTY26SEPFUT'
+        Commodity: 'GOLD' -> 'GOLD26SEPFUT'
+        Handles M-Stock's current_expiry format (e.g. '29Sep2026').
         """
         inst_upper = inst.upper()
         exp = self.current_expiry
-        # Already a full contract
-        if any(x in inst_upper for x in ["SEP26", "OCT26", "NOV26", "DEC26",
-                                          "JAN27", "AUG26", "JUL26", "FUT"]):
-            return inst.upper()
+        exp_uc = exp.upper()  # e.g. "29SEP2026"
+        yr = exp_uc[-2:]      # "26"
+        month = exp_uc[2:5]   # "SEP"
+
+        # Already a full contract name (e.g. "ASHOKLEYSEPFUT26")
+        if "FUT" in inst_upper:
+            return inst_upper
+
         # Index futures: NIFTY -> NIFTY26SEPFUT
         for idx in self.INDEX_FUTURES:
             if inst_upper.startswith(idx):
-                yr = exp[-2:]
-                month = exp[:3]
                 return f"{idx.upper()}{yr}{month}FUT"
         # Commodity futures: GOLD -> GOLD26SEPFUT
         for c in self.COMMODITY_FUTURES:
             if inst_upper.startswith(c):
-                yr = exp[-2:]
-                month = exp[:3]
                 return f"{c.upper()}{yr}{month}FUT"
-        # Stock futures: ICICIBANK -> ICICIBANKSEP26
-        yr = exp[-2:]
-        month = exp[:3]
-        return f"{inst_upper}{month}{yr}FUT"
+        # Stock futures: ASHOKLEY -> ASHOKLEYSEPFUT26
+        return f"{inst_upper}{month}FUT{yr}"
 
     # ── Live Trade Tracking ────────────────────────────────────────────────────
 
@@ -291,15 +331,41 @@ class TradingEngine:
         logger.info(f"[LIVE] Trade recorded: {order.get('instrument')} {order.get('side')} {order.get('quantity')}lots @ {order.get('entry_price')}")
 
     def connect_broker(self, name: str) -> bool:
-        """Manually connect a broker by name."""
+        """Manually connect a broker by name (sync, runs in thread pool via asyncio.to_thread)."""
         if name not in self.brokers:
             logger.error(f"Unknown broker: {name}")
             return False
         result = self.brokers[name].connect()
         if result:
             self._sync_nfo_instruments()  # Refresh NFO list with new broker
-            self.broadcast_state()
+            # Subscribe all watchlist instruments to live quote streaming
+            all_instruments = list(self._watchlist.keys())
+            if all_instruments and hasattr(self.brokers[name], "subscribe"):
+                self.brokers[name].subscribe(all_instruments)
+                logger.info(f"[LIVE] Subscribed {len(all_instruments)} instruments for live streaming")
+            # Queue broadcast_state from the event loop thread (broadcast_state is async)
+            if self._loop and self._loop.is_running():
+                self._loop.call_soon_threadsafe(
+                    lambda: asyncio.create_task(self.broadcast_state())
+                )
         return result
+
+    def _subscribe_instruments(self, instruments: List[str]):
+        """Subscribe instruments to live quote streaming via all connected brokers.
+        Pass base symbols (e.g. "ASHOKLEY") — broker resolves to NFO token internally.
+        Live quote cache is keyed by base symbol, so base symbols must be used consistently."""
+        for broker in self.brokers.values():
+            if broker.is_connected() and hasattr(broker, "subscribe"):
+                # Pass base symbols directly — broker._poll_live_quotes resolves to tokens
+                broker.subscribe(instruments)
+                logger.info(f"[LIVE] Subscribed {len(instruments)} instruments for live streaming")
+
+    def _unsubscribe_instruments(self, instruments: List[str]):
+        """Unsubscribe instruments from live quote streaming — pass base symbols."""
+        for broker in self.brokers.values():
+            if broker.is_connected() and hasattr(broker, "unsubscribe"):
+                # Pass base symbols to match how subscribe() stored them
+                broker.unsubscribe(instruments)
 
     # ── Strategy setup ────────────────────────────────────────────────────────
 
@@ -850,9 +916,15 @@ class TradingEngine:
             broker_status[name] = status
 
         # Get live quotes — from broker, or Yahoo Finance fallback
-        # Merge config instruments + dashboard-added strategies so LTP works for all watchlist entries
+        # Merge config instruments + strategies + watchlist base symbols for live LTP on dashboard
+        # Watchlist instruments are stored with base symbol keys in _watchlist
+        watchlist_symbols = set(self._watchlist.keys())
+        all_instrument_keys = (
+            set(config.INSTRUMENTS.keys())
+            | set(self.strategies.keys())
+            | watchlist_symbols
+        )
         quotes = {}
-        all_instrument_keys = set(config.INSTRUMENTS.keys()) | set(self.strategies.keys())
         for inst_key in all_instrument_keys:
             broker = self._get_broker_for_instrument(inst_key)
             if broker and broker.is_connected():
@@ -983,6 +1055,8 @@ class TradingEngine:
             "available_futures": list(self._available_futures),
             "current_expiry":  self.current_expiry,
             "watchlist":       list(self._watchlist.keys()),
+            # Full watchlist data keyed by instrument symbol — used by dashboard for live LTP lookups
+            "watchlist_data":  {k: v for k, v in self._watchlist.items()},
         }
 
     async def handle_dashboard_message(self, data: dict, ws):
@@ -1249,12 +1323,26 @@ class TradingEngine:
             strat_name = data.get("strategy_name", "HIT")
             quantity = int(data.get("quantity", 1))
 
-            inst = self._resolve_futures(instrument)
+            # Base symbol for live quote lookups (cache is keyed by base symbol, e.g. "ASHOKLEY")
+            # Full contract for candles and trading (e.g. "ASHOKLEYSEPFUT26")
+            base_inst = instrument.strip().upper()
+            inst = self._resolve_futures(base_inst)
             result = {"success": False, "instrument": inst, "mode": mode, "message": ""}
 
-            # ── Step 1: Fetch candles for direction detection ─────────────────────
-            candles = []
+            # ── Step 1: Get live LTP first (fastest — from streaming cache) ────
+            # Live quote cache is keyed by BASE symbol, NOT full contract
             broker = next((b for b in self.brokers.values() if b.is_connected()), None)
+            live_ltp = None
+            if broker and hasattr(broker, "get_live_quote"):
+                live_q = broker.get_live_quote(base_inst)  # Use base symbol!
+                if live_q and live_q.get("last_price", 0) > 0:
+                    live_ltp = live_q["last_price"]
+                    logger.info(f"[hit_trade] {base_inst} live LTP: Rs.{live_ltp}")
+                else:
+                    logger.info(f"[hit_trade] {base_inst} live quote not in cache yet (will use candles)")
+
+            # ── Step 2: Fetch candles for swing high/low (direction detection) ───
+            candles = []
             if broker:
                 try:
                     to_ts = int(_dt.now().timestamp())
@@ -1270,7 +1358,7 @@ class TradingEngine:
                 await ws.send(json.dumps({"type": "notification", **result}))
                 return
 
-            # ── Step 2: Auto-detect direction ────────────────────────────────────
+            # ── Step 3: Auto-detect direction ────────────────────────────────────
             # Use last 20 candles to find swing high/low
             lookback = min(20, len(candles))
             recent = candles[-lookback:]
@@ -1280,20 +1368,23 @@ class TradingEngine:
             swing_low  = min(lows)
             current_close = candles[-1].close
 
+            # Use live LTP if available, otherwise current candle close
+            price_for_direction = live_ltp if live_ltp else current_close
+
             # Direction: LONG if breaking above swing high, SHORT if below swing low
             direction = None
-            if current_close > swing_high:
+            if price_for_direction > swing_high:
                 direction = "LONG"
-            elif current_close < swing_low:
+            elif price_for_direction < swing_low:
                 direction = "SHORT"
 
             if not direction:
-                result["message"] = f"No hit — {inst} in range (H:₹{swing_high:.0f} L:₹{swing_low:.0f} C:₹{current_close:.0f})"
+                result["message"] = f"No hit — {inst} in range (H:₹{swing_high:.0f} L:₹{swing_low:.0f} C:₹{price_for_direction:.0f})"
                 await ws.send(json.dumps({"type": "notification", **result}))
                 return
 
-            # ── Step 3: Get entry price (LTP) ───────────────────────────────────
-            entry_price = current_close  # MARKET order — use current LTP
+            # ── Step 4: Get entry price (LTP) ───────────────────────────────────
+            entry_price = live_ltp if live_ltp else current_close  # MARKET order — use live LTP if available
 
             # ── Step 4: Execute trade ───────────────────────────────────────────
             sig_type = SignalType.LONG_ENTRY if direction == "LONG" else SignalType.SHORT_ENTRY
@@ -1398,12 +1489,17 @@ class TradingEngine:
             incoming = data.get("instruments", [])
 
             # Remove instruments no longer in dashboard's list
+            removed = []
             for inst in list(self._watchlist.keys()):
                 if inst not in incoming:
                     self._remove_strategy(inst)
                     del self._watchlist[inst]
+                    removed.append(inst)
+            if removed:
+                self._unsubscribe_instruments(removed)
 
             # Keep existing instruments, add new ones from dashboard
+            added = []
             for inst in incoming:
                 if inst not in self._watchlist:
                     self._apply_strategy(inst, "SAR_TOP_BOTTOM", {})
@@ -1411,13 +1507,19 @@ class TradingEngine:
                         "strategy":        "SAR_TOP_BOTTOM",
                         "strategy_params":  {},
                     }
+                    added.append(inst)
+
+            # Subscribe new instruments to live quote streaming
+            if added:
+                self._subscribe_instruments(added)
 
             self._save_watchlist()
             await self.broadcast_state()
 
         elif cmd == "connect_broker":
             name = data.get("broker", "")
-            ok   = self.connect_broker(name)
+            # Run blocking broker connection in background thread to avoid blocking event loop
+            ok = await asyncio.to_thread(self.connect_broker, name)
             await self.broadcast_state()
             await ws.send(json.dumps({
                 "type": "notification",
@@ -1625,6 +1727,7 @@ class TradingEngine:
             if inst in self._watchlist:
                 del self._watchlist[inst]
             logger.info(f"[DASHBOARD] Removed strategy for {inst}")
+            self._unsubscribe_instruments([inst])
             self._save_watchlist()
             await self.broadcast_state()
             await ws.send(json.dumps({
@@ -1681,6 +1784,7 @@ class TradingEngine:
                 "enabled":     True,
             }
             logger.info(f"[DASHBOARD] Added {inst} to watchlist via Add button")
+            self._subscribe_instruments([inst])
             await self.broadcast_state()
             self._save_watchlist()
             await ws.send(json.dumps({
