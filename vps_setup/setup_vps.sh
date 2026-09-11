@@ -23,7 +23,7 @@ apt-get install -y software-properties-common -qq
 add-apt-repository -y ppa:deadsnakes/ppa 2>/dev/null || true
 apt-get update -qq
 apt-get install -y python3.12 python3.12-venv python3.12-dev python3-pip -qq
-ln -sf /usr/bin/python3.12 /usr/local/bin/python
+ln -sf /usr/bin/python3.12 /usr/local/bin/python 2>/dev/null || true
 
 # ── pip packages ─────────────────────────────────────────────────────────────
 echo "[3/8] Installing Python dependencies..."

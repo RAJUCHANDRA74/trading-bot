@@ -25,7 +25,7 @@ SyslogIdentifier=sartrader
 # MODE can be "PAPER" or "LIVE"
 # For LIVE mode, set MODE=LIVE and ensure MSTOCK_API_KEY + MSTOCK_TOTP_SECRET are in .env
 # ──────────────────────────────────────────────────────────────────────────
-ExecStart=/usr/local/bin/python -m sartrader.engine
+ExecStart=/usr/bin/python3 -m sartrader.engine --host 0.0.0.0 --port 8765
 
 # Graceful shutdown: give engine 10 seconds to close positions / persist state
 ExecStop=/bin/bash -c 'echo "SIGTERM received — stopping SARTrader..."'
