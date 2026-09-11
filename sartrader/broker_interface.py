@@ -154,6 +154,16 @@ class AbstractBroker(ABC):
         """
         ...
 
+    def get_daily_price(self, exchange: str, token: str, trading_symbol: str = "") -> List[OHLC]:
+        """
+        Fetch historical daily OHLCV for R1 top/bottom detection.
+        exchange: 'NSE' or 'NFO'
+        token: exchange token string
+        trading_symbol: display name for logging
+        Returns list of OHLC objects (newest last), up to 60 trading days.
+        """
+        return []
+
     @abstractmethod
     def place_order(self, instrument: str, side: OrderSide,
                     quantity: int, order_type: OrderType,

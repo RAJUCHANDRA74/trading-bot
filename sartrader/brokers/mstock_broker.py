@@ -12,6 +12,7 @@ Connection flow:
   3. Access token valid till midnight — re-authenticate next day
 =============================================================
 """
+import re
 import time
 import logging
 import threading
@@ -19,7 +20,7 @@ from typing import List, Optional
 
 from sartrader.broker_interface import (
     AbstractBroker, AccountInfo, Position, Quote,
-    OHLC, OrderType, OrderSide, OrderStatus, PositionSide,
+    OHLC, OrderType, OrderSide, OrderStatus, PositionSide, Order,
     register_broker,
 )
 
@@ -69,7 +70,7 @@ class MStockBroker(AbstractBroker):
         self._live_quotes: dict = {}                    # symbol → {ltp, timestamp}
         self._poll_thread: Optional[threading.Thread] = None
         self._poll_running: bool = False
-        self._poll_interval: int = 5                    # seconds
+        self._poll_interval: int = 1                    # seconds (live futures LTP)
 
     # ── Properties ────────────────────────────────────────────────────────────
 
@@ -163,7 +164,7 @@ class MStockBroker(AbstractBroker):
         logger.info("M-Stock disconnected")
 
     # ═══════════════════════════════════════════════════════════════════════════
-    #  LIVE QUOTE STREAMING  (REST polling — M-Stock has no WebSocket feed)
+    #  LIVE QUOTE STREAMING  (REST polling — 1-second interval for live futures LTP)
     # ═══════════════════════════════════════════════════════════════════════════
 
     def _fetch_instruments(self):
@@ -213,6 +214,25 @@ class MStockBroker(AbstractBroker):
             logger.warning(f"[MStock] Failed to fetch instruments: {e}")
 
     # ── Token resolution ──────────────────────────────────────────────────────
+
+    def _get_base_symbol(self, instrument: str) -> str:
+        """
+        Strip exchange-specific suffixes to get the base symbol.
+        e.g. 'M&MSEPFUT26' → 'M&M', 'BANKNIFTY26SEPFUT' → 'BANKNIFTY'
+        """
+        inst = instrument.strip().upper()
+        # Strip futures/options suffixes
+        for suffix in ["FUT", "FUTURES"]:
+            inst = inst.replace(suffix, "")
+        # Strip common expiry patterns: SEP26, OCT26, 29Sep2026, etc.
+        import re
+        inst = re.sub(r'(SEP|OCT|NOV|DEC|JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG)\s*20\d\d', '', inst)
+        inst = re.sub(r'(SEP|OCT|NOV|DEC|JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG)\d{2}(CE|PE|FUT)?', '', inst)
+        # Strip CE/PE options suffix (e.g. 150CE → handled above, but also 150CE directly)
+        inst = re.sub(r'\d+(CE|PE)$', '', inst)
+        # Strip any remaining digits
+        inst = re.sub(r'\d+$', '', inst)
+        return instrument.strip()  # Return original if stripping makes it empty
 
     def _resolve_token(self, instrument: str) -> tuple:
         """
@@ -310,13 +330,14 @@ class MStockBroker(AbstractBroker):
                 symbol_to_key = {}
                 for sym in self._live_quotes:
                     exch, token = self._resolve_token(sym)
+                    logger.debug(f"[MStock poll] {sym} -> exch={exch}, token={token}")
                     if exch == "NFO" and token:
                         nfo_tokens.append(token)
                         symbol_to_key[token] = sym
                     elif exch == "NSE" and token:
                         nse_tokens.append(token)
                         symbol_to_key[token] = sym
-
+                logger.debug(f"[MStock poll] NFO={len(nfo_tokens)} tokens, NSE={len(nse_tokens)} tokens | live_quotes={list(self._live_quotes.keys())}")
                 fetched = []
                 if nfo_tokens:
                     try:
@@ -324,42 +345,49 @@ class MStockBroker(AbstractBroker):
                         data = resp.json()
                         for item in (data.get("data", {}).get("fetched", []) if isinstance(data, dict) else []):
                             token = item.get("symbolToken", "")
-                            sym = symbol_to_key.get(token)
+                            sym = symbol_to_key.get(token)  # Full instrument name (e.g. M&MSEPFUT26)
                             if sym and item.get("ltp", 0) > 0:
-                                self._live_quotes[sym] = {
-                                    "last_price": float(item["ltp"]),
-                                    "bid": float(item["ltp"]),
-                                    "ask": float(item["ltp"]),
-                                    "volume": 0,
-                                    "timestamp": int(time.time()),
+                                price = float(item["ltp"])
+                                self._live_quotes[sym] = {  # Store under FULL contract name (NFO)
+                                    "last_price": price, "bid": price, "ask": price,
+                                    "volume": 0, "timestamp": int(time.time()),
                                 }
+                                # Also store under base symbol for non-futures instruments
+                                base = self._get_base_symbol(sym)
+                                if base != sym:
+                                    self._live_quotes[base] = {
+                                        "last_price": price, "bid": price, "ask": price,
+                                        "volume": 0, "timestamp": int(time.time()),
+                                    }
                                 fetched.append(sym)
-                    except Exception as e:
+                    except BaseException as e:  # Catch ALL (including SystemExit, DataException)
                         logger.debug(f"[MStock] NFO quote poll error: {e}")
 
                 if nse_tokens:
                     try:
                         resp = self._client.get_market_quote("LTP", {"NSE": nse_tokens[:100]})
                         data = resp.json()
-                        for item in (data.get("data", {}).get("fetched", []) if isinstance(data, dict) else []):
+                        fetched_items = data.get("data", {}).get("fetched", []) if isinstance(data, dict) else []
+                        logger.debug(f"[MStock NSE poll] tokens={nse_tokens} -> fetched={len(fetched_items)} items: {fetched_items[:2]}")
+                        for item in fetched_items:
                             token = item.get("symbolToken", "")
-                            sym = symbol_to_key.get(token)
+                            sym = symbol_to_key.get(token)  # Base symbol for NSE (equity)
+                            logger.debug(f"[MStock NSE update] token={token!r}(type={type(token).__name__}) sym_lookup={sym!r}")
                             if sym and item.get("ltp", 0) > 0:
+                                price = float(item["ltp"])
+                                # Store equity quote under base symbol only (NSE = equity)
                                 self._live_quotes[sym] = {
-                                    "last_price": float(item["ltp"]),
-                                    "bid": float(item["ltp"]),
-                                    "ask": float(item["ltp"]),
-                                    "volume": 0,
-                                    "timestamp": int(time.time()),
+                                    "last_price": price, "bid": price, "ask": price,
+                                    "volume": 0, "timestamp": int(time.time()),
                                 }
                                 fetched.append(sym)
-                    except Exception as e:
+                    except BaseException as e:  # Catch ALL (including SystemExit, DataException)
                         logger.debug(f"[MStock] NSE quote poll error: {e}")
 
                 if fetched:
                     logger.debug(f"[MStock] Live quotes updated: {', '.join(fetched[:5])}")
 
-            except Exception as e:
+            except BaseException as e:
                 logger.warning(f"[MStock] Quote poll error: {e}")
 
             time.sleep(self._poll_interval)
@@ -618,6 +646,235 @@ class MStockBroker(AbstractBroker):
 
     # ── Candles ─────────────────────────────────────────────────────────────
 
+    def _strip_expiry(self, inst: str) -> str:
+        """Strip expiry suffix from contract names for token lookup.
+        Examples:
+          'CANBKSEPFUT26'    -> 'CANBK'
+          'NIFTY26SEPFUT'    -> 'NIFTY'
+          'BANKNIFTY26SEPFUT'-> 'BANKNIFTY'
+          'ICICIBANKSEPFUT26'-> 'ICICIBANK'
+        """
+        s = inst.upper()
+        # Step 1: Remove 'FUT26', 'FUT27', 'FUT28', 'FUT29' (FUT + 2-digit year)
+        s = re.sub(r'FUT\d{2}$', '', s)
+        # Step 2: Remove 'FUT' suffix (for contracts without year suffix)
+        if s.endswith('FUT'):
+            s = s[:-3]
+        # Step 3: Remove trailing 2-digit year (26, 27, etc.)
+        s = re.sub(r'\d{2}$', '', s)
+        # Step 4: Remove month patterns (Sep26, 26Sep, Sep2026, 29Sep2026, Sep)
+        s = re.sub(r'\d{2}(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)$', '', s, flags=re.IGNORECASE)
+        s = re.sub(r'(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\d{4}$', '', s, flags=re.IGNORECASE)
+        s = re.sub(r'(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\d{2}$', '', s, flags=re.IGNORECASE)
+        s = re.sub(r'(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)$', '', s, flags=re.IGNORECASE)
+        return s.strip()
+
+    def _extract_expiry_for_nfo(self, inst: str) -> Optional[str]:
+        """
+        Extract NFO expiry string from instrument name.
+        Looks up the ACTUAL expiry from the token_map (authoritative source).
+        Falls back to computing last Thursday if not found in token map.
+        Returns e.g. '29Sep2026' or None.
+        """
+        import re, calendar
+        inst_upper = inst.upper()
+        base = self._strip_expiry(inst)
+
+        # Find matching entries in token_map for this base symbol
+        matching_keys = []
+        for key in self._token_map.keys():
+            parts = key.split(":")
+            if len(parts) >= 3 and parts[0].upper() == base.upper():
+                matching_keys.append(key)
+
+        if matching_keys:
+            # Pick the entry matching the month/year from the instrument name
+            # Extract expected month/year from instrument
+            m = re.search(r'(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(\d{2})', inst_upper)
+            if m:
+                exp_mon = m.group(1).title()  # 'Sep'
+                exp_yr = m.group(2)  # '26'
+                for key in matching_keys:
+                    parts = key.split(":")
+                    expiry_in_key = parts[1]  # e.g. '29Sep2026'
+                    # Check if month and 2-digit year match
+                    if exp_mon.lower() in expiry_in_key.lower() and exp_yr in expiry_in_key:
+                        return expiry_in_key  # Return the actual token map expiry string
+            # Fallback: return the first matching expiry (e.g. current month)
+            parts = matching_keys[0].split(":")
+            return parts[1]
+
+        # Fallback: compute last Thursday (old logic)
+        # Pattern 1: BASEMONSEPYY
+        m = re.match(r'^([A-Z]+)(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(FUT|26|27|28|29)?(\d{2})?F?$', inst_upper)
+        if m:
+            mon = m.group(2)
+            yy = m.group(4)
+            if yy:
+                year = 2000 + int(yy)
+                month_map = {'JAN':1,'FEB':2,'MAR':3,'APR':4,'MAY':5,'JUN':6,
+                             'JUL':7,'AUG':8,'SEP':9,'OCT':10,'NOV':11,'DEC':12}
+                month_num = month_map.get(mon, 9)
+                import datetime
+                last_day = calendar.monthrange(year, month_num)[1]
+                last_thursday = last_day
+                while True:
+                    dt = datetime.date(year, month_num, last_thursday)
+                    if dt.weekday() == 3:
+                        break
+                    last_thursday -= 1
+                return f"{last_thursday}{mon}{year}"
+
+        # Pattern 2: BASEYYMONFUT
+        m2 = re.match(r'^([A-Z]+)(\d{2})(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)FUT$', inst_upper)
+        if m2:
+            mon = m2.group(3)
+            yy = m2.group(2)
+            year = 2000 + int(yy)
+            month_map = {'JAN':1,'FEB':2,'MAR':3,'APR':4,'MAY':5,'JUN':6,
+                         'JUL':7,'AUG':8,'SEP':9,'OCT':10,'NOV':11,'DEC':12}
+            month_num = month_map.get(mon, 9)
+            import datetime
+            last_day = calendar.monthrange(year, month_num)[1]
+            last_thursday = last_day
+            while True:
+                dt = datetime.date(year, month_num, last_thursday)
+                if dt.weekday() == 3:
+                    break
+                last_thursday -= 1
+            return f"{last_thursday}{mon}{year}"
+
+        return None
+
+    def _find_nfo_futures_token(self, base_symbol: str, expiry_str: str,
+                                  inst_type: str = "FUTSTK") -> Optional[str]:
+        """
+        Find the NFO futures token for a base symbol + expiry.
+        token_map keys: "RELIANCE:25Sep2026:FUTSTK" or "BANKNIFTY:29Sep2026:FUTIDX"
+        inst_type: "FUTSTK" (stock futures) or "FUTIDX" (index futures).
+        Returns token string or None.
+        """
+        base_upper = base_symbol.upper()
+        expiry_upper = expiry_str.upper()
+
+        # Exact match (case-insensitive)
+        target = f"{base_upper}:{expiry_upper}:{inst_type}"
+        if target in self._token_map:
+            return self._token_map[target]
+
+        # Case-insensitive search: match base + expiry + type
+        for key, token in self._token_map.items():
+            parts = key.split(":")
+            if len(parts) >= 3 and parts[0].upper() == base_upper and parts[1].upper() == expiry_upper and parts[2] == inst_type:
+                return token
+        return None
+
+    def get_daily_price(self, exchange: str, token: str, trading_symbol: str = "") -> List[list]:
+        """
+        Fetch historical daily OHLCV from M-Stock get_historical_chart API.
+        Uses the SDK's session auth and supports ALL exchanges including NFO futures.
+        exchange: "NSE" or "NFO"
+        token: instrument token string — if empty, trading_symbol is used to resolve token
+        Returns list of OHLC objects (newest last).
+        """
+        if not self._connected or self._client is None:
+            return []
+
+        from datetime import datetime, timezone, timedelta, date
+        IST = timezone(timedelta(hours=5, minutes=30))
+
+        # Resolve correct token for futures contracts
+        _exch = exchange
+        _token = token
+        inst = trading_symbol.strip().upper() if trading_symbol else ""
+        if inst and not _token:
+            # Resolve token from instrument name
+            is_fut = bool(
+                inst.endswith("FUT") or
+                re.search(r'(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\d{2}F?$', inst)
+            )
+            if is_fut:
+                base = self._strip_expiry(inst)
+                expiry = self._extract_expiry_for_nfo(inst)
+                if expiry:
+                    # Detect index vs stock futures
+                    INDEX_FUTURES = {"NIFTY", "BANKNIFTY", "FINNIFTY", "SENSEX", "MIDCPNIFTY"}
+                    inst_type = "FUTIDX" if any(base.startswith(f) for f in INDEX_FUTURES) else "FUTSTK"
+                    nfo_token = self._find_nfo_futures_token(base, expiry, inst_type)
+                    if nfo_token:
+                        _exch = "NFO"
+                        _token = nfo_token
+            if not _token:
+                _exch, _token = self._resolve_token(inst)
+
+        if not _token:
+            return []
+
+        # Determine date range (up to 60 trading days back)
+        today = date.today()
+        from_date = (today - timedelta(days=60)).strftime("%Y-%m-%d")
+        to_date = today.strftime("%Y-%m-%d")
+
+        try:
+            resp = self._client.get_historical_chart(
+                _exchange=_exch,
+                _security_token=str(_token),
+                _interval="ONE_DAY",
+                _fromDate=from_date,
+                _toDate=to_date,
+            )
+            raw = resp.text
+            try:
+                data = resp.json()
+            except Exception:
+                logger.warning(f"[MStock get_daily_price] JSON parse error for {trading_symbol}: {raw[:100]}")
+                return []
+
+            if not isinstance(data, dict):
+                logger.warning(f"[MStock get_daily_price] Unexpected response type for {trading_symbol}: {type(data)}")
+                return []
+
+            if not data.get("status"):
+                logger.warning(f"[MStock get_daily_price] API error for {trading_symbol}: {data.get('error', data)}")
+                return []
+
+            # Candles are at data.data.candles or data.data (list)
+            raw_candles = (
+                data.get("data", {}).get("candles", []) or
+                data.get("data", []) or
+                []
+            )
+
+            candles = []
+            for row in raw_candles:
+                if not isinstance(row, list) or len(row) < 5:
+                    continue
+                ts_str = str(row[0])
+                o, h, l, c = float(row[1]), float(row[2]), float(row[3]), float(row[4])
+                v = int(row[5]) if len(row) > 5 else 0
+
+                try:
+                    # Parse "2026-09-01 09:15" or "2026-09-01"
+                    if " " in ts_str:
+                        dt = datetime.strptime(ts_str, "%Y-%m-%d %H:%M").replace(tzinfo=IST)
+                    else:
+                        dt = datetime.strptime(ts_str[:10], "%Y-%m-%d").replace(tzinfo=IST)
+                    ts = int(dt.timestamp())
+                except Exception:
+                    ts = int(time.time())
+
+                if c > 0:
+                    candles.append(OHLC(timestamp=ts, open=o, high=h, low=l, close=c, volume=v))
+
+            if candles:
+                logger.info(f"[MStock get_daily_price] {trading_symbol}: {len(candles)} daily bars, "
+                            f"latest={candles[-1].close:.2f}")
+            return candles
+
+        except Exception as e:
+            logger.warning(f"[MStock get_daily_price] Exception for {trading_symbol}: {e}")
+            return []
+
     def get_candles(self, instrument: str, interval: str,
                     from_ts: int, to_ts: int) -> List[OHLC]:
         if not self._connected or self._client is None:
@@ -626,13 +883,46 @@ class MStockBroker(AbstractBroker):
         interval_key = _INTERVAL_MAP.get(interval, "FIFTEEN_MINUTE")
         inst = instrument.strip().upper()
 
-        # Resolve token — get_market_quote and get_intraday_chart need numeric tokens
-        exch, token = self._resolve_token(inst)
+        # Resolve token — strip expiry suffix so we get the base symbol for token map lookup
+        base = self._strip_expiry(inst)
+        exch, token = self._resolve_token(base)
         if not exch or not token:
-            return []
+            # Try full name directly (for indices like NIFTY26SEPFUT)
+            exch, token = self._resolve_token(inst)
+            if not exch or not token:
+                return []
+
+        # ── CRITICAL FIX: For NFO futures, use NFO token (not equity token) ──
+        # When inst = "ICICIBANKSEPFUT26", _strip_expiry → "ICICIBANK" which falls through
+        # to cash_token_map → wrong token. Fix: try NFO token lookup using actual expiry.
+        is_futures_contract = bool(
+            inst.upper().endswith('FUT') or
+            re.search(r'(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\d{2}F?$', inst.upper())
+        )
+        if is_futures_contract and exch == "NSE":
+            expiry_str = self._extract_expiry_for_nfo(inst)
+            if expiry_str:
+                nfo_token = self._find_nfo_futures_token(base, expiry_str)
+                if nfo_token:
+                    exch, token = "NFO", nfo_token
+                    logger.info(f"[MStock get_candles] FUTURES FIX: {inst} → NFO token={token} (expiry={expiry_str})")
 
         try:
             exch_code = self._resolve_exchange(exch)
+
+            # ── Daily candles: use GetDailyPrice API (gives historical data) ──
+            if interval_key == "ONE_DAY":
+                daily = self.get_daily_price(exch, token, inst)
+                if daily:
+                    # Filter by date range
+                    filtered = [c for c in daily if from_ts <= c.timestamp <= to_ts]
+                    if filtered:
+                        return filtered
+                    return daily  # Return all if filter yields nothing
+                return []
+
+            candles = []  # Initialize before try — used in exception handler
+            logger.info(f"[MStock get_candles] inst={inst} base={base} exch={exch}({exch_code}) token={token} interval={interval_key}")
             resp = self._client.get_intraday_chart(
                 _exchange=exch_code,
                 _symboltoken=token,
@@ -647,7 +937,6 @@ class MStockBroker(AbstractBroker):
             from datetime import datetime, timezone, timedelta
             IST = timezone(timedelta(hours=5, minutes=30))
 
-            candles = []
             for row in rows:
                 if isinstance(row, list) and len(row) >= 5:
                     ts_str = row[0]
@@ -665,14 +954,11 @@ class MStockBroker(AbstractBroker):
                         ts = int(time.time())
 
                     # M-Stock intraday_chart returns last session only — no time filtering needed
-                    candles.append(OHLC(
-                        timestamp=ts,
-                        open=o, high=h, low=l, close=c,
-                        volume=v,
-                    ))
+                    # Return as OHLC dataclass objects (matches Yahoo Finance broker format)
+                    candles.append(OHLC(timestamp=ts, open=o, high=h, low=l, close=c, volume=v))
 
             if candles:
-                logger.info(f"[MStock] Candles for {inst}: {len(candles)} bars (last session)")
+                logger.info(f"[MStock] Candles for {inst}: {len(candles)} bars")
 
         except Exception as e:
             logger.debug(f"[MStock] Candle fetch error for {inst}: {e}")

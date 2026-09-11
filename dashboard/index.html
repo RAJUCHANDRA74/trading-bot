@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -92,12 +92,14 @@ body{font-family:var(--font);font-size:13px;line-height:1.5;background:var(--bg-
 /* TICKER */
 .ticker-bar{display:flex;gap:0;overflow:hidden;flex:1}
 .ticker-item{display:flex;align-items:center;gap:6px;padding:0 16px;border-right:1px solid var(--border);white-space:nowrap;font-size:12px}
-.ticker-item .tk-name{color:var(--text-muted);font-size:11px}
-.ticker-item .tk-price{font-weight:700;color:var(--text-primary)}
-.ticker-item .tk-arrow{font-size:10px}
+.ticker-item .tk-name{color:var(--text-primary);font-size:13px;font-weight:700;letter-spacing:0.3px}
+.ticker-item .tk-price{font-weight:800;color:var(--text-primary);font-size:13px}
+.ticker-item .tk-arrow{font-size:12px;font-weight:700}
 .ticker-item.up .tk-arrow{color:var(--green)}
 .ticker-item.down .tk-arrow{color:var(--red)}
-.ticker-item .tk-change{font-size:10px;color:var(--text-muted)}
+.ticker-item .tk-change{font-size:12px;font-weight:700;padding:1px 5px;border-radius:4px}
+.ticker-item.up .tk-change{background:rgba(0,200,150,0.15);color:var(--green)}
+.ticker-item.down .tk-change{background:rgba(255,77,106,0.15);color:var(--red)}
 
 /* SIDEBAR */
 .sidebar{width:200px;background:var(--bg-secondary);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
@@ -229,6 +231,14 @@ table .empty-state{text-align:center;padding:30px;color:var(--text-muted);font-s
 .wl-hit:disabled{background:var(--border);color:var(--text-muted);cursor:not-allowed;opacity:1}
 .wl-rm{background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;opacity:0.4;transition:opacity 0.15s;padding:2px 6px;border-radius:4px}
 .wl-rm:hover{opacity:1;background:var(--red-dim)}
+
+/* Trade Log action buttons */
+.btn-stop{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,77,106,0.3);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;transition:all 0.15s;font-weight:600}
+.btn-stop:hover{background:var(--red);color:#fff}
+.btn-restart{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(59,130,246,0.3);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;transition:all 0.15s;font-weight:600}
+.btn-restart:hover{background:var(--blue);color:#fff}
+.btn-remove-tl{background:var(--gold-dim);color:var(--gold);border:1px solid rgba(245,200,66,0.3);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;transition:all 0.15s;font-weight:600}
+.btn-remove-tl:hover{background:var(--gold);color:#000}
 
 /* Editable inputs in table */
 .wl-edit{
@@ -568,10 +578,10 @@ table .empty-state{text-align:center;padding:30px;color:var(--text-muted);font-s
 
         <!-- 3 Tabs -->
         <div class="wl-tabs">
-          <div class="wl-tab active" id="wlTabCASH" onclick="switchWlTab('CASH')">
+          <div class="wl-tab" id="wlTabCASH" onclick="switchWlTab('CASH')">
             💰 Cash <span class="wl-tab-count" id="wlCountCASH">(0)</span>
           </div>
-          <div class="wl-tab" id="wlTabFUTURE" onclick="switchWlTab('FUTURE')">
+          <div class="wl-tab active" id="wlTabFUTURE" onclick="switchWlTab('FUTURE')">
             📈 Futures <span class="wl-tab-count" id="wlCountFUTURE">(0)</span>
           </div>
           <div class="wl-tab" id="wlTabOPTION" onclick="switchWlTab('OPTION')">
@@ -684,8 +694,24 @@ table .empty-state{text-align:center;padding:30px;color:var(--text-muted);font-s
             <div class="wl-add-section">
               <div class="wl-add-lbl">Add instrument to Futures Watchlist</div>
               <div class="wl-add-row">
-                <input type="text" id="wlAddFUTURE" class="wl-add-inp" placeholder="Type instrument, e.g. BANKNIFTYSEP26FUT">
-                <button class="wl-add-btn" onclick="wlAddInstrument('FUTURE')">+ Add to Watchlist</button>
+                <input type="text" id="wlAddFUTURE" class="wl-add-inp" placeholder="CANBK, M&M, BANKNIFTY" style="width:110px" onkeydown="if(event.key==='Enter')wlAddInstrument('FUTURE')">
+                <select id="wlFutSector" style="background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-primary);border-radius:7px;padding:8px 6px;font-size:12px">
+                  <option value="">— Sector —</option>
+                  <option value="PSU_BANK">PSU Bank</option>
+                  <option value="PVT_BANK">PVT Bank</option>
+                  <option value="AUTO">Auto</option>
+                  <option value="IT">IT</option>
+                  <option value="PHARMA">Pharma</option>
+                  <option value="METAL">Metal</option>
+                  <option value="FMCG">FMCG</option>
+                  <option value="REAL_ESTATE">Real Estate</option>
+                  <option value="INDEX_FUTURES">Index Futures</option>
+                  <option value="OTHER">Other</option>
+                </select>
+                <select id="wlFutStrat" style="background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-primary);border-radius:7px;padding:8px 6px;font-size:12px">
+                  <option value="SAR_TOP_BOTTOM">TB</option>
+                </select>
+                <button class="wl-add-btn" onclick="wlAddInstrument('FUTURE')">+ Add</button>
               </div>
             </div>
           </div>
@@ -733,110 +759,10 @@ table .empty-state{text-align:center;padding:30px;color:var(--text-muted);font-s
           <div class="breadcrumb">SARTrader / <span>Trade Log</span></div>
           <div style="display:flex;gap:8px">
             <button onclick="exportTradesCSV()" style="padding:6px 14px;font-size:12px;background:var(--bg-card2);border:1px solid var(--border);color:var(--text-primary);border-radius:8px;cursor:pointer">📥 Export</button>
-            <button onclick="switchOrdersTab('Summary')" style="padding:6px 14px;font-size:12px;background:var(--bg-card2);border:1px solid var(--border);color:var(--text-primary);border-radius:8px;cursor:pointer">📊 Summary</button>
-            <button onclick="switchOrdersTab('Journal')" style="padding:6px 14px;font-size:12px;background:var(--bg-card2);border:1px solid var(--border);color:var(--text-primary);border-radius:8px;cursor:pointer">📝 Journal</button>
-          </div>
-        </div>
-
-        <!-- Main tabs: Live / Paper -->
-        <div style="display:flex;gap:8px;margin:12px 0">
-          <div class="wl-tab active" id="ordersTabLive" onclick="switchOrdersTab('Live')" style="cursor:pointer;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600">⚡ LIVE Trades</div>
-          <div class="wl-tab" id="ordersTabPaper" onclick="switchOrdersTab('Paper')" style="cursor:pointer;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600">📋 Paper Trades</div>
-        </div>
-
-        <!-- LIVE TRADES PANEL -->
-        <div id="ordersPanelLive">
-          <!-- Segment sub-tabs -->
-          <div style="display:flex;gap:6px;margin-bottom:12px">
-            <div class="seg-tab active" id="liveSegCash" onclick="switchLiveSeg('CASH')">💰 Cash</div>
-            <div class="seg-tab" id="liveSegFutures" onclick="switchLiveSeg('FUTURES')">📈 Futures</div>
-            <div class="seg-tab" id="liveSegOptions" onclick="switchLiveSeg('OPTIONS')">📊 Options</div>
-          </div>
-
-          <!-- Cash live trades -->
-          <div id="livePanelCASH">
-            <div class="seg-header">💰 Cash — Live Trades</div>
-            <div class="table-wrap">
-              <table>
-                <thead><tr><th>#</th><th>Date</th><th>Instrument</th><th>Dir</th><th>Entry ₹</th><th>LTP ₹</th><th>P&L</th><th>Qty</th><th>Status</th><th>Action</th></tr></thead>
-                <tbody id="liveCashBody"><tr><td colspan="10" class="empty-state">No cash trades...</td></tr></tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- Futures live trades -->
-          <div id="livePanelFUTURES" style="display:none">
-            <div class="seg-header">📈 Futures — Live Trades</div>
-            <div id="liveFuturesSummary" style="display:flex;gap:10px;margin-bottom:10px;font-size:12px;color:var(--text-secondary)">
-              <span>📦 Stock Futures: <b id="liveSFCount">0</b></span>
-              <span>📊 Index Futures: <b id="liveIFCount">0</b></span>
-              <span>🥇 Commodity: <b id="liveCFCount">0</b></span>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead><tr><th>#</th><th>Date</th><th>Instrument</th><th>Type</th><th>Dir</th><th>Entry ₹</th><th>LTP ₹</th><th>P&L</th><th>Qty</th><th>Status</th><th>Action</th></tr></thead>
-                <tbody id="liveFuturesBody"><tr><td colspan="11" class="empty-state">No futures trades...</td></tr></tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- Options live trades -->
-          <div id="livePanelOPTIONS" style="display:none">
-            <div class="seg-header">📊 Options — Live Trades</div>
-            <div class="table-wrap">
-              <table>
-                <thead><tr><th>#</th><th>Date</th><th>Instrument</th><th>Dir</th><th>Entry ₹</th><th>LTP ₹</th><th>P&L</th><th>Qty</th><th>Status</th><th>Action</th></tr></thead>
-                <tbody id="liveOptionsBody"><tr><td colspan="10" class="empty-state">No options trades...</td></tr></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- PAPER TRADES PANEL -->
-        <div id="ordersPanelPaper" style="display:none">
-          <!-- Segment sub-tabs -->
-          <div style="display:flex;gap:6px;margin-bottom:12px">
-            <div class="seg-tab active" id="paperSegCash" onclick="switchPaperSeg('CASH')">💰 Cash</div>
-            <div class="seg-tab" id="paperSegFutures" onclick="switchPaperSeg('FUTURES')">📈 Futures</div>
-            <div class="seg-tab" id="paperSegOptions" onclick="switchPaperSeg('OPTIONS')">📊 Options</div>
-          </div>
-
-          <!-- Cash paper trades -->
-          <div id="paperPanelCASH">
-            <div class="seg-header">💰 Cash — Paper Trades</div>
-            <div class="table-wrap">
-              <table>
-                <thead><tr><th>#</th><th>Date</th><th>Instrument</th><th>Dir</th><th>Entry ₹</th><th>Exit ₹</th><th>P&L</th><th>Qty</th><th>Status</th><th>Action</th></tr></thead>
-                <tbody id="paperCashBody"><tr><td colspan="10" class="empty-state">No cash trades...</td></tr></tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- Futures paper trades -->
-          <div id="paperPanelFUTURES" style="display:none">
-            <div class="seg-header">📈 Futures — Paper Trades</div>
-            <div id="paperFuturesSummary" style="display:flex;gap:10px;margin-bottom:10px;font-size:12px;color:var(--text-secondary)">
-              <span>📦 Stock: <b id="paperSFCount">0</b></span>
-              <span>📊 Index: <b id="paperIFCount">0</b></span>
-              <span>🥇 Commodity: <b id="paperCFCount">0</b></span>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead><tr><th>#</th><th>Date</th><th>Instrument</th><th>Type</th><th>Dir</th><th>Entry ₹</th><th>Exit ₹</th><th>P&L</th><th>Qty</th><th>Status</th><th>Action</th></tr></thead>
-                <tbody id="paperFuturesBody"><tr><td colspan="11" class="empty-state">No futures trades...</td></tr></tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- Options paper trades -->
-          <div id="paperPanelOPTIONS" style="display:none">
-            <div class="seg-header">📊 Options — Paper Trades</div>
-            <div class="table-wrap">
-              <table>
-                <thead><tr><th>#</th><th>Date</th><th>Instrument</th><th>Dir</th><th>Entry ₹</th><th>Exit ₹</th><th>P&L</th><th>Qty</th><th>Status</th><th>Action</th></tr></thead>
-                <tbody id="paperOptionsBody"><tr><td colspan="10" class="empty-state">No options trades...</td></tr></tbody>
-              </table>
-            </div>
+            <button onclick="switchOrdersTab('Summary')" id="ordersTabSummary" style="padding:6px 14px;font-size:12px;background:var(--bg-card2);border:1px solid var(--border);color:var(--text-primary);border-radius:8px;cursor:pointer">📊 Summary</button>
+            <button onclick="switchOrdersTab('Journal')" id="ordersTabJournal" style="padding:6px 14px;font-size:12px;background:var(--bg-card2);border:1px solid var(--border);color:var(--text-primary);border-radius:8px;cursor:pointer">📝 Journal</button>
+            <button onclick="switchOrdersTab('History')" id="ordersTabHistory" style="padding:6px 14px;font-size:12px;background:var(--bg-card2);border:1px solid var(--border);color:var(--text-primary);border-radius:8px;cursor:pointer">📋 History</button>
+            <button onclick="switchOrdersTab('Trades')" id="ordersTabTrades" style="padding:6px 14px;font-size:12px;background:var(--accent);border:1px solid var(--accent);color:#fff;border-radius:8px;cursor:pointer;font-weight:700">📊 Trade Log</button>
           </div>
         </div>
 
@@ -878,6 +804,102 @@ table .empty-state{text-align:center;padding:30px;color:var(--text-muted);font-s
         <div id="ordersPanelJournal" style="display:none">
           <div id="journalEmpty" style="text-align:center;padding:40px;color:var(--text-muted)">Click "Journal" on any closed trade to add notes.</div>
           <div id="journalEntries"></div>
+        </div>
+
+        <!-- TRADE LOG PANEL (20-column open positions) -->
+        <div id="ordersPanelTrades" style="display:block">
+          <!-- PAPER/LIVE mode filter + Segment filter + counts -->
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+            <!-- PAPER/LIVE filter -->
+            <div class="seg-tab active" id="tlModeALL" data-mode="ALL" onclick="switchTradeMode('ALL')">All</div>
+            <div class="seg-tab" id="tlModePAPER" data-mode="PAPER" onclick="switchTradeMode('PAPER')">📋 Paper</div>
+            <div class="seg-tab" id="tlModeLIVE" data-mode="LIVE" onclick="switchTradeMode('LIVE')">⚡ Live</div>
+            <div style="width:1px;height:20px;background:var(--border);margin:0 4px"></div>
+            <span style="font-size:12px;color:var(--text-muted)">Segment:</span>
+            <div class="seg-tab active" id="tlSegAll" onclick="switchTlSeg('ALL')">All</div>
+            <div class="seg-tab" id="tlSegFUTURES" onclick="switchTlSeg('FUTURES')">📈 Futures</div>
+            <div class="seg-tab" id="tlSegCASH" onclick="switchTlSeg('CASH')">💰 Cash</div>
+            <div class="seg-tab" id="tlSegOPTIONS" onclick="switchTlSeg('OPTIONS')">📊 Options</div>
+            <span style="margin-left:12px;font-size:12px;color:var(--green)">● Active: <b id="tlActiveCount">0</b></span>
+            <span style="font-size:12px;color:var(--gold)">⏳ Waiting: <b id="tlWaitingCount">0</b></span>
+            <span id="tlTotalPnl" style="margin-left:auto;font-size:13px;font-weight:700;color:var(--text-muted)">Total P&L: —</span>
+          </div>
+          <div class="table-wrap">
+            <table style="font-size:12px;white-space:nowrap">
+              <thead>
+                <tr>
+                  <th>#</th><th>Entry</th><th>Lots</th><th>Strat</th><th>Instrument</th><th>Sector</th>
+                  <th>Dir</th><th>Entry / Reason</th><th>LTP</th><th>SL</th><th>Gap</th>
+                  <th>Prev Top</th><th>Prev Bot</th><th title="Pyramiding Lots">Pyr</th><th title="Rollover">Roll</th>
+                  <th>P&L</th><th>Total P&L</th><th>Chart</th><th>Stop</th><th>Restart</th><th>Remove</th>
+                </tr>
+              </thead>
+              <tbody id="tlBody"><tr><td colspan="21" class="empty-state">No positions. Use the form below or go to Watchlist → GO.</td></tr></tbody>
+            </table>
+          </div>
+          <!-- Add Instrument form at bottom of Trade Log -->
+          <div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding:10px 12px;background:var(--bg-card2);border-radius:8px;border:1px solid var(--border);flex-wrap:wrap">
+            <span style="font-size:12px;font-weight:600;color:var(--text-secondary);white-space:nowrap">Add Instrument:</span>
+            <input type="text" id="tlAddInst" placeholder="e.g. CANBK, M&M" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:5px 8px;font-size:12px;width:100px" onkeydown="if(event.key==='Enter')tlQuickAdd()">
+            <select id="tlAddStrat" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:5px 6px;font-size:12px">
+              <option value="SAR_TOP_BOTTOM">TB</option>
+            </select>
+            <select id="tlAddSector" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:5px 6px;font-size:12px">
+              <option value="">— Sector —</option>
+              <option value="PSU_BANK">PSU Bank</option>
+              <option value="PVT_BANK">PVT Bank</option>
+              <option value="AUTO">Auto</option>
+              <option value="IT">IT</option>
+              <option value="PHARMA">Pharma</option>
+              <option value="METAL">Metal</option>
+              <option value="FMCG">FMCG</option>
+              <option value="REAL_ESTATE">Real Estate</option>
+              <option value="INDEX_FUTURES">Index Futures</option>
+              <option value="OTHER">Other</option>
+            </select>
+            <select id="tlAddMode" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:5px 6px;font-size:12px">
+              <option value="PAPER">📋 PAPER</option>
+              <option value="LIVE">⚡ LIVE</option>
+            </select>
+            <button onclick="tlQuickAdd()" style="padding:5px 14px;background:var(--accent);border:1px solid var(--accent);color:#fff;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">+ Add</button>
+          </div>
+        </div>
+
+        <!-- TRADE HISTORY PANEL — closed/exited trades -->
+        <div id="ordersPanelHistory" style="display:none">
+          <!-- Filter bar -->
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+            <div class="seg-tab active" id="thModeALL" onclick="switchThMode('ALL')">All</div>
+            <div class="seg-tab" id="thModePAPER" onclick="switchThMode('PAPER')">📋 Paper</div>
+            <div class="seg-tab" id="thModeLIVE" onclick="switchThMode('LIVE')">⚡ Live</div>
+            <div style="width:1px;height:20px;background:var(--border);margin:0 4px"></div>
+            <span style="font-size:12px;color:var(--text-muted)">Segment:</span>
+            <div class="seg-tab active" id="thSegAll" onclick="switchThSeg('ALL')">All</div>
+            <div class="seg-tab" id="thSegFUTURES" onclick="switchThSeg('FUTURES')">📈 Futures</div>
+            <div class="seg-tab" id="thSegCASH" onclick="switchThSeg('CASH')">💰 Cash</div>
+            <div class="seg-tab" id="thSegOPTIONS" onclick="switchThSeg('OPTIONS')">📊 Options</div>
+            <span style="margin-left:auto;font-size:12px;color:var(--text-muted)"><b id="thTotalCount">0</b> closed trades</span>
+          </div>
+          <div class="table-wrap">
+            <table style="font-size:12px;white-space:nowrap">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Entry Date</th>
+                  <th>Instrument</th>
+                  <th>Dir</th>
+                  <th>Entry ₹</th>
+                  <th>Exit Date</th>
+                  <th>Exit ₹</th>
+                  <th>P&L</th>
+                  <th>Lots</th>
+                  <th>Reason</th>
+                  <th>Mode</th>
+                </tr>
+              </thead>
+              <tbody id="thBody"><tr><td colspan="11" class="empty-state">No closed trades yet.</td></tr></tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -1024,7 +1046,7 @@ let selectedInstruments = {};
   Item shape: { inst, sysId, entryPrice: '', sl: '', mode: 'PAPER' }
 */
 const WATCHLISTS = { CASH: [], FUTURE: [], OPTION: [] };
-let activeWlTab = 'CASH';
+let activeWlTab = 'FUTURE';  // Default to Futures watchlist (Cash segment has no strategy)
 
 function loadWatchlists() {
   try {
@@ -1036,6 +1058,9 @@ function loadWatchlists() {
       });
     }
   } catch(e) {}
+  // CASH segment has no strategy — clear it on every load to avoid stale entries
+  WATCHLISTS['CASH'] = [];
+  saveWatchlists();
 }
 function saveWatchlists() {
   try { localStorage.setItem('watchlists', JSON.stringify(WATCHLISTS)); } catch(e){}
@@ -1168,8 +1193,10 @@ function connectWS(){
   const [host,port]=httpHost.includes(':')?httpHost.split(':'):[httpHost,'8765'];
   // Fallback to localhost if host looks like an IP (avoids cross-origin WS issues)
   const wsHost = (host === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(host)) ? host : 'localhost';
-  ws=new WebSocket(`ws://${wsHost}:${Number(port)+1}`);
-  ws.onopen=()=>{ ws.send(JSON.stringify({command:'get_state'})); };
+  const wsUrl = `ws://${wsHost}:${Number(port)+1}`;
+  console.log('[WS] Connecting to:', wsUrl, '| httpHost:', httpHost, '| host:', host, '| port:', port);
+  ws=new WebSocket(wsUrl);
+  ws.onopen=()=>{ console.log('[WS] Connected!'); const f=document.getElementById('footerMode'); if(f) f.textContent='CONNECTED ✓'; ws.send(JSON.stringify({command:'get_state'})); };
   ws.onmessage=(evt)=>{
     try{
       const msg=JSON.parse(evt.data);
@@ -1191,11 +1218,25 @@ function connectWS(){
         showToast(`${icon} ${e.event}: ${e.instrument} — ${e.signal_type||''}`, e.event==='ENTRY'?'var(--blue)':e.event==='EXIT'?'var(--green)':'var(--orange)');
         if(e.event==='ENTRY') playBuyAlert();
         if(e.event==='EXIT') playSellAlert();
+      } else if(msg.type==='candles'){
+        // OHLC candle data for chart
+        if(msg.error){
+          showToast('Chart error: '+msg.error,'var(--red)');
+        } else {
+          const tf=msg.interval||'1d';
+          const range=msg.range||'60d';
+          showToast('📊 '+msg.symbol+' '+tf+' chart loaded ('+((msg.candles||[]).length)+' bars)','var(--green)');
+          renderTlChart(msg.instrument, msg.symbol, msg.candles||[], tf, range);
+        }
+      }
+      // Force refresh when server signals state change
+      if(n&&n.forceRefresh&&ws&&ws.readyState===WebSocket.OPEN){
+        ws.send(JSON.stringify({command:'get_state'}));
       }
     }catch(e){}
   };
-  ws.onerror=()=>{ const f=document.getElementById('footerMode'); if(f) f.textContent='WS ERROR'; };
-  ws.onclose=()=>{ setTimeout(connectWS,5000); };
+  ws.onerror=()=>{ const f=document.getElementById('footerMode'); if(f) f.textContent='WS ERROR'; console.warn('[WS] Connection error — reconnecting...'); };
+  ws.onclose=()=>{ console.warn('[WS] Connection closed — reconnecting in 2s...'); setTimeout(connectWS,2000); };
 }
 
 /* ════════════════════════════════════════
@@ -1203,6 +1244,11 @@ function connectWS(){
 ════════════════════════════════════════ */
 function updateAll(state){
   window._quotes=state.quotes||{};
+  window._positions=state.positions||{};
+  // Keep LTP, Total P&L reactive on every engine tick (no table rebuild)
+  if(document.getElementById('ordersPanelTrades')?.style.display!=='none'){
+    refreshTlCells();
+  }
   window._segmentPnl=state.segment_pnl||{CASH:0,FUTURES:0,OPTIONS:0};
   const prevSignalCount=window._prevSignalCount||0;
   window._prevSignalCount=state.signals?.length||0;
@@ -1211,8 +1257,8 @@ function updateAll(state){
   const fmode=document.getElementById('footerMode'); if(fmode) fmode.textContent=`${state.mode||'PAPER'} MODE`;
   updateTicker('tkNifty',state.quotes['NIFTY']);
   updateTicker('tkBankNifty',state.quotes['BANKNIFTY']);
-  updateTicker('tkGold',state.quotes['GC=F']);
-  updateTicker('tkSilver',state.quotes['SI=F']);
+  updateTicker('tkGold',state.quotes['GOLD']);
+  updateTicker('tkSilver',state.quotes['SILVER']);
   updateTrades(state.trades||[]);
   window._allTrades=state.trades||[];
   updateSignals(state.signals||[],prevSignalCount);
@@ -1237,18 +1283,23 @@ function updateAll(state){
   }
   refreshAllChips();
   renderAllWatchlists();
-  // Render Live & Paper trades
-  renderLiveTrades(state.live_trades||[]);
-  renderPaperTrades(state.trades||[]);
   // Render broker status
   renderBrokerStatus(state.brokers||{});
+  // Render Trade Log (18-column open positions)
+  renderTradeLog();
 }
 function updateTicker(id,q){
-  const el=document.getElementById(id); if(!el||!q)return;
+  const el=document.getElementById(id); if(!el)return;
   const pe=el.querySelector('.tk-price');const ae=el.querySelector('.tk-arrow');const ce=el.querySelector('.tk-change');
   if(!pe)return;
-  const curr=q.last_price||q.price||0;const chg=q.change||0;const pct=q.change_pct||0;
-  pe.textContent=curr.toLocaleString('en-IN',{minimumFractionDigits:2});
+  if(!q || (!q.last_price && !q.price)){
+    // No quote available yet — show placeholder
+    pe.textContent='—'; if(ae)ae.textContent='—'; if(ce)ce.textContent='—';
+    el.className='ticker-item';
+    return;
+  }
+  const curr=Number(q.last_price||q.price||0);const chg=Number(q.change||0);const pct=Number(q.change_pct||0);
+  pe.textContent=curr>0?curr.toLocaleString('en-IN',{minimumFractionDigits:2}):'—';
   if(ae) ae.textContent=chg>=0?'▲':'▼';
   if(ce) ce.textContent=`${chg>=0?'+':''}${pct.toFixed(2)}%`;
   el.className=`ticker-item ${chg>=0?'up':'down'}`;
@@ -1487,144 +1538,536 @@ function exportTradesCSV(){
   a.click();showToast('CSV exported!','var(--green)');
 }
 
-/* ════════════════════════════════════════
-   LIVE & PAPER TRADE RENDERING
-════════════════════════════════════════ */
-function _fmtDate(d){
-  if(!d)return'—';
-  return d.includes('T')?d.split('T')[0]:d;
-}
-function _fmtPrice(v){
-  if(v==null||v==='')return'—';
-  return'₹'+Number(v).toLocaleString('en-IN',{minimumFractionDigits:2});
-}
-function _fmtPnl(v){
-  if(v==null)return'<span style="color:var(--gold)">Running</span>';
-  const cls=v>=0?'var(--green)':'var(--red)';
-  return`<span style="color:${cls};font-weight:700">${v>=0?'+':''}₹${v.toFixed(0)}</span>`;
-}
-function _dirBadge(d){
-  return`<span class="${d==='LONG'?'badge-green':'badge-red'}">${d||'—'}</span>`;
-}
-function _exitBtn(trade_id,inst,mode){
-  return`<button onclick="exitTrade('${trade_id}','${inst}','${mode}')" style="background:var(--red-dim);border:1px solid rgba(255,77,106,0.3);color:var(--red);border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer">EXIT</button>`;
-}
-function _journalBtn(trade_id,inst,pnl){
-  if(pnl==null)return'—';
-  const jn=loadJournalEntry(trade_id);
-  return`<button onclick="openJournal('${trade_id}','${inst}',${pnl},'')" style="background:var(--bg-card2);border:1px solid var(--border);color:var(--text-secondary);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer">${jn?'📝':'📒'}</button>`;
-}
-function _subsegLabel(seg){
-  if(seg==='STOCK_FUTURES')return'<span style="font-size:10px;padding:1px 5px;background:var(--blue-dim);color:var(--blue);border-radius:3px">Stock</span>';
-  if(seg==='INDEX_FUTURES')return'<span style="font-size:10px;padding:1px 5px;background:var(--purple-dim);color:var(--purple)">Index</span>';
-  if(seg==='COMMODITY_FUTURES')return'<span style="font-size:10px;padding:1px 5px;background:var(--gold-dim);color:var(--gold)">Commodity</span>';
-  return'<span style="font-size:10px;padding:1px 5px;background:var(--bg-card2);color:var(--text-muted)">Stock</span>';
-}
-function _calcLtpPnl(trade){
-  const q=getQuote(trade.instrument);
-  if(!q)return{ltp:'—',pnl:null};
-  const ltp=q.last_price||q.price||0;
-  const mult=(trade.direction==='LONG')?1:-1;
-  const pnl=mult*(ltp-trade.entry_price)*trade.quantity;
-  return{ltp,lpnl:pnl};
-}
-function _renderTradeRow(t,i,showLtp,mode){
-  const {ltp,lpnl}=_calcLtpPnl(t);
-  const status=t.exit_price?'Closed':'Open';
-  const seg=t.segment||'CASH';
-  const pnlVal=t.pnl??lpnl;
-  const hasLtp=ltp!=='—'&&ltp!==0;
-  const statusCls=t.exit_price?'badge-gold':'badge-green';
-  return`<tr>
-    <td>${i+1}</td>
-    <td>${_fmtDate(t.entry_date)}</td>
-    <td><b>${t.instrument||'—'}</b></td>
-    ${seg==='FUTURES'||seg==='STOCK_FUTURES'||seg==='INDEX_FUTURES'||seg==='COMMODITY_FUTURES'?'<td>'+_subsegLabel(t.segment||seg)+'</td>':''}
-    <td>${_dirBadge(t.direction)}</td>
-    <td>${_fmtPrice(t.entry_price)}</td>
-    <td>${showLtp&&hasLtp?'₹'+Number(ltp).toLocaleString('en-IN',{minimumFractionDigits:2}):_fmtPrice(t.exit_price)}</td>
-    <td>${pnlVal!=null?_fmtPnl(pnlVal):'<span style="color:var(--gold)">—</span>'}</td>
-    <td>${t.quantity||'—'}</td>
-    <td><span class="${statusCls}">${status}</span></td>
-    <td>${t.exit_price?_journalBtn(t.trade_id,t.instrument,pnlVal):_exitBtn(t.trade_id,t.instrument,mode)}</td>
-  </tr>`;
-}
-function _filterSeg(trades,seg){
-  if(seg==='CASH')return trades.filter(t=>{const s=(t.segment||'CASH');return s==='CASH'||s==='CASH';});
-  if(seg==='FUTURES')return trades.filter(t=>{const s=(t.segment||'FUTURES');return s==='FUTURES'||s==='STOCK_FUTURES'||s==='INDEX_FUTURES'||s==='COMMODITY_FUTURES';});
-  if(seg==='OPTIONS')return trades.filter(t=>(t.segment||'')==='OPTIONS');
-  return trades;
-}
-function renderLiveTrades(liveTrades){
-  ['CASH','FUTURES','OPTIONS'].forEach(seg=>{
-    const body=document.getElementById('live'+seg.charAt(0)+seg.slice(1)+'Body');
-    if(!body)return;
-    const filtered=_filterSeg(liveTrades,seg);
-    if(!filtered.length){body.innerHTML=`<tr><td colspan="${seg==='FUTURES'?'11':'10'}" class="empty-state">No ${seg.toLowerCase()} trades...</td></tr>`;return;}
-    body.innerHTML=filtered.map((t,i)=>_renderTradeRow(t,i,true,'LIVE')).join('');
-  });
-  // Update futures sub-counts
-  const futTrades=liveTrades.filter(t=>['FUTURES','STOCK_FUTURES','INDEX_FUTURES','COMMODITY_FUTURES'].includes(t.segment||''));
-  const sf=futTrades.filter(t=>(t.segment||'')==='STOCK_FUTURES').length;
-  const iff=futTrades.filter(t=>(t.segment||'')==='INDEX_FUTURES').length;
-  const cf=futTrades.filter(t=>(t.segment||'')==='COMMODITY_FUTURES').length;
-  const sf2=document.getElementById('liveSFCount');if(sf2)sf2.textContent=sf;
-  const iff2=document.getElementById('liveIFCount');if(iff2)iff2.textContent=iff;
-  const cf2=document.getElementById('liveCFCount');if(cf2)cf2.textContent=cf;
-}
-function renderPaperTrades(paperTrades){
-  ['CASH','FUTURES','OPTIONS'].forEach(seg=>{
-    const body=document.getElementById('paper'+seg.charAt(0)+seg.slice(1)+'Body');
-    if(!body)return;
-    const filtered=_filterSeg(paperTrades,seg);
-    if(!filtered.length){body.innerHTML=`<tr><td colspan="${seg==='FUTURES'?'11':'10'}" class="empty-state">No ${seg.toLowerCase()} trades...</td></tr>`;return;}
-    body.innerHTML=filtered.map((t,i)=>_renderTradeRow(t,i,false,'PAPER')).join('');
-  });
-  const futTrades=paperTrades.filter(t=>['FUTURES','STOCK_FUTURES','INDEX_FUTURES','COMMODITY_FUTURES'].includes(t.segment||''));
-  const sf=futTrades.filter(t=>(t.segment||'')==='STOCK_FUTURES').length;
-  const iff=futTrades.filter(t=>(t.segment||'')==='INDEX_FUTURES').length;
-  const cf=futTrades.filter(t=>(t.segment||'')==='COMMODITY_FUTURES').length;
-  const sf2=document.getElementById('paperSFCount');if(sf2)sf2.textContent=sf;
-  const iff2=document.getElementById('paperIFCount');if(iff2)iff2.textContent=iff;
-  const cf2=document.getElementById('paperCFCount');if(cf2)cf2.textContent=cf;
-}
-function exitTrade(trade_id,inst,mode){
-  if(!confirm(`Exit ${inst} (${mode})?`))return;
-  if(ws&&ws.readyState===WebSocket.OPEN){
-    ws.send(JSON.stringify({command:'exit_trade',trade_id,instrument:inst,mode}));
-  }
-}
+
 
 /* ════════════════════════════════════════
    ORDERS TAB SWITCHER
 ════════════════════════════════════════ */
-let _ordersTab='Live';
+let _ordersTab='Trades';  // Default to Trade Log (open positions with all 20 columns)
+let _tradeMode='ALL';  // ALL/PAPER/LIVE filter for Trade Log
+let _thMode='ALL';     // ALL/PAPER/LIVE filter for Trade History
+let _thSeg='ALL';        // Segment filter for Trade History
+
+function switchTradeMode(mode){
+  _tradeMode=mode;
+  document.getElementById('tlModeALL')?.classList.toggle('active',mode==='ALL');
+  document.getElementById('tlModePAPER')?.classList.toggle('active',mode==='PAPER');
+  document.getElementById('tlModeLIVE')?.classList.toggle('active',mode==='LIVE');
+  renderTradeLog();
+}
+function switchThMode(mode){
+  _thMode=mode;
+  document.getElementById('thModeALL')?.classList.toggle('active',mode==='ALL');
+  document.getElementById('thModePAPER')?.classList.toggle('active',mode==='PAPER');
+  document.getElementById('thModeLIVE')?.classList.toggle('active',mode==='LIVE');
+  renderTradeHistory();
+}
+function switchThSeg(seg){
+  _thSeg=seg;
+  ['ALL','FUTURES','CASH','OPTIONS'].forEach(s=>{
+    document.getElementById('thSeg'+s)?.classList.toggle('active',s===seg);
+  });
+  renderTradeHistory();
+}
 function switchOrdersTab(tab){
   _ordersTab=tab;
-  ['Live','Paper','Summary','Journal'].forEach(t=>{
+  ['Summary','Journal','History','Trades'].forEach(t=>{
     const te=document.getElementById('ordersTab'+t);
     const pe=document.getElementById('ordersPanel'+t);
-    if(te)te.classList.toggle('active',t===tab);
+    if(te){
+      const isActive=t===tab;
+      te.style.background=isActive?'var(--accent)':'var(--bg-card2)';
+      te.style.borderColor=isActive?'var(--accent)':'var(--border)';
+      te.style.color=isActive?'#fff':'var(--text-primary)';
+    }
     if(pe)pe.style.display=t===tab?'':'none';
   });
   if(tab==='Journal')renderJournal();
-  if(tab==='Live'){switchLiveSeg('FUTURES');}
-  if(tab==='Paper'){switchPaperSeg('FUTURES');}
+  if(tab==='Summary')renderSummary();
+  if(tab==='History')renderTradeHistory();
+  if(tab==='Trades')renderTradeLog();
 }
-function switchLiveSeg(seg){
-  ['CASH','FUTURES','OPTIONS'].forEach(s=>{
-    const te=document.getElementById('liveSeg'+s);
-    const pe=document.getElementById('livePanel'+s);
-    if(te)te.classList.toggle('active',s===seg);
-    if(pe)pe.style.display=s===seg?'':'none';
+
+/* ════════════════════════════════════════
+   TRADE LOG (open positions)
+════════════════════════════════════════ */
+let _tradeSeg='ALL';
+function switchTlSeg(seg){
+  _tradeSeg=seg;
+  ['ALL','FUTURES','CASH','OPTIONS'].forEach(s=>{
+    const el=document.getElementById('tlSeg'+s);
+    if(el)el.classList.toggle('active',s===seg);
   });
+  renderTradeLog();
 }
-function switchPaperSeg(seg){
-  ['CASH','FUTURES','OPTIONS'].forEach(s=>{
-    const te=document.getElementById('paperSeg'+s);
-    const pe=document.getElementById('paperPanel'+s);
-    if(te)te.classList.toggle('active',s===seg);
-    if(pe)pe.style.display=s===seg?'':'none';
+// Extract base symbol from contract name: M&MSEPFUT26 → M&M, NIFTY26SEPFUT → NIFTY
+function getBaseSymbol(inst){
+  if(!inst)return'';
+  const u=inst.toUpperCase();
+  let base=u.replace(/FUT(FUTURES)?$/,'').replace(/\d+(CE|PE)$/,'');
+  base=base.replace(/(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\d{0,2}\d{2}$/,'');
+  base=base.replace(/\d+$/,'');
+  return base.trim()||inst;
+}
+// Global quote lookup: try base symbol first (watchlist), then full contract name (engine state)
+function getQuote(inst){
+  const base=getBaseSymbol(inst||'');
+  return window._quotes?.[base] || window._quotes?.[inst] || null;
+}
+function _tlFiltered(){
+  // Returns positions matching current PAPER/LIVE + segment filter, sorted by status
+  const positions=window._positions||{};
+  const segMap={FUTURES:['FUTURES','STOCK_FUTURES','INDEX_FUTURES','COMMODITY_FUTURES']};
+  return Object.entries(positions).filter(([inst,p])=>{
+    if(p.status==='REMOVED')return false;
+    const posMode=p.mode||'PAPER';
+    if(_tradeMode!=='ALL'&&posMode!==_tradeMode)return false;
+    const seg=p.segment_type||'STOCK_FUTURES';
+    if(_tradeSeg!=='ALL'){
+      if(_tradeSeg==='CASH'&&seg!=='CASH')return false;
+      if(_tradeSeg==='OPTIONS'&&seg!=='OPTIONS')return false;
+      if(_tradeSeg==='FUTURES'&&!segMap.FUTURES.includes(seg))return false;
+    }
+    return true;
+  }).sort((a,b)=>{const o={ACTIVE:0,WAITING:1,STOPPED:2};return(o[a[1].status]||9)-(o[b[1].status]||9);});
+}
+function renderTradeLog(){
+  const positions=window._positions||{};
+  const tb=document.getElementById('tlBody');
+  if(!tb)return;
+
+  // Friendly sector name map
+  const sectorMap={
+    'PVT_BANK':'PVT Bank','PSU_BANK':'PSU Bank','AUTO':'Auto','IT':'IT',
+    'PHARMA':'Pharma','METAL':'Metal','FMCG':'FMCG','REAL_ESTATE':'Real Estate',
+    'INDEX_FUTURES':'Idx Futures','OTHER':'Other',
+  };
+
+  // Count active/waiting
+  let ac=0,wc=0;
+  Object.values(positions).forEach(p=>{
+    if(p.status==='ACTIVE')ac++;
+    else if(p.status==='WAITING')wc++;
+  });
+  const ae=document.getElementById('tlActiveCount');
+  const we=document.getElementById('tlWaitingCount');
+  if(ae)ae.textContent=ac;
+  if(we)we.textContent=wc;
+
+  const list=_tlFiltered();
+  if(!list.length){
+    tb.innerHTML='<tr><td colspan="21" class="empty-state">No positions. Use the form below or go to Watchlist → GO.</td></tr>';
+    return;
+  }
+
+  let html='';
+  list.forEach(([inst,p],i)=>{
+    const dir=p.direction||p.side||'—';
+    const dirCls=dir==='LONG'?'badge-green':dir==='SHORT'?'badge-red':'badge-gold';
+    const status=p.status||'—';
+    const segType=p.segment_type||'STOCK_FUTURES';
+    const segLabel=segType==='INDEX_FUTURES'?'Idx':segType==='STOCK_FUTURES'?'Stock':segType==='OPTIONS'?'Opt':'Cash';
+    const isWaiting=status==='WAITING';
+    const isStopped=status==='STOPPED';
+    const rowBg=isWaiting?'rgba(200,160,0,0.04)':isStopped?'rgba(255,60,60,0.04)':'transparent';
+    // Support both DB field (initial_lots) and engine field (qty)
+    const lots=p.initial_lots||p.qty||1;
+    const ep=p.entry_price?'₹'+Number(p.entry_price).toLocaleString('en-IN',{minimumFractionDigits:2}):'—';
+    const reason=p.entry_reason||'—';
+    const base=getBaseSymbol(inst);
+    const q=getQuote(inst);
+    const ltp=q?(q.last_price||q.price||0):null;
+    const ltpStr=ltp?'₹'+Number(ltp).toLocaleString('en-IN',{minimumFractionDigits:2}):'<span style="color:var(--text-muted)">—</span>';
+    const pnl=(ltp&&p.entry_price&&dir!=='—')?(dir==='LONG'?(ltp-p.entry_price)*lots:(p.entry_price-ltp)*lots):null;
+    const pnlStr=pnl!==null?(pnl>=0?'+₹':'₹')+Math.abs(pnl).toFixed(0):'—';
+    const pnlCls=pnl===null?'':(pnl>=0?'var(--green)':'var(--red)');
+    const slVal=p.current_sl?'₹'+Number(p.current_sl).toLocaleString('en-IN',{minimumFractionDigits:2}):'—';
+    const prevT=p.prev_top>0?'₹'+Number(p.prev_top).toLocaleString('en-IN',{minimumFractionDigits:2}):'—';
+    const prevB=p.prev_bottom>0?'₹'+Number(p.prev_bottom).toLocaleString('en-IN',{minimumFractionDigits:2}):'—';
+    const pyOn=p.pyramiding_mode==='on'||p.pyramiding_mode==='auto';
+    const canStop=!isWaiting&&!isStopped;
+    const canRestart=isStopped||isWaiting;
+    const canRemove=!isStopped;
+    const stratLabel=p.strategy==='SAR_TOP_BOTTOM'?'TB':p.strategy||'—';
+    const gapRule=p.gap_rule||'inactive';
+    const gapActive=gapRule==='active';
+    const rollVal=p.rollover?'Yes':'No';
+    // Friendly sector label
+    const sectorLabel=sectorMap[p.sector]||p.sector||'—';
+    // Pyramiding lots: DB uses pyramid_lots, engine uses pyramids
+    const pyrLots=p.pyramiding_lots||p.pyramids||1;
+
+    html+=`<tr data-inst="${inst}" style="background:${rowBg}">
+      <td style="text-align:center;color:var(--text-muted)">${i+1}</td>
+      <td style="font-size:11px">${p.entry_date?(p.entry_date.includes('T')?p.entry_date.split('T')[0]+' '+p.entry_date.split('T')[1]?.substring(0,5):p.entry_date):'—'}</td>
+      <td style="text-align:center">
+        <span style="cursor:pointer;color:var(--text-muted)" onclick="tlAdjLots('${inst}',${i},-1)">−</span>
+        <span id="tlLots_${i}" style="font-weight:700;color:var(--accent);padding:0 4px">${lots}</span>
+        <span style="cursor:pointer;color:var(--text-muted)" onclick="tlAdjLots('${inst}',${i},1)">+</span>
+      </td>
+      <td style="font-size:11px;color:var(--accent)">${stratLabel}</td>
+      <td><span class="wl-name">${base}</span><span style="font-size:9px;color:var(--text-muted)">${segLabel}</span></td>
+      <td style="font-size:11px">${sectorLabel}</td>
+      <td><span class="${dirCls}" style="font-size:11px">${dir}</span></td>
+      <td><div style="font-size:11px">${ep}</div><div style="font-size:10px;color:var(--text-muted)">${reason}</div></td>
+      <td id="tlLTP_${i}" style="font-weight:700;font-size:12px;color:var(--text-primary)">${ltpStr}</td>
+      <td id="tlSL_${i}" style="cursor:pointer;font-size:11px" title="Click to override" onclick="tlEditSL(${i},'${inst}')">${p.sl_mode==='manual'&&p.current_sl?'<span style="color:var(--blue)">₹'+Number(p.current_sl).toLocaleString('en-IN',{minimumFractionDigits:2})+'</span>':'<span style="color:var(--gold)">'+(p.current_sl?'₹'+Number(p.current_sl).toLocaleString('en-IN',{minimumFractionDigits:2}):'—')+'</span>'}</td>
+      <td id="tlGap_${i}" style="cursor:pointer;font-size:11px;color:${gapActive?'var(--orange)':'var(--text-muted)'}" onclick="tlToggle('${inst}','gap_rule',${i})">${gapRule}</td>
+      <td style="font-size:11px;color:var(--text-muted)">${prevT}</td>
+      <td style="font-size:11px;color:var(--text-muted)">${prevB}</td>
+      <td style="text-align:center">
+        <span style="cursor:pointer;color:var(--text-muted);font-size:10px" onclick="tlAdjPyr('${inst}',${i},-1)">−</span>
+        <span id="tlPyr_${i}" style="font-size:11px;font-weight:700;color:var(--accent)">${pyrLots}</span>
+        <span style="cursor:pointer;color:var(--text-muted);font-size:10px" onclick="tlAdjPyr('${inst}',${i},1)">+</span>
+      </td>
+      <td id="tlRoll_${i}" style="cursor:pointer;font-size:11px" onclick="tlToggleRoll('${inst}',${i})">${rollVal}</td>
+      <td style="font-size:12px;font-weight:600;color:${pnlCls}">${pnlStr}</td>
+      <td id="tlTPnl_${i}" style="font-weight:700;font-size:13px;color:var(--text-muted)">—</td>
+      <td><button class="btn-chart" onclick="openTlChart('${inst}','${base}')" style="padding:3px 8px;font-size:11px;background:var(--blue-dim);color:var(--blue);border:1px solid rgba(59,130,246,0.3);border-radius:6px;cursor:pointer">📊</button></td>
+      <td>${canStop?`<button class="btn-stop" onclick="onTlStop('${inst}')" style="padding:3px 8px;font-size:11px">Stop</button>`:'<span style="color:var(--text-muted);font-size:11px">—</span>'}</td>
+      <td>${canRestart?`<button class="btn-restart" onclick="onTlRestart('${inst}')" style="padding:3px 8px;font-size:11px">Restart</button>`:'<span style="color:var(--text-muted);font-size:11px">—</span>'}</td>
+      <td>${canRemove?`<button class="btn-remove-tl" onclick="onTlRemove('${inst}')" style="padding:3px 8px;font-size:11px">Remove</button>`:'<span style="color:var(--text-muted);font-size:11px">—</span>'}</td>
+    </tr>`;
+  });
+  tb.innerHTML=html;
+  refreshTlCells();
+}
+// ── Reactive column refresh (LTP, SL, Total P&L) called on every engine tick
+function refreshTlCells(){
+  const list=_tlFiltered();
+  let totalPnl=0;
+  list.forEach(([inst,p],i)=>{
+    const q=getQuote(inst);
+    const ltp=q?(q.last_price||q.price||0):null;
+
+    // LTP
+    const ltpEl=document.getElementById('tlLTP_'+i);
+    if(ltpEl&&ltp)ltpEl.textContent='₹'+Number(ltp).toLocaleString('en-IN',{minimumFractionDigits:2});
+
+    // SL (auto-computed by engine)
+    const slEl=document.getElementById('tlSL_'+i);
+    if(slEl&&p.current_sl){
+      const slTxt='₹'+Number(p.current_sl).toLocaleString('en-IN',{minimumFractionDigits:2});
+      const cls=p.sl_mode==='manual'?'var(--blue)':'var(--gold)';
+      slEl.innerHTML=`<span style="color:${cls};cursor:pointer">${slTxt}</span>`;
+    }
+
+    // P&L + Total
+    const dir2=p.direction||p.side||'—';
+    if(p.status==='ACTIVE'&&p.entry_price&&dir2!=='—'){
+      const l=dir2==='LONG'?(ltp||0)-p.entry_price:p.entry_price-(ltp||0);
+      const lots2=p.initial_lots||p.qty||1;
+      const rowPnl=l*lots2;
+      totalPnl+=rowPnl;
+      const el=document.getElementById('tlTPnl_'+i);
+      if(el){el.textContent=(rowPnl>=0?'+₹':'−₹')+Math.abs(rowPnl).toFixed(0);el.style.color=rowPnl>=0?'var(--green)':'var(--red)';}
+    }
+
+    // Lots (in case changed elsewhere)
+    const lotsEl=document.getElementById('tlLots_'+i);
+    if(lotsEl)lotsEl.textContent=p.initial_lots||p.qty||1;
+
+    // Pyramiding lots
+    const pyrEl=document.getElementById('tlPyr_'+i);
+    if(pyrEl)pyrEl.textContent=p.pyramiding_lots||p.pyramids||1;
+  });
+  const el=document.getElementById('tlTotalPnl');
+  if(el){
+    el.textContent='Total P&L: '+(totalPnl>=0?'+':'−')+'₹'+Math.abs(totalPnl).toFixed(0);
+    el.style.color=totalPnl>=0?'var(--green)':'var(--red)';
+    el.style.fontWeight='700';
+  }
+}
+// ── Toggle gap_rule / pyramiding_on
+function tlToggle(inst,field,i){
+  if(!ws||ws.readyState!==WebSocket.OPEN){showToast('Engine not connected','var(--red)');return;}
+  const positions=window._positions||{};
+  const p=positions[inst];
+  if(!p)return;
+  let newVal;
+  if(field==='gap_rule'){
+    newVal=p.gap_rule==='active'?'inactive':'active';
+  } else if(field==='pyramiding_on'){
+    newVal=!p.pyramiding_on;
+  }
+  const payload={command:'update_strategy_params',instrument:inst};
+  payload[field]=newVal;
+  ws.send(JSON.stringify(payload));
+}
+// ── Toggle rollover (yes/no)
+function tlToggleRoll(inst,i){
+  if(!ws||ws.readyState!==WebSocket.OPEN){showToast('Engine not connected','var(--red)');return;}
+  const positions=window._positions||{};
+  const p=positions[inst];
+  if(!p)return;
+  ws.send(JSON.stringify({command:'update_strategy_params',instrument:inst,rollover:!p.rollover}));
+}
+// ── Edit SL: click shows inline input
+function tlEditSL(i,inst){
+  const positions=window._positions||{};
+  const p=positions[inst];
+  if(!p)return;
+  const el=document.getElementById('tlSL_'+i);
+  if(!el)return;
+  const current=p.current_sl||p.entry_price||0;
+  el.innerHTML=`<input id="tlSLInp_${i}" type="number" step="0.5" value="${current}"
+    style="width:70px;background:var(--bg-card);border:1px solid var(--accent);color:var(--text-primary);
+    border-radius:4px;padding:2px 5px;font-size:11px"
+    onkeydown="if(event.key==='Enter')tlSaveSL(${i},'${inst}')"
+    onclick="event.stopPropagation()">`;
+  const inp=document.getElementById('tlSLInp_'+i);
+  if(inp){inp.focus();inp.select();}
+}
+function tlSaveSL(i,inst){
+  const inp=document.getElementById('tlSLInp_'+i);
+  if(!inp||!ws||ws.readyState!==WebSocket.OPEN){showToast('Engine not connected','var(--red)');return;}
+  const val=parseFloat(inp.value);
+  if(isNaN(val)||val<=0){showToast('Enter a valid price','var(--orange)');return;}
+  ws.send(JSON.stringify({command:'update_strategy_params',instrument:inst,sl_manual_price:val,sl_mode:'manual'}));
+}
+// ── Adjust lots (1–10)
+function tlAdjLots(inst,i,delta){
+  if(!ws||ws.readyState!==WebSocket.OPEN){showToast('Engine not connected','var(--red)');return;}
+  const p=(window._positions||{})[inst];
+  if(!p)return;
+  const newLots=Math.max(1,Math.min(10,(p.initial_lots||1)+delta));
+  ws.send(JSON.stringify({command:'update_strategy_params',instrument:inst,initial_lots:newLots}));
+}
+// ── Adjust pyramiding lots (1–10)
+function tlAdjPyr(inst,i,delta){
+  if(!ws||ws.readyState!==WebSocket.OPEN){showToast('Engine not connected','var(--red)');return;}
+  const p=(window._positions||{})[inst];
+  if(!p)return;
+  const newPyr=Math.max(1,Math.min(10,(p.pyramiding_lots||1)+delta));
+  ws.send(JSON.stringify({command:'update_strategy_params',instrument:inst,pyramiding_lots:newPyr}));
+}
+function onTlStop(inst){if(!confirm('Stop '+inst+'?'))return;if(ws&&ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify({command:'stop_position',instrument:inst,mode:'PAPER'}));}
+// ── Quick Add Instrument from Trade Log form (bypasses Watchlist)
+function tlQuickAdd(){
+  const input=document.getElementById('tlAddInst');
+  const modeSel=document.getElementById('tlAddMode');
+  const stratSel=document.getElementById('tlAddStrat');
+  const sectorSel=document.getElementById('tlAddSector');
+  if(!input||!modeSel)return;
+  const val=input.value.trim().toUpperCase();
+  if(!val){showToast('Enter an instrument name','var(--orange)');return;}
+  if(!(ws&&ws.readyState===WebSocket.OPEN)){showToast('Engine not connected','var(--red)');return;}
+  const mode=modeSel.value;
+  const strategy=stratSel?stratSel.value:'SAR_TOP_BOTTOM';
+  const sector=sectorSel&&sectorSel.value?sectorSel.value:_inferSector(val);
+  ws.send(JSON.stringify({
+    command:'add_position',
+    instrument:val,
+    mode:mode,
+    strategy:strategy,
+    segment:'STOCK_FUTURES',
+    sector:sector,
+  }));
+  showToast('📋 '+val+' added ('+mode+', '+strategy.split('_')[0]+')',mode==='LIVE'?'var(--orange)':'var(--blue)');
+  input.value='';
+}
+function onTlRestart(inst){if(!confirm('Restart '+inst+'?'))return;if(ws&&ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify({command:'restart_position',instrument:inst,mode:'PAPER'}));}
+function onTlRemove(inst){if(!confirm('Remove '+inst+' from log?'))return;if(ws&&ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify({command:'remove_position',instrument:inst}));}
+// ── Chart modal — requests candle data from engine and renders OHLC chart
+window._chartCache = {};   // { interval: { candles, interval, range } }
+window._chartCfg  = { inst: '', symbol: '', interval: '1d', range: '60d', chartType: 'candle' };
+window._chartTimer = null;  // auto-refresh interval handle
+
+function openTlChart(inst, base){
+  console.log('[Chart] openTlChart called — inst:', inst, 'base:', base);
+  if(!ws||ws.readyState!==WebSocket.OPEN){
+    showToast('Engine not connected','var(--red)');return;
+  }
+  // Default: 60-day daily candles (TB strategy uses daily line chart)
+  window._chartCfg = { inst, symbol: base, interval: '1d', range: '60d', chartType: 'candle' };
+  window._chartCache = {};
+  // Clear any existing refresh timer
+  if(window._chartTimer){ clearInterval(window._chartTimer); window._chartTimer=null; }
+  ws.send(JSON.stringify({command:'get_candles',instrument:inst,symbol:base,interval:'1d',range:'60d'}));
+  showToast('📊 '+base+' daily chart — loading...','var(--blue)');
+}
+
+function _drawChart(canvas, ohlc, chartType, interval){
+  const W=700,H=340,padL=60,padR=20,padT=20,padB=40;
+  const chartW=W-padL-padR,chartH=H-padT-padB;
+  const prices=ohlc.flatMap(c=>[c.h,c.l]);
+  const minP=Math.min(...prices),maxP=Math.max(...prices);
+  const rng=maxP-minP||1;
+  const xStep=chartW/(ohlc.length-1||1);
+  function px(p){return padT+chartH-(p-minP)/rng*chartH;}
+  function py(i){return padL+i*xStep;}
+  const candleW=Math.max(1,xStep*0.65);
+
+  const ctx=canvas.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
+  canvas.width=W*dpr;canvas.height=H*dpr;
+  canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.scale(dpr,dpr);
+  ctx.clearRect(0,0,W,H);
+
+  // Grid
+  ctx.strokeStyle='rgba(255,255,255,0.06)';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=padT+i*chartH/4;
+    ctx.beginPath();ctx.moveTo(padL,y);ctx.lineTo(padL+chartW,y);ctx.stroke();
+    const p=minP+rng*(1-i/4);
+    ctx.fillStyle='rgba(255,255,255,0.3)';ctx.font='10px monospace';ctx.textAlign='right';
+    ctx.fillText('₹'+p.toFixed(0),padL-4,y+3);
+  }
+  ctx.fillStyle='rgba(255,255,255,0.3)';ctx.font='10px monospace';ctx.textAlign='left';
+  ctx.fillText('₹'+maxP.toFixed(0),padL+chartW+4,padT+10);
+  ctx.fillText('₹'+minP.toFixed(0),padL+chartW+4,padT+chartH);
+
+  if(chartType==='line'){
+    // Line chart — single polyline of closes
+    ctx.beginPath();
+    ohlc.forEach((c,i)=>{
+      const y=px(c.c);
+      i===0?ctx.moveTo(py(i),y):ctx.lineTo(py(i),y);
+    });
+    ctx.strokeStyle='#00c896';ctx.lineWidth=1.5;ctx.stroke();
+    // Filled area below line
+    ctx.lineTo(py(ohlc.length-1),padT+chartH);
+    ctx.lineTo(py(0),padT+chartH);
+    ctx.closePath();
+    ctx.fillStyle='rgba(0,200,150,0.08)';ctx.fill();
+  } else {
+    // Candlestick chart
+    ohlc.forEach((c,i)=>{
+      const cx=py(i);
+      const bodyTop=px(Math.max(c.o,c.c)),bodyBot=px(Math.min(c.o,c.c));
+      const isGreen=c.c>=c.o;
+      const col=isGreen?'#00c896':'#ff4d6a';
+      const bodyH=Math.max(1,bodyBot-bodyTop);
+      ctx.strokeStyle=col;ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(cx,px(c.h));ctx.lineTo(cx,px(c.l));ctx.stroke();
+      ctx.fillStyle=col;
+      ctx.fillRect(cx-candleW/2,bodyTop,candleW,bodyH);
+    });
+  }
+
+  // Last price label
+  const lastP=ohlc[ohlc.length-1]?.c||0;
+  const lastY=px(lastP);
+  ctx.strokeStyle='rgba(255,200,0,0.4)';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+  ctx.beginPath();ctx.moveTo(padL,lastY);ctx.lineTo(padL+chartW,lastY);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='rgba(255,200,0,0.9)';ctx.font='bold 10px monospace';ctx.textAlign='left';
+  ctx.fillText('₹'+lastP.toFixed(2),padL+chartW+4,lastY+3);
+
+  // Interval label bottom-right
+  const label=interval==='1d'?'Daily':interval==='60m'?'1 Hour':interval==='15m'?'15 Min':'5 Min';
+  ctx.fillStyle='rgba(255,255,255,0.25)';ctx.font='10px monospace';ctx.textAlign='right';
+  ctx.fillText(label,padL+chartW,padT+chartH+14);
+}
+
+function _startChartRefresh(){
+  // Auto-refresh the current interval's candles every 30 seconds
+  if(window._chartTimer){ clearInterval(window._chartTimer); }
+  window._chartTimer = setInterval(()=>{
+    if(!document.getElementById('chartModal')){
+      clearInterval(window._chartTimer); window._chartTimer=null;
+      return;
+    }
+    const cfg=window._chartCfg;
+    if(!cfg.inst) return;
+    const rangeMap={'1d':'60d','60m':'5d','15m':'5d'};
+    const range=rangeMap[cfg.interval]||'60d';
+    console.log('[Chart] Auto-refresh: '+cfg.symbol+' '+cfg.interval);
+    ws.send(JSON.stringify({command:'get_candles',instrument:cfg.inst,symbol:cfg.symbol,interval:cfg.interval,range:range}));
+  },1000);
+}
+
+function renderTlChart(inst, symbol, candles, interval, range){
+  interval=interval||window._chartCfg.interval||'1d';
+  range=range||window._chartCfg.range||'60d';
+  const chartType=window._chartCfg.chartType||'candle';
+
+  // Update cache
+  window._chartCache[interval]={candles,interval,range};
+
+  // Build modal
+  let modal=document.getElementById('chartModal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='chartModal';
+    modal.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center';
+    modal.onclick=function(e){if(e.target===modal)modal.remove();};
+    document.body.appendChild(modal);
+    // Start live auto-refresh when modal first opens
+    _startChartRefresh();
+  }
+
+  if(!candles||!candles.length){
+    modal.innerHTML=`<div style="background:var(--bg-card);border-radius:12px;padding:30px;text-align:center;max-width:380px">
+      <div style="font-size:18px;margin-bottom:10px">📊 ${symbol}</div>
+      <div style="color:var(--text-muted)">No candle data available</div>
+      <button onclick="document.getElementById('chartModal').remove()" style="margin-top:16px;padding:8px 20px;background:var(--bg-card2);border:1px solid var(--border);color:var(--text-primary);border-radius:8px;cursor:pointer">Close</button>
+    </div>`;
+    return;
+  }
+
+  const ohlc=candles.map(c=>({t:c[0],o:parseFloat(c[1]),h:parseFloat(c[2]),l:parseFloat(c[3]),c:parseFloat(c[4])}));
+  const firstTs=ohlc[0]?.t||0;
+  const lastTs=ohlc[ohlc.length-1]?.t||0;
+  const tfLabel=interval==='1d'?'Daily':interval==='60m'?'1 Hour':interval==='15m'?'15 Min':'5 Min';
+
+  modal.innerHTML=`<div style="background:var(--bg-card);border-radius:12px;padding:16px;max-width:740px;width:95vw;user-select:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;flex-wrap:wrap">
+      <div style="font-size:16px;font-weight:700;color:var(--text-primary)">📊 ${symbol} — <span id="tlTfLabel">${tfLabel}</span> <span style="font-size:11px;color:var(--green);font-weight:400;margin-left:6px">● LIVE</span></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <!-- Timeframe pills: Daily / 1 Hour / 15 Min -->
+        ${['1d','60m','15m'].map(tf=>`<button class="tl-tf-btn${tf===interval?' tl-tf-active':''}" data-tf="${tf}" style="padding:4px 10px;font-size:11px;border-radius:6px;border:1px solid;cursor:pointer;font-weight:600;background:${tf===interval?'var(--accent)':'var(--bg-card2)'};color:${tf===interval?'#fff':'var(--text-muted)'};border-color:${tf===interval?'var(--accent)':'var(--border)'}">${tf==='1d'?'1D':tf==='60m'?'1H':'15m'}</button>`).join('')}
+        <div style="width:1px;height:20px;background:var(--border)"></div>
+        <!-- Chart type pills -->
+        <button class="tl-ct-btn${chartType==='candle'?' tl-ct-active':''}" data-ct="candle" style="padding:4px 10px;font-size:11px;border-radius:6px;border:1px solid;cursor:pointer;font-weight:600;color:${chartType==='candle'?'#fff':'var(--text-muted)'};background:${chartType==='candle'?'var(--accent)':'var(--bg-card2)'};border-color:${chartType==='candle'?'var(--accent)':'var(--border)'}">Candle</button>
+        <button class="tl-ct-btn${chartType==='line'?' tl-ct-active':''}" data-ct="line" style="padding:4px 10px;font-size:11px;border-radius:6px;border:1px solid;cursor:pointer;font-weight:600;color:${chartType==='line'?'#fff':'var(--text-muted)'};background:${chartType==='line'?'var(--accent)':'var(--bg-card2)'};border-color:${chartType==='line'?'var(--accent)':'var(--border)'}">Line</button>
+      </div>
+    </div>
+    <canvas id="tlCanvas" width="700" height="340" style="display:block;border-radius:8px;background:var(--bg-card2)"></canvas>
+    <div style="margin-top:8px;display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted)">
+      <span>${new Date(firstTs*1000).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'})}</span>
+      <span style="color:var(--green)">Auto-refreshes every 1s</span>
+      <span>${ohlc.length} bars</span>
+      <span>${new Date(lastTs*1000).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'})}</span>
+    </div>
+    <button onclick="document.getElementById('chartModal').remove()" style="margin-top:10px;width:100%;padding:8px;background:var(--bg-card2);border:1px solid var(--border);color:var(--text-primary);border-radius:8px;cursor:pointer;font-size:13px">Close</button>
+  </div>`;
+
+  // Draw chart
+  setTimeout(()=>{
+    const canvas=document.getElementById('tlCanvas');
+    if(canvas) _drawChart(canvas,ohlc,chartType,interval);
+  },50);
+
+  // Timeframe pill clicks
+  modal.querySelectorAll('.tl-tf-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const tf=btn.dataset.tf;
+      if(tf===window._chartCfg.interval) return;
+      if(window._chartCache[tf]){
+        window._chartCfg.interval=tf;
+        const cached=window._chartCache[tf];
+        renderTlChart(window._chartCfg.inst,window._chartCfg.symbol,cached.candles,cached.interval,cached.range);
+      } else {
+        const rangeMap={'1d':'60d','60m':'5d','15m':'5d'};
+        window._chartCfg.interval=tf;
+        ws.send(JSON.stringify({command:'get_candles',instrument:window._chartCfg.inst,symbol:window._chartCfg.symbol,interval:tf,range:rangeMap[tf]||'60d'}));
+        showToast('📊 Fetching '+tf+' candles...','var(--blue)');
+      }
+    });
+  });
+
+  // Chart type pill clicks
+  modal.querySelectorAll('.tl-ct-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const ct=btn.dataset.ct;
+      window._chartCfg.chartType=ct;
+      const cached=window._chartCache[window._chartCfg.interval];
+      if(cached){
+        renderTlChart(window._chartCfg.inst,window._chartCfg.symbol,cached.candles,cached.interval,cached.range);
+      }
+    });
   });
 }
 
@@ -1706,6 +2149,29 @@ function _inferSegment(inst){
   if(/^(NIFTY|BANKNIFTY|FINNIFTY|SENSEX|MIDCPNIFTY)/.test(u))return'INDEX_FUTURES';
   if(/^(GOLD|SILVER|CRUDEOIL|NATURALGAS)/.test(u))return'COMMODITY_FUTURES';
   return'CASH';
+}
+function _inferSector(stock){
+  // Map stock base symbol to sector name (display label)
+  const s=stock.toUpperCase().replace(/\d+$/,'').trim();
+  const map={
+    'CANBK':'PSU Bank','SBIN':'PSU Bank','BANK OF BARODA':'PSU Bank','UNIONBANK':'PSU Bank',
+    'PNB':'PSU Bank','CENTRALBK':'PSU Bank','INDIANB':'PSU Bank','UCOBANK':'PSU Bank',
+    'HDFCBANK':'PVT Bank','ICICIBANK':'PVT Bank','KOTAKBANK':'PVT Bank','INDUSINDBK':'PVT Bank',
+    'AXISBANK':'PVT Bank','IDFCFIRSTB':'PVT Bank','BANDHANBNK':'PVT Bank','RBLBANK':'PVT Bank',
+    'MARUTI':'Auto','M&M':'Auto','TATAMOTORS':'Auto','BAJAJ-AUTO':'Auto','HEROMOTOCO':'Auto',
+    'EICHERMOT':'Auto','TVSMOTOR':'Auto','ASHOKLEY':'Auto','BALKRISIND':'Auto',
+    'RELIANCE':'Energy','ONGC':'Energy','BPCL':'Energy','IOC':'Energy','HPCL':'Energy','GAIL':'Energy',
+    'HINDUNILVR':'FMCG','NESTLE':'FMCG','DABUR':'FMCG','COLPAL':'FMCG','BRITANNIA':'FMCG','MARICO':'FMCG',
+    'TITAN':'Consumer Durable','HAVELLS':'Consumer Durable','VOLTAS':'Consumer Durable','CROMPTON':'Consumer Durable',
+    'BAJFINANCE':'Financial Services','BAJ FINSERV':'Financial Services','MUTHOOTFIN':'Financial Services',
+    'INFY':'IT','TCS':'IT','HCLTECH':'IT','WIPRO':'IT','TECHM':'IT','LTIM':'IT','COFORGE':'IT',
+    'TATASTEEL':'Metal','JSWSTEEL':'Metal','HINDALCO':'Metal','JSPL':'Metal','NMDC':'Metal','SAIL':'Metal',
+    'SUNPHARMA':'Pharma','CIPLA':'Pharma','DRREDDY':'Pharma','APOLLOPHARMA':'Pharma','ZYDUSLIFE':'Pharma',
+    'NTPC':'PSE','POWERGRID':'PSE','COALINDIA':'PSE','BEL':'Defence','HAL':'Defence','BEML':'Defence',
+    'DLF':'Realty','GODREJPROP':'Realty','ADANI PORTS':'Infrastructure','DELHIVERY':'Infrastructure',
+    'CONCOR':'Infrastructure','ADANIENT':'Miscellaneous','ADANIGREEN':'Miscellaneous',
+  };
+  return map[s]||'AUTO';
 }
 function getQuote(inst){
   const q=window._quotes||{};
@@ -2043,6 +2509,8 @@ function switchWlTab(tab){
    RENDER WATCHLIST TABLE
 ════════════════════════════════════════ */
 function renderAllWatchlists(){
+  // CASH segment has no strategy — always keep it empty (defense against browser JS cache)
+  WATCHLISTS['CASH'] = [];
   renderWatchlistTable('CASH');
   renderWatchlistTable('FUTURE');
   renderWatchlistTable('OPTION');
@@ -2075,16 +2543,17 @@ function renderWatchlistTable(tab){
 
   tbody.innerHTML=items.map((item,idx)=>{
     const ltp=getLtpDisplay(item.inst);
-    const secKey=item.sysId.replace('SEC_','');
-    const sysLabel=CASH_SYSTEMS[item.sysId]?.label
-      ||FUTURE_SYSTEMS[item.sysId]?.label
-      ||(FUT_SECTORS[secKey] ? secKey+' Sector' : item.sysId);
     const id=`${tab}_${idx}`;
     const isPaper=item.mode==='PAPER';
     const modeCls=isPaper?'paper':'live';
     const modeLbl=isPaper?'PAPER':'LIVE';
 
-    // Sector label — extract from FUT_SECTORS if available
+    // Strategy label — show friendly name (TB, RSI, etc.), NOT the sector sysId
+    const rawStrat=(item.strategy||'SAR_TOP_BOTTOM');
+    const stratMap={'SAR_TOP_BOTTOM':'TB','TOP_BOTTOM_2':'TB2','RSI_REVERSAL':'RSI','MACD_CROSS':'MACD','BB_SQUEEZE':'BB'};
+    const stratLabel=stratMap[rawStrat]||rawStrat.split('_')[0];
+
+    // Sector label — extract from FUT_SECTORS if available (for FUTURE tab)
     let sectorLabel='—';
     if(tab==='FUTURE'){
       Object.entries(FUT_SECTORS).forEach(([sector,stocks])=>{
@@ -2113,7 +2582,7 @@ function renderWatchlistTable(tab){
       <td class="wl-sr">${idx+1}</td>
       <td class="wl-inst">${item.inst}</td>
       <td class="wl-sector">${tab==='FUTURE' ? sectorLabel : '—'}</td>
-      <td class="wl-sys">${sysLabel}</td>
+      <td class="wl-strat">${stratLabel}</td>
       <td class="wl-ltp ${ltp.cls}">${ltp.price}</td>
       <td class="wl-change ${ltp.cls}">${ltp.change}</td>
       ${entrySlCols}
@@ -2125,7 +2594,7 @@ function renderWatchlistTable(tab){
         </div>
       </td>
       <td>
-        <button class="wl-hit" id="wlHit_${id}" onclick="onWlHit('${tab}',${idx})">HIT</button>
+        <button class="wl-hit" id="wlHit_${id}" onclick="onWlHit('${tab}',${idx})">GO</button>
       </td>
       <td>
         <button class="wl-rm" onclick="onWlRemove('${tab}',${idx})" title="Remove">✕</button>
@@ -2164,27 +2633,29 @@ function onWlHit(tab,idx){
   if(!item)return;
 
   if(!(ws && ws.readyState===WebSocket.OPEN)){
-    showToast('Engine not connected — cannot hit trade', 'var(--red)');
+    showToast('Engine not connected — cannot GO', 'var(--red)');
     return;
   }
 
   if(tab==='FUTURE'){
-    // HIT for futures — auto-detect direction, no signal check, resolve to current month contract
+    // Derive sector: check if sysId is SEC_<name>, else infer from stock name
+    let sector = 'AUTO';
+    if(item.sysId && item.sysId.startsWith('SEC_')){
+      sector = item.sysId.replace('SEC_',''); // e.g. 'PSU Bank', 'Auto', 'IT'
+    } else {
+      sector = _inferSector(item.inst);
+    }
     ws.send(JSON.stringify({
-      command: 'hit_trade',
+      command: 'add_position',
       instrument: item.inst,
-      mode: item.mode,  // PAPER or LIVE
+      mode: item.mode || 'PAPER',
+      segment: 'STOCK_FUTURES',
+      sector: sector,
     }));
-    showToast(`⚡ HIT — ${item.inst}: auto-detecting direction & entering...`, item.mode==='LIVE'?'var(--red)':'var(--blue)');
+    showToast(`📋 ${item.inst} added to Trade Log (WAITING)`, item.mode==='LIVE'?'var(--orange)':'var(--blue)');
   } else {
-    // CASH / OPTION — fire strategy signal as before
-    ws.send(JSON.stringify({
-      command: 'signal_trade',
-      instrument: item.inst,
-      mode: item.mode,
-      strategy: item.sysId,
-    }));
-    showToast(`🎯 ${item.inst} — firing signal...`, item.mode==='LIVE'?'var(--red)':'var(--blue)');
+    // CASH / OPTION — no strategy defined yet
+    showToast('⚠️ No strategy defined for CASH/OPTION segment', 'var(--orange)');
   }
 }
 
@@ -2213,18 +2684,29 @@ function wlAddInstrument(tab){
   const input=document.getElementById('wlAdd'+tab);
   if(!input)return;
   const val=input.value.trim().toUpperCase();
-  if(!val)return;
+  if(!val){showToast('Enter instrument name','var(--orange)');return;}
   if(WATCHLISTS[tab].find(x=>x.inst===val)){
     showToast(`${val} already in watchlist`,'var(--orange)');return;
   }
-  WATCHLISTS[tab].push({ inst:val, sysId:tab, entryPrice:'', sl:'', mode:'PAPER' });
-  selectedInstruments[val]=tab;
+  let sysId = tab;
+  let strategy = 'SAR_TOP_BOTTOM';
+  if(tab==='FUTURE'){
+    const sectorSel=document.getElementById('wlFutSector');
+    const stratSel=document.getElementById('wlFutStrat');
+    const chosenSector=sectorSel&&sectorSel.value?sectorSel.value:_inferSector(val);
+    strategy=stratSel&&stratSel.value?stratSel.value:'SAR_TOP_BOTTOM';
+    sysId=chosenSector&&chosenSector!=='OTHER'?'SEC_'+chosenSector:'FUTURE';
+    selectedInstruments[val]=sysId;
+  } else {
+    selectedInstruments[val]=tab;
+  }
+  WATCHLISTS[tab].push({ inst:val, sysId:sysId, entryPrice:'', sl:'', mode:'PAPER', strategy:strategy });
   input.value='';
   updateSegCount(tab);
   saveWatchlists();
   renderAllWatchlists();
   syncToEngine();
-  showToast(`Added ${val} to ${tab} watchlist`,'var(--green)');
+  showToast(`📋 ${val} added (${tab}, ${strategy.split('_')[0]})`,'var(--green)');
 }
 
 /* ════════════════════════════════════════
@@ -2232,8 +2714,12 @@ function wlAddInstrument(tab){
 ════════════════════════════════════════ */
 function syncToEngine(){
   if(ws&&ws.readyState===WebSocket.OPEN){
-    // Sync ALL segments: CASH, FUTURES, and OPTIONS
-    const allInsts=WATCHLISTS.CASH.concat(WATCHLISTS.FUTURE,WATCHLISTS.OPTION).map(x=>x.inst);
+    // Sync ALL segments: CASH, FUTURES, and OPTIONS — send strategy/sector per instrument
+    const allInsts=WATCHLISTS.CASH.concat(WATCHLISTS.FUTURE,WATCHLISTS.OPTION).map(x=>({
+      inst:x.inst,
+      strategy:x.strategy||'SAR_TOP_BOTTOM',
+      sector:x.sector||'OTHER',
+    }));
     ws.send(JSON.stringify({command:'sync_watchlist',instruments:allInsts}));
   }
 }
@@ -2313,6 +2799,7 @@ document.head.appendChild(style);
 function init(){
   loadStratStocks();
   loadWatchlists();
+  switchOrdersTab('Trades');  // Default to Trade Log panel (open positions)
   Object.keys(CASH_SYSTEMS).forEach(k=>{if(!STRAT_STOCKS[k])STRAT_STOCKS[k]=[...CASH_SYSTEMS[k].stocks];});
   Object.keys(FUTURE_SYSTEMS).forEach(k=>{if(!STRAT_STOCKS[k])STRAT_STOCKS[k]=[...FUTURE_SYSTEMS[k].stocks];});
   Object.keys(FUT_SECTORS).forEach(k=>{if(!STRAT_STOCKS['SEC_'+k])STRAT_STOCKS['SEC_'+k]=[...FUT_SECTORS[k]];});
@@ -2329,12 +2816,20 @@ function init(){
   renderAllWatchlists();
   Object.keys(CASH_SYSTEMS).forEach(k=>updateSegCount('CASH'));
   Object.keys(FUTURE_SYSTEMS).forEach(k=>updateSegCount('FUTURE'));
-  switchOrdersTab('Live'); // Default to Live Trades tab
-  switchLiveSeg('FUTURES');
+  switchOrdersTab('Trades'); // Default to Trade Log tab
   connectWS();
 }
 
 init();
+
+// Force hard reload when page is restored from Chrome bfcache (back/forward cache)
+// This ensures fresh JS is loaded even if tab was backgrounded
+window.addEventListener('pageshow', function(e){
+  if(e.persisted){
+    // Page was restored from bfcache — force a hard reload
+    window.location.reload();
+  }
+});
 </script>
 </body>
 </html>

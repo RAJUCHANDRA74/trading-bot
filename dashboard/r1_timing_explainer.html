@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>R1 Timing Explainer</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; padding: 24px; max-width: 900px; margin: 0 auto; }
+  h2 { color: #60a5fa; margin-top: 32px; }
+  .scenario { background: #1e293b; border-radius: 12px; padding: 20px; margin: 16px 0; }
+  .scenario h3 { color: #f97316; margin-top: 0; }
+  .days { display: flex; align-items: flex-end; gap: 4px; margin: 16px 0; height: 200px; padding: 12px; background: #0f172a; border-radius: 8px; overflow-x: auto; }
+  .day { display: flex; flex-direction: column; align-items: center; min-width: 50px; flex-shrink: 0; }
+  .price { font-size: 11px; font-weight: bold; color: #94a3b8; }
+  .bar { width: 36px; border-radius: 4px 4px 0 0; transition: all 0.3s; }
+  .day-label { font-size: 10px; color: #64748b; margin-top: 4px; text-align: center; }
+  .top-marker { color: #f97316; font-size: 13px; font-weight: bold; }
+  .bot-marker { color: #3b82f6; font-size: 13px; font-weight: bold; }
+  .today-marker { color: #fbbf24; font-size: 10px; }
+  .note { background: #1e3a5f; border-left: 3px solid #60a5fa; padding: 10px 14px; border-radius: 0 6px 6px 0; margin: 10px 0; font-size: 13px; }
+  .arrow { color: #4ade80; font-size: 20px; }
+  .question-box { background: #3b1a1a; border-left: 3px solid #ef4444; padding: 12px 14px; border-radius: 0 6px 6px 0; margin: 12px 0; font-size: 13px; color: #fca5a5; }
+  .answer-box { background: #1a3b1a; border-left: 3px solid #22c55e; padding: 12px 14px; border-radius: 0 6px 6px 0; margin: 12px 0; font-size: 13px; color: #86efac; }
+  .timeline { position: relative; margin: 16px 0; padding: 16px; background: #0f172a; border-radius: 8px; }
+  .timeline-row { display: flex; align-items: center; gap: 0; margin: 8px 0; }
+  .tl-label { width: 140px; font-size: 12px; color: #94a3b8; flex-shrink: 0; }
+  .tl-bar { flex: 1; height: 24px; background: #1e293b; border-radius: 4px; position: relative; }
+  .tl-fill { height: 100%; border-radius: 4px; }
+  .tl-text { position: absolute; left: 8px; top: 4px; font-size: 11px; font-weight: bold; }
+  .q-marker { position: absolute; width: 2px; background: #ef4444; top: 0; bottom: 0; }
+  .rule-box { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 16px; margin: 16px 0; }
+  .rule-box h4 { color: #fbbf24; margin: 0 0 8px; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin: 16px 0; font-size: 13px; }
+  .legend span { display: flex; align-items: center; gap: 6px; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .key-moment { background: #fbbf24; color: #0f172a; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; }
+</style>
+</head>
+<body>
+<h2 style="color:#60a5fa; margin-bottom:4px">📊 R1 Timing — When is a Top/Bottom CONFIRMED?</h2>
+<p style="color:#94a3b8; margin-top:0; font-size:13px">Understanding the difference between <em>daily close confirmation</em> and <em>intraday R2 entries</em></p>
+
+<div class="rule-box">
+  <h4>⚡ The Core Rule (R1)</h4>
+  <p style="margin:0; font-size:13px">A <strong style="color:#f97316">TOP</strong> or <strong style="color:#3b82f6">BOTTOM</strong> is <strong>confirmed only at end of trading day (15:30)</strong>.<br>
+  Entry/exit via R2 fires <strong>during the trading day</strong> — but uses only <em>already-confirmed</em> levels.</p>
+</div>
+
+<!-- SCENARIO 1 -->
+<div class="scenario">
+  <h3>Scenario 1 — Can we confirm a Top on Day 4 at 11:00 AM?</h3>
+  
+  <div class="days">
+    <div class="day">
+      <div class="price">₹1350</div>
+      <div class="bar" style="height:70px; background:#64748b"></div>
+      <div class="day-label">Day 1<br><span style="color:#475569">closed</span></div>
+    </div>
+    <div class="day">
+      <div class="price">₹1360</div>
+      <div class="bar" style="height:90px; background:#64748b"></div>
+      <div class="day-label">Day 2<br><span style="color:#475569">closed</span></div>
+    </div>
+    <div class="day">
+      <div class="price">₹1370</div>
+      <div class="bar" style="height:110px; background:#f97316"></div>
+      <div class="day-label">Day 3<br><span style="color:#f97316">🔴 TOP</span></div>
+    </div>
+    <div class="day">
+      <div class="price">₹1365</div>
+      <div class="bar" style="height:90px; background:#64748b"></div>
+      <div class="day-label">Day 4<br><span style="color:#fbbf24">trading...</span></div>
+    </div>
+    <div class="day">
+      <div class="price">?open</div>
+      <div class="bar" style="height:20px; background:#1e293b; border:1px dashed #334155"></div>
+      <div class="day-label">Day 5<br><span style="color:#ef4444">future</span></div>
+    </div>
+  </div>
+
+  <div class="question-box">
+    ❓ <strong>At 11:00 AM on Day 4</strong> — we have Day 1, 2, 3 closes. Day 5 doesn't exist yet.<br>
+    Can we say "Day 3 is a TOP"?<br>
+    R1 needs: close[i] > close[i-1] <span style="color:#4ade80">AND</span> close[i] >= close[i+1]<br>
+    → Day 3 = 1370 > 1360 ✓ <span style="color:#4ade80">AND</span> Day 3 = 1370 >= Day4(1365) <span style="color:#ef4444">✗</span><br>
+    <strong style="color:#fca5a5">Second condition FAILS — Day 3 cannot be confirmed as TOP yet.</strong>
+  </div>
+
+  <div class="answer-box">
+    ✅ <strong>Only at 15:30 on Day 5</strong> — when Day 5 closes at 1360:<br>
+    Day 3 = 1370 > Day 2 = 1360 ✓ <strong style="color:#4ade80">AND</strong> Day 3 = 1370 >= Day 5 = 1360 ✓<br>
+    <strong style="color:#86efac">BOTH conditions pass → Day 3 is NOW a confirmed TOP.</strong>
+  </div>
+
+  <div class="note">
+    <strong>📌 Key insight:</strong> Even though the TOP is on Day 3, it is only <em>confirmed</em> at the close of Day 5.<br>
+    During Day 4 trading, Day 3 is <strong>NOT</strong> a confirmed level for R2 entries.<br>
+    Only levels confirmed on <strong>previous days' closes</strong> can be used for intraday R2 entries.
+  </div>
+</div>
+
+<!-- TIMELINE VISUAL -->
+<div class="scenario">
+  <h3>Timeline — What happens on Day 4?</h3>
+  <div class="timeline">
+    <div style="font-size:11px; color:#64748b; margin-bottom:8px">← 09:15 | 11:00 (Day 4) | 13:00 | 15:30 →</div>
+    
+    <div class="timeline-row">
+      <div class="tl-label">Day 3 TOP?</div>
+      <div class="tl-bar">
+        <div class="tl-fill" style="width:15%; background:#ef4444; opacity:0.3"></div>
+        <div class="q-marker" style="left:15%"></div>
+        <div class="tl-text" style="color:#fca5a5">❌ not yet</div>
+        <div class="key-moment" style="position:absolute; left:100%; top:3px; color:#0f172a">15:30 Day 5 closes → confirmed!</div>
+      </div>
+    </div>
+
+    <div class="timeline-row">
+      <div class="tl-label">Can R2 fire?</div>
+      <div class="tl-bar">
+        <div class="tl-fill" style="width:100%; background:#22c55e; opacity:0.2"></div>
+        <div class="tl-text" style="color:#86efac">✅ Yes — use levels confirmed at Day 3 close</div>
+      </div>
+    </div>
+
+    <div class="timeline-row">
+      <div class="tl-label">New level appears?</div>
+      <div class="tl-bar">
+        <div class="tl-fill" style="width:15%; background:#fbbf24; opacity:0.4"></div>
+        <div class="tl-text" style="color:#fcd34d">⏳ waiting for 15:30</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCENARIO 2 -->
+<div class="scenario">
+  <h3>Scenario 2 — Can we confirm a Top on Day 4 at 11:00 AM? (Different prices)</h3>
+
+  <div class="days">
+    <div class="day">
+      <div class="price">₹1350</div>
+      <div class="bar" style="height:70px; background:#64748b"></div>
+      <div class="day-label">Day 1<br><span style="color:#475569">closed</span></div>
+    </div>
+    <div class="day">
+      <div class="price">₹1360</div>
+      <div class="bar" style="height:90px; background:#64748b"></div>
+      <div class="day-label">Day 2<br><span style="color:#475569">closed</span></div>
+    </div>
+    <div class="day">
+      <div class="price">₹1370</div>
+      <div class="bar" style="height:110px; background:#f97316"></div>
+      <div class="day-label">Day 3<br><span style="color:#f97316">🔴 TOP</span></div>
+    </div>
+    <div class="day">
+      <div class="price">₹1380</div>
+      <div class="bar" style="height:130px; background:#64748b"></div>
+      <div class="day-label">Day 4<br><span style="color:#fbbf24">trading...</span></div>
+    </div>
+    <div class="day">
+      <div class="price">?open</div>
+      <div class="bar" style="height:20px; background:#1e293b; border:1px dashed #334155"></div>
+      <div class="day-label">Day 5<br><span style="color:#ef4444">future</span></div>
+    </div>
+  </div>
+
+  <div class="answer-box">
+    ✅ <strong>Day 3 is ALREADY a confirmed TOP</strong> (confirmed at Day 4 close yesterday).<br>
+    R1: Day 3 = 1370 > Day 2 = 1360 ✓ <strong style="color:#4ade80">AND</strong> Day 3 = 1370 >= Day 4 = 1380? <span style="color:#ef4444">✗</span><br>
+    <strong style="color:#fca5a5">Wait — Day 3 is NOT a top either way in this case. Day 3 was already confirmed previously.</strong>
+  </div>
+
+  <div class="note">
+    <strong>📌 In this example:</strong> Day 3 (1370) was confirmed as TOP at Day 4's close (yesterday).<br>
+    During today's trading (Day 5 so far), Day 3 TOP is a <strong>valid confirmed level</strong> for R2.<br>
+    Any R2 LONG entry today would use Day 3's TOP (1370) as the cross level.
+  </div>
+</div>
+
+<!-- LEGEND -->
+<div class="legend">
+  <span><div class="dot" style="background:#f97316"></div> Swing Top (R1)</span>
+  <span><div class="dot" style="background:#3b82f6"></div> Swing Bottom (R1)</span>
+  <span><div class="dot" style="background:#22c55e"></div> R2 Entry fires (during day)</span>
+  <span><div class="dot" style="background:#fbbf24"></div> EOD Confirmation (15:30)</span>
+  <span><div class="dot" style="background:#ef4444"></div> R1 requires next day close</span>
+</div>
+
+<div class="rule-box" style="border-color:#f97316; margin-top:24px">
+  <h4 style="color:#f97316">🎯 Bottom Line</h4>
+  <p style="margin:0; font-size:13px; line-height:1.6">
+    <strong>During any trading day</strong>, R2 uses levels confirmed by <em>yesterday's close or earlier</em>.<br>
+    Today's candle cannot confirm a new level — it needs <strong>tomorrow's close</strong> too.<br>
+    So a Top/Bottom identified on Day <em>N</em> becomes actionable only from Day <em>N+2</em>'s intraday trading.
+  </p>
+</div>
+
+</body>
+</html>

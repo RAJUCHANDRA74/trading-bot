@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pyramiding Rules Explainer</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; max-width: 900px; margin: 0 auto; font-size: 13px; }
+  h2 { color: #60a5fa; margin-bottom: 4px; }
+  h3 { color: #fbbf24; margin: 20px 0 8px; }
+  .rule-box { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 14px; margin: 12px 0; }
+  .rule-box h4 { color: #fbbf24; margin: 0 0 8px; }
+  .timeline { background: #1e293b; border-radius: 10px; padding: 16px; margin: 12px 0; overflow-x: auto; }
+  .tl-row { display: flex; align-items: center; gap: 12px; margin: 8px 0; min-height: 32px; }
+  .tl-date { width: 80px; flex-shrink: 0; font-weight: bold; color: #94a3b8; font-size: 12px; }
+  .tl-event { flex: 1; font-size: 12px; }
+  .tl-sl { width: 200px; flex-shrink: 0; font-size: 11px; text-align: right; }
+  .price-tag { display: inline-block; padding: 1px 6px; border-radius: 4px; font-weight: bold; }
+  .entry { background: #166534; color: #bbf7d0; }
+  .exit  { background: #991b1b; color: #fecaca; }
+  .sl    { background: #1e3a5f; color: #93c5fd; }
+  .note  { background: #1e293b; border-left: 3px solid #fbbf24; padding: 10px 14px; border-radius: 0 6px 6px 0; margin: 10px 0; font-size: 12px; }
+  .question { background: #2d1a1a; border-left: 3px solid #ef4444; padding: 10px 14px; border-radius: 0 6px 6px 0; margin: 10px 0; font-size: 12px; color: #fca5a5; }
+  .answer  { background: #1a2d1a; border-left: 3px solid #22c55e; padding: 10px 14px; border-radius: 0 6px 6px 0; margin: 10px 0; font-size: 12px; color: #86efac; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 12px; }
+  th { background: #1e3a5f; color: #93c5fd; padding: 8px; text-align: center; }
+  td { padding: 8px; border-bottom: 1px solid #1e293b; text-align: center; }
+  tr:nth-child(even) { background: #1a2332; }
+  .highlight { background: #f97316; color: white; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+  .green { color: #86efac; }
+  .red { color: #fca5a5; }
+  .blue { color: #93c5fd; }
+  .yellow { color: #fcd34d; }
+</style>
+</head>
+<body>
+
+<h2>📐 Pyramiding Rules — Complete Explanation</h2>
+
+<!-- CORE RULES -->
+<div class="rule-box">
+  <h4>⚡ Core Pyramiding Rules</h4>
+  <ol style="margin: 8px 0 0; padding-left: 20px; line-height: 1.8">
+    <li>Every new entry uses the <strong class="highlight">same lot size</strong> as the initial entry</li>
+    <li>When a new pyramid entry fires, initial trade's SL → <strong>moves to new bottom</strong> (break-even protection)</li>
+    <li>New pyramid entry → <strong>Day 1 SL = Rule 6</strong></li>
+    <li>From <strong>Day 2 of new entry onwards</strong> → all units share <strong>same unified SL</strong> (Rules 3 & 4)</li>
+    <li>Every entry always follows R1, R2, R6 → then R3/R4 → independently from their own Day 1</li>
+  </ol>
+</div>
+
+<!-- STEP BY STEP EXAMPLE -->
+<h3>📅 Step-by-Step Example: ICICIBANK Stock Futures (1.5% / 3%)</h3>
+
+<div class="note">
+  <strong>Setup:</strong> New bottom B1 = ₹1,360 confirmed. Recent top T1 = ₹1,380 confirmed.<br>
+  <span class="yellow">Entry 1 LONG</span> fires at ₹1,380 when LTP crosses above T1 (R2).
+</div>
+
+<div class="timeline">
+  <div style="font-size:11px; color:#64748b; margin-bottom:8px">NFO Stock Futures — 1.5% Day1 / 3% Day2+ | Same lot = 1 unit throughout</div>
+
+  <!-- Day 1 -->
+  <div class="tl-row" style="background:#1a2d1a; border-radius:6px; padding:8px">
+    <div class="tl-date">Day 1<br><span style="font-size:10px;color:#64748b">Entry 1</span></div>
+    <div class="tl-event">
+      <span class="price-tag entry">LONG Entry 1</span> at ₹1,380 (R2 cross above T1)
+    </div>
+    <div class="tl-sl">
+      Entry 1 SL = MIN(B1₹1360, ₹1380×98.5%) = <span class="blue">₹1,360</span><br>
+      <span style="font-size:10px;color:#64748b">Rule 6 — new bottom is closer</span>
+    </div>
+  </div>
+
+  <!-- Day 2 -->
+  <div class="tl-row" style="padding:8px">
+    <div class="tl-date">Day 2<br><span style="font-size:10px;color:#64748b">Entry 1</span></div>
+    <div class="tl-event">
+      Price rises to ₹1,430 → <span class="green">profit > 3%</span>
+    </div>
+    <div class="tl-sl">
+      Entry 1 SL → <span class="green">Break-even ₹1,380</span> (Rule 4)
+    </div>
+  </div>
+
+  <!-- Day 3 -->
+  <div class="tl-row" style="padding:8px">
+    <div class="tl-date">Day 3<br><span style="font-size:10px;color:#64748b">Entry 1</span></div>
+    <div class="tl-event">
+      <span class="blue">New bottom B2 = ₹1,390 confirmed</span> (R1)
+    </div>
+    <div class="tl-sl">
+      Entry 1 SL still at <span class="green">₹1,380</span> (BE)
+    </div>
+  </div>
+
+  <!-- Day 4 -->
+  <div class="tl-row" style="background:#1a2d1a; border-radius:6px; padding:8px">
+    <div class="tl-date">Day 4<br><span style="font-size:10px;color:#64748b">Entry 2</span></div>
+    <div class="tl-event">
+      Price pulls back, then crosses above <span class="yellow">new top T2 = ₹1,420</span><br>
+      <span class="price-tag entry">LONG Entry 2</span> at ₹1,420 (R2 — second pyramid unit)
+    </div>
+    <div class="tl-sl">
+      <span class="blue">Entry 1 SL → moves to B2 ₹1,390</span><br>
+      <span class="blue">Entry 2 SL = MIN(B2₹1390, ₹1420×98.5%) = ₹1,390</span>
+    </div>
+  </div>
+
+  <!-- Day 5+ -->
+  <div class="tl-row" style="padding:8px">
+    <div class="tl-date">Day 5+<br><span style="font-size:10px;color:#64748b">Day 2 of Entry 2</span></div>
+    <div class="tl-event">
+      Entry 2 is now <strong>Day 2</strong> → <span class="highlight">UNIFIED SL for ALL units</span>
+    </div>
+    <div class="tl-sl">
+      Entry 1 + Entry 2 SL = <span class="blue">₹1,390</span> (MIN of B2 or 3%)<br>
+      <span style="font-size:10px;color:#64748b">Both managed by Rules 3 & 4 together</span>
+    </div>
+  </div>
+
+  <!-- Exit -->
+  <div class="tl-row" style="padding:8px">
+    <div class="tl-date">Exit</div>
+    <div class="tl-event">
+      Price drops below unified SL ₹1,390
+    </div>
+    <div class="tl-sl">
+      <span class="price-tag exit">BOTH units EXIT</span> at ₹1,390
+    </div>
+  </div>
+</div>
+
+<!-- THE QUESTION -->
+<h3>❓ My Question: What if Entry 3 fires BEFORE Entry 2 reaches Day 2?</h3>
+
+<div class="question">
+  <strong>Scenario:</strong> Entry 2 fires on Day 4. Entry 2 is Day 1.<br>
+  Then on <strong>Day 5</strong> (still Day 1 of Entry 2), a new bottom B3 forms and Entry 3 fires via R2.<br>
+  <strong>Question:</strong> Does Entry 2's Day 1 end on Day 5? Or does it wait for Entry 3 to also reach Day 2?
+</div>
+
+<div class="answer">
+  <strong>Answer:</strong> Each entry is independent.<br><br>
+  <strong>On Day 5:</strong><br>
+  → Entry 2 is now <strong>Day 2</strong> → its SL follows Rules 3 & 4<br>
+  → Entry 3 fires as <strong>Day 1</strong> → its SL follows Rule 6<br>
+  → Entry 1 → managed by Rules 3 & 4 (already Day 2+)<br><br>
+  <strong>On Day 6:</strong><br>
+  → Entry 3 is now Day 2 → <span class="highlight">ALL THREE units share ONE unified SL</span><br>
+  → Managed together by Rules 3 & 4
+</div>
+
+<!-- SUMMARY TABLE -->
+<h3>📊 Summary Table for This Example</h3>
+<table>
+  <tr>
+    <th>Day</th>
+    <th>Entry 1 SL</th>
+    <th>Entry 2 SL</th>
+    <th>Entry 3 SL</th>
+    <th>Unified?</th>
+  </tr>
+  <tr>
+    <td>Day 1</td>
+    <td>₹1,360 (R6)</td>
+    <td>—</td>
+    <td>—</td>
+    <td>No</td>
+  </tr>
+  <tr>
+    <td>Day 2</td>
+    <td>₹1,380 BE (R4)</td>
+    <td>—</td>
+    <td>—</td>
+    <td>No</td>
+  </tr>
+  <tr>
+    <td>Day 4 (Entry 2 fires)</td>
+    <td>₹1,390 (moves to B2)</td>
+    <td>₹1,390 (R6)</td>
+    <td>—</td>
+    <td>No</td>
+  </tr>
+  <tr>
+    <td>Day 5 (Entry 2 = Day 2)</td>
+    <td colspan="2"><span class="highlight">UNIFIED ₹1,390</span></td>
+    <td>—</td>
+    <td>Entry 1 & 2 YES</td>
+  </tr>
+  <tr>
+    <td>Day 6 (Entry 3 fires)</td>
+    <td>₹1,390</td>
+    <td>₹1,390</td>
+    <td>₹1,410 (R6)</td>
+    <td>No — 1&2 unified, 3 separate</td>
+  </tr>
+  <tr>
+    <td>Day 7+</td>
+    <td colspan="3"><span class="highlight">ALL THREE = UNIFIED SL (Rules 3 & 4)</span></td>
+    <td>YES — all unified</td>
+  </tr>
+</table>
+
+<div class="note">
+  <strong>Key insight:</strong> Unification happens independently per entry — when any entry reaches Day 2, it joins the unified SL pool. Entry 3 joins when it reaches its own Day 2. Every entry always follows: Day 1 → R6 | Day 2+ → Rules 3 & 4 (joined unified).
+</div>
+
+</body>
+</html>

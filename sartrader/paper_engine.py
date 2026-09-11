@@ -77,9 +77,12 @@ class PaperEngine:
         # Trade history
         self.trades: List[PaperTrade] = []
 
+        # All instrument positions (from DB) — keyed by instrument symbol
+        self._db_positions: Dict[str, dict] = {}
+
         # SQLite persistence
         self._db_path = db_path
-        self._lock    = threading.Lock()
+        self._lock    = threading.RLock()  # RLock so enter() can safely call exit() internally
         self._trade_counter = 0
 
         Path(db_path).parent.mkdir(parents=True, exist_ok=True)
@@ -117,11 +120,50 @@ class PaperEngine:
                 notes       TEXT
             )
         """)
+        # New positions table — full 18-column position state per instrument
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS positions (
+                instrument          TEXT PRIMARY KEY,
+                status              TEXT DEFAULT 'WAITING',   -- ACTIVE / WAITING / STOPPED / REMOVED
+                direction           TEXT,                       -- LONG / SHORT / null
+                strategy            TEXT DEFAULT 'SAR_TOP_BOTTOM',
+                sector              TEXT DEFAULT 'AUTO',
+                initial_lots        INTEGER DEFAULT 1,
+                entry_date          TEXT,
+                entry_price         REAL,
+                entry_reason        TEXT,                       -- 'Top crossed' / 'Bottom crossed' / 'GO manual'
+                sl_mode             TEXT DEFAULT 'auto',        -- 'auto' / 'manual'
+                sl_value            REAL,                       -- manual SL price (when sl_mode=manual)
+                gap_rule            TEXT DEFAULT 'inactive',    -- 'inactive' / 'rule1' / 'rule2'
+                prev_top            REAL,                       -- Previous swing top at time of entry
+                prev_bottom         REAL,                       -- Previous swing bottom at time of entry
+                pyramid_mode        TEXT DEFAULT 'auto',        -- 'auto' / 'manual'
+                pyramid_lots        INTEGER DEFAULT 1,
+                rollover            INTEGER DEFAULT 1,          -- 1=yes, 0=no
+                exit_date           TEXT,
+                exit_price          REAL,
+                stop_reason         TEXT,                       -- 'manual_stop' / 'rule3' / 'rule4' / 'gap_rule' / null
+                updated_at          TEXT DEFAULT CURRENT_TIMESTAMP,
+                mode                TEXT DEFAULT 'PAPER'        -- PAPER / LIVE
+            )
+        """)
+        # Migration: add mode column if it doesn't exist (for existing DBs)
+        try:
+            cur2 = conn.execute("PRAGMA table_info(positions)")
+            existing_cols = [row[1] for row in cur2.fetchall()]
+            if 'mode' not in existing_cols:
+                conn.execute("ALTER TABLE positions ADD COLUMN mode TEXT DEFAULT 'PAPER'")
+                conn.execute("UPDATE positions SET mode='PAPER' WHERE mode IS NULL")
+                conn.commit()
+                logger.info("[PaperEngine] Migrated: added 'mode' column to positions table")
+        except Exception as e:
+            logger.warning(f"[PaperEngine] Migration check failed: {e}")
         conn.commit()
         conn.close()
 
-        # Load historical trades from DB into memory
+        # Load historical trades and positions from DB into memory
         self._load_trades()
+        self._load_positions()
 
     def _load_trades(self):
         """Load closed trades from DB so they survive engine restarts."""
@@ -149,6 +191,47 @@ class PaperEngine:
         conn.close()
         if self.trades:
             logger.info(f"[PaperEngine] Loaded {len(self.trades)} historical trade(s) from DB")
+
+    def _load_positions(self):
+        """Load all instrument positions from DB."""
+        conn = sqlite3.connect(self._db_path, check_same_thread=False)
+        cur = conn.execute("SELECT * FROM positions")
+        cols = [desc[0] for desc in cur.description]
+        for row in cur.fetchall():
+            pos = dict(zip(cols, row))
+            inst = pos["instrument"]
+            pos["mode"] = pos.get("mode") or "PAPER"  # Default to PAPER for backward compat
+            # Build engine-compatible position dict
+            self._db_positions[inst] = pos
+        conn.close()
+        if self._db_positions:
+            logger.info(f"[PaperEngine] Loaded {len(self._db_positions)} position(s) from DB")
+
+    def _save_position(self, inst: str, data: dict):
+        """Save/upsert a position record to DB."""
+        conn = sqlite3.connect(self._db_path, check_same_thread=False)
+        cols = [
+            "instrument","status","direction","strategy","sector","initial_lots",
+            "entry_date","entry_price","entry_reason","sl_mode","sl_value",
+            "gap_rule","prev_top","prev_bottom","pyramid_mode","pyramid_lots",
+            "rollover","exit_date","exit_price","stop_reason","mode"
+        ]
+        # Only update provided fields
+        update_parts = []
+        values = []
+        for col in cols:
+            if col in data:
+                update_parts.append(f"{col}=?")
+                values.append(data[col])
+        values.append(inst)
+        if update_parts:
+            conn.execute(
+                f"INSERT INTO positions (instrument) VALUES (?) ON CONFLICT(instrument) DO UPDATE SET {','.join(update_parts)}",
+                [inst] + values[:-1]
+            )
+        conn.commit()
+        conn.close()
+        self._db_positions[inst] = data
 
     def _tick(self) -> str:
         self._trade_counter += 1
@@ -226,8 +309,15 @@ class PaperEngine:
                 f"| Reason: {signal.reason} | TradeID: {trade_id}"
             )
 
-            # Log to DB
+            # Persist open trade to DB immediately so it survives engine restarts
             conn = sqlite3.connect(self._db_path, check_same_thread=False)
+            conn.execute(
+                "INSERT INTO paper_trades VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)",
+                (trade.trade_id, trade.instrument, trade.direction,
+                 trade.entry_date, trade.entry_price, trade.exit_date,
+                 trade.exit_price, trade.quantity, trade.pnl,
+                 trade.pyramids, trade.reason, trade.capital_after)
+            )
             conn.execute(
                 "INSERT INTO capital_log VALUES (?, ?, ?, ?)",
                 (now, self.capital, side, f"Entry: {signal.reason}")
@@ -287,14 +377,11 @@ class PaperEngine:
                 f"[{reason}]"
             )
 
-            # Persist
+            # Persist — UPDATE the existing open trade row (created by enter()), don't duplicate
             conn = sqlite3.connect(self._db_path, check_same_thread=False)
             conn.execute(
-                "INSERT INTO paper_trades VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)",
-                (trade.trade_id, trade.instrument, trade.direction,
-                 trade.entry_date, trade.entry_price, trade.exit_date,
-                 trade.exit_price, trade.quantity, trade.pnl,
-                 trade.pyramids, trade.reason, trade.capital_after)
+                "UPDATE paper_trades SET exit_date=?, exit_price=?, pnl=?, capital_after=? WHERE trade_id=?",
+                (trade.exit_date, trade.exit_price, trade.pnl, trade.capital_after, trade.trade_id)
             )
             conn.execute(
                 "INSERT INTO capital_log VALUES (?, ?, ?, ?)",
@@ -335,8 +422,8 @@ class PaperEngine:
             else:
                 unrealized = (pos.entry_price - pos.current_sl) * qty
 
-        wins  = [t for t in self.trades if t.pnl > 0]
-        losses= [t for t in self.trades if t.pnl <= 0]
+        wins  = [t for t in self.trades if t.pnl is not None and t.pnl > 0]
+        losses= [t for t in self.trades if t.pnl is not None and t.pnl <= 0]
         wr    = len(wins) / len(self.trades) * 100 if self.trades else 0
 
         return {
@@ -390,6 +477,31 @@ class PaperEngine:
             seg = _infer_segment(t.instrument)
             result[seg] = round(result.get(seg, 0) + (t.pnl or 0), 2)
         return result
+
+    def get_positions(self) -> Dict[str, dict]:
+        """Return all instrument positions from DB."""
+        return dict(self._db_positions)
+
+
+def _infer_segment_type(inst: str) -> str:
+    """Return 'INDEX_FUTURES' or 'STOCK_FUTURES' for futures instruments."""
+    import re
+    inst_upper = inst.upper()
+    # Index futures: NIFTY, BANKNIFTY, FINNIFTY, MIDCPNIFTY, SENSEX, BANKEX
+    index_patterns = [
+        r'NIFTY', r'BANKNIFTY', r'FINNIFTY', r'MIDCPNIFTY',
+        r'SENSEX', r'BANKEX', r'NIFTY_FUT', r'BANKNIFTY_FUT',
+    ]
+    for pat in index_patterns:
+        if re.search(pat, inst_upper):
+            return "INDEX_FUTURES"
+    # Options: CE/PE
+    if re.search(r'(CE|PE)\d', inst_upper):
+        return "OPTIONS"
+    # Futures (SEP/OCT/NOV/DEC + FUT)
+    if re.search(r'(SEP|OCT|NOV|DEC|JAN|AUG)\s*20\d{2}\s*FUT', inst_upper):
+        return "STOCK_FUTURES"
+    return "STOCK_FUTURES"  # default to stock futures
 
 
 def _infer_segment(inst: str) -> str:
