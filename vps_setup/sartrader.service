@@ -1,0 +1,38 @@
+[Unit]
+Description=SARTrader Trading Engine
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=sartrader
+Group=sartrader
+WorkingDirectory=/home/sartrader/trading-bot
+
+# Load secrets from .env file
+EnvironmentFile=/home/sartrader/trading-bot/.env
+
+# Restart policy: always restart on crash, 5s delay between restarts
+Restart=on-failure
+RestartSec=5
+
+# Logging — journalctl -u sartrader -f
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=sartrader
+
+# ── IMPORTANT ───────────────────────────────────────────────────────────────
+# MODE can be "PAPER" or "LIVE"
+# For LIVE mode, set MODE=LIVE and ensure MSTOCK_API_KEY + MSTOCK_TOTP_SECRET are in .env
+# ──────────────────────────────────────────────────────────────────────────
+ExecStart=/usr/local/bin/python -m sartrader.engine
+
+# Graceful shutdown: give engine 10 seconds to close positions / persist state
+ExecStop=/bin/bash -c 'echo "SIGTERM received — stopping SARTrader..."'
+
+# Resource limits
+LimitNOFILE=65536
+MemoryMax=512M
+
+[Install]
+WantedBy=multi-user.target

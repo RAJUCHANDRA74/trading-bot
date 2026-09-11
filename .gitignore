@@ -8,7 +8,22 @@ logs/
 
 # Temporary debug files
 describe*.json
+check_*.py
 debug_*.py
+fetch_*.py
+get_*.py
+read_*.py
+verify_*.py
+ws_*.py
+gen_*.py
+diagnostic*.html
+*.log
+engine_startup.log
+img_args*.json
+tb1_chart_data.json
+bn_chart.html
+banknifty_chart.html
+sartrader.js
 fix_*.py
 test_*.py
 run_*.py
