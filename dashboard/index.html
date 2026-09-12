@@ -111,6 +111,8 @@ body{font-family:var(--font);font-size:13px;line-height:1.5;background:var(--bg-
 .sidebar-footer{border-top:1px solid var(--border);padding:10px 14px;font-size:10px;color:var(--text-muted)}
 .footer-mode{display:flex;align-items:center;gap:6px;margin-bottom:4px}
 .mode-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+.logout-btn{width:100%;margin-top:8px;padding:7px 10px;background:rgba(255,77,106,0.1);border:1px solid rgba(255,77,106,0.3);color:var(--red);border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:5px;transition:all 0.15s;letter-spacing:0.5px}
+.logout-btn:hover{background:rgba(255,77,106,0.2);border-color:rgba(255,77,106,0.5)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
 
 /* MAIN CONTENT */
@@ -319,7 +321,8 @@ table .empty-state{text-align:center;padding:30px;color:var(--text-muted);font-s
       <div class="nav-item" id="navBrokers" onclick="switchView('Brokers')"><span class="nav-icon">⚡</span> Brokers</div>
     </div>
     <div class="sidebar-footer">
-      <div class="footer-mode"><div class="mode-dot"></div><span>SARTrader v1.0</span></div>
+      <button class="logout-btn" onclick="logout()">⏻ Logout</button>
+      <div class="footer-mode" style="margin-top:10px"><div class="mode-dot"></div><span>SARTrader v1.0</span></div>
       <div id="footerMode">PAPER MODE</div>
     </div>
   </div>
@@ -1081,6 +1084,23 @@ function attemptLogin() {
     err.style.display = 'block';
     document.getElementById('loginPassword').value = '';
   }
+}
+function logout() {
+  // Stop all refresh timers
+  if (window._chartTimer) { clearInterval(window._chartTimer); window._chartTimer = null; }
+  // Close WebSocket
+  if (ws && ws.readyState === WebSocket.OPEN) { ws.close(); ws = null; }
+  // Clear cached state
+  window._positions = {};
+  window._quotes = {};
+  window._state = null;
+  // Return to login screen
+  document.querySelector('.layout').style.display = 'none';
+  document.getElementById('loginOverlay').style.display = 'flex';
+  document.getElementById('loginPassword').value = '';
+  document.getElementById('loginError').style.display = 'none';
+  // Stop any chart refresh intervals
+  try { clearInterval(window._chartTimer); } catch(e) {}
 }
 function initParticles() {
   const c = document.getElementById('loginParticles');
