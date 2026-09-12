@@ -30,6 +30,7 @@ sudo systemctl stop $SERVICE_NAME 2>/dev/null || true
 # ── Pull latest code ─────────────────────────────────────────────────────────
 info "Pulling latest code from GitHub..."
 cd $APP_DIR
+git config --global --add safe.directory "$APP_DIR" 2>/dev/null || true
 git stash 2>/dev/null || true
 git pull origin main
 

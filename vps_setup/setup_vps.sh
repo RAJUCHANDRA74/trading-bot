@@ -33,6 +33,7 @@ pip install websockets upstox-python-sdk pandas schedule pytz requests python-do
 # ── git + ufw + curl ────────────────────────────────────────────────────────
 echo "[4/8] Installing git, ufw, curl..."
 apt-get install -y git curl ufw fail2ban -qq
+git config --global --add safe.directory '*'
 
 # ── Firewall (allow SSH, 8765, 8766) ────────────────────────────────────────
 echo "[5/8] Configuring firewall..."
