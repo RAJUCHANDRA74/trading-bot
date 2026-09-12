@@ -470,6 +470,52 @@ class TradingEngine:
             return "STOCK_FUTURES"
         return "CASH"
 
+    def _infer_sector(self, inst: str) -> str:
+        """
+        Map a base stock symbol to a sector name (matches dashboard _inferSector).
+        Handles both raw base symbols (SBIN, TATAMOTORS) and full contract names.
+        """
+        import re
+        inst_upper = inst.upper()
+        # Strip contract suffixes to get base symbol
+        base = re.sub(r'(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\d{0,2}\d{2}$', '', inst_upper)
+        base = re.sub(r'^\d+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)', '', base)
+        base = re.sub(r'FUT(FUTURES)?$', '', base)
+        base = re.sub(r'\d+$', '', base)
+        base = base.strip()
+
+        sector_map = {
+            "SBIN": "PSU Bank", "CANBK": "PSU Bank", "BANK OF BARODA": "PSU Bank",
+            "UNIONBANK": "PSU Bank", "PNB": "PSU Bank", "CENTRALBK": "PSU Bank",
+            "INDIANB": "PSU Bank", "UCOBANK": "PSU Bank",
+            "HDFCBANK": "PVT Bank", "ICICIBANK": "PVT Bank", "KOTAKBANK": "PVT Bank",
+            "INDUSINDBK": "PVT Bank", "AXISBANK": "PVT Bank", "IDFCFIRSTB": "PVT Bank",
+            "BANDHANBNK": "PVT Bank", "RBLBANK": "PVT Bank",
+            "MARUTI": "Auto", "M&M": "Auto", "TATAMOTORS": "Auto", "BAJAJ-AUTO": "Auto",
+            "HEROMOTOCO": "Auto", "EICHERMOT": "Auto", "TVSMOTOR": "Auto",
+            "ASHOKLEY": "Auto", "BALKRISIND": "Auto",
+            "RELIANCE": "Energy", "ONGC": "Energy", "BPCL": "Energy", "IOC": "Energy",
+            "HPCL": "Energy", "GAIL": "Energy",
+            "HINDUNILVR": "FMCG", "NESTLE": "FMCG", "DABUR": "FMCG", "COLPAL": "FMCG",
+            "BRITANNIA": "FMCG", "MARICO": "FMCG",
+            "TITAN": "Consumer", "HAVELLS": "Consumer", "VOLTAS": "Consumer", "CROMPTON": "Consumer",
+            "BAJFINANCE": "Financial Services", "BAJ FINSERV": "Financial Services",
+            "MUTHOOTFIN": "Financial Services",
+            "INFY": "IT", "TCS": "IT", "HCLTECH": "IT", "WIPRO": "IT",
+            "TECHM": "IT", "LTIM": "IT", "COFORGE": "IT",
+            "TATASTEEL": "Metal", "JSWSTEEL": "Metal", "HINDALCO": "Metal",
+            "JSPL": "Metal", "NMDC": "Metal", "SAIL": "Metal",
+            "SUNPHARMA": "Pharma", "CIPLA": "Pharma", "DRREDDY": "Pharma",
+            "APOLLOPHARMA": "Pharma", "ZYDUSLIFE": "Pharma",
+            "NTPC": "PSE", "POWERGRID": "PSE", "COALINDIA": "PSE",
+            "BEL": "Defence", "HAL": "Defence", "BEML": "Defence",
+            "DLF": "Realty", "GODREJPROP": "Realty",
+            "ADANI PORTS": "Infrastructure", "ADANIPORTS": "Infrastructure",
+            "DELHIVERY": "Infrastructure", "CONCOR": "Infrastructure",
+            "ADANIENT": "Misc", "ADANIGREEN": "Misc",
+        }
+        return sector_map.get(base, "Other")
+
     def _resolve_futures(self, inst: str) -> str:
         """
         Convert base symbol to current month futures contract (UPPERCASE).
@@ -2775,7 +2821,12 @@ class TradingEngine:
                     return
 
                 inst = self._resolve_futures(raw)
-                sector = data.get("sector", "AUTO")
+                raw_sector = data.get("sector", "AUTO")
+                # Infer real sector when AUTO/unknown is passed
+                if raw_sector in ("AUTO", "", None) or raw_sector.startswith("SEC_"):
+                    sector = self._infer_sector(raw)
+                else:
+                    sector = raw_sector
                 initial_lots = int(data.get("initial_lots", 1) or 1)
 
                 if inst in self._positions:

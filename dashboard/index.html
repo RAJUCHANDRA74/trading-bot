@@ -1600,13 +1600,20 @@ function switchTlSeg(seg){
   });
   renderTradeLog();
 }
-// Extract base symbol from contract name: M&MSEPFUT26 → M&M, NIFTY26SEPFUT → NIFTY
+// Extract base symbol from contract name: M&MSEPFUT26 → M&M, NIFTY26SEPFUT → NIFTY, TATAMOTORS26SEPF26 → TATAMOTORS
 function getBaseSymbol(inst){
   if(!inst)return'';
   const u=inst.toUpperCase();
-  let base=u.replace(/FUT(FUTURES)?$/,'').replace(/\d+(CE|PE)$/,'');
+  let base=u;
+  // Step 1: strip month+year expiry (SEP26, 26SEP, SEPFUT26, etc.) — do FIRST before FUT
   base=base.replace(/(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\d{0,2}\d{2}$/,'');
+  base=base.replace(/^\d+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)/,'');
+  // Step 2: strip FUT / FUTFUTURES suffix
+  base=base.replace(/FUT(FUTURES)?$/,'');
+  // Step 3: strip trailing digits (for indices like NIFTY26)
   base=base.replace(/\d+$/,'');
+  // Step 4: strip any remaining partial month codes (e.g. SEP26 left after step 1 failed)
+  base=base.replace(/(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\d*$/,'');
   return base.trim()||inst;
 }
 // Global quote lookup: try base symbol first (watchlist), then full contract name (engine state)
@@ -2152,7 +2159,8 @@ function _inferSegment(inst){
 }
 function _inferSector(stock){
   // Map stock base symbol to sector name (display label)
-  const s=stock.toUpperCase().replace(/\d+$/,'').trim();
+  // Use same stripping logic as getBaseSymbol to handle all contract formats
+  const s=getBaseSymbol(stock).toUpperCase();
   const map={
     'CANBK':'PSU Bank','SBIN':'PSU Bank','BANK OF BARODA':'PSU Bank','UNIONBANK':'PSU Bank',
     'PNB':'PSU Bank','CENTRALBK':'PSU Bank','INDIANB':'PSU Bank','UCOBANK':'PSU Bank',
