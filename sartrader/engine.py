@@ -1998,6 +1998,14 @@ class TradingEngine:
                 if bots:
                     prev_bot_val = float(bots[-1][1])
 
+            # ── TB-1: map recent_level to prev_top/bottom for dashboard display ──
+            if pos.get("tb1_mode") and pos.get("recent_level"):
+                rl = float(pos["recent_level"])
+                if pos["side"] == "LONG":
+                    prev_top_val = rl    # most recent CONFIRMED bottom = pre-bottom for LONG
+                else:
+                    prev_bot_val = rl    # most recent CONFIRMED top = pre-top for SHORT
+
             positions_state[inst] = {
                 **pos,
                 "unrealized_pnl": round(unreal_pnl, 2),
@@ -3144,6 +3152,34 @@ class TradingEngine:
                             logger.info(f"[get_candles] {inst}: {len(mstock_candles)} M-Stock candles ({interval})")
                     except Exception as e:
                         logger.warning(f"[get_candles] M-Stock failed for {inst}: {e}")
+
+            # 1b. M-Stock get_daily_price for NFO futures daily candles
+            # This fixes charts for stock futures (SBI, TATAMOTORS, etc.) which Yahoo Finance doesn't cover
+            if interval == "1d":
+                broker = self.brokers.get("MSTOCK")
+                if broker and broker.is_connected():
+                    try:
+                        # Resolve date range (get_daily_price returns up to 365 days of daily OHLCV)
+                        to_ts = int(_dt.now().timestamp())
+                        if range_ == "60d":
+                            from_ts = to_ts - (60 * 86400)
+                        elif range_ == "120d":
+                            from_ts = to_ts - (120 * 86400)
+                        elif range_ == "180d":
+                            from_ts = to_ts - (180 * 86400)
+                        else:
+                            from_ts = to_ts - (60 * 86400)
+
+                        # Try get_daily_price for the full instrument name (handles NFO futures internally)
+                        daily_bars = broker.get_daily_price(inst, None)
+                        if daily_bars:
+                            # Filter by date range and convert OHLC dataclass → [ts, o, h, l, c, v]
+                            for c in daily_bars:
+                                if hasattr(c, 'timestamp') and from_ts <= c.timestamp <= to_ts:
+                                    raw_candles.append([c.timestamp, c.open, c.high, c.low, c.close, c.volume])
+                            logger.info(f"[get_candles] {inst}: {len(raw_candles)} M-Stock daily candles (from get_daily_price)")
+                    except Exception as e:
+                        logger.warning(f"[get_candles] get_daily_price failed for {inst}: {e}")
 
             # 2. Yahoo Finance — primary source for daily candles, fallback for intraday
             try:
