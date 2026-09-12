@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<head><title>JS Test</title></head>
+<body>
+<h1 id="status">Loading...</h1>
+<script src="sartrader.js?v=1725809999"></script>
+<script>
+  document.getElementById('status').innerHTML =
+    'attemptLogin: ' + (typeof attemptLogin !== 'undefined') +
+    ' | CASH_SYSTEMS: ' + (typeof CASH_SYSTEMS !== 'undefined');
+</script>
+</body>
+</html>

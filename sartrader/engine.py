@@ -472,8 +472,9 @@ class TradingEngine:
 
     def _infer_sector(self, inst: str) -> str:
         """
-        Map a base stock symbol to a sector name (matches dashboard _inferSector).
+        Map a base stock symbol to a sector name (matches dashboard sectorMap keys).
         Handles both raw base symbols (SBIN, TATAMOTORS) and full contract names.
+        Returns uppercase+underscore keys that match the dashboard sectorMap.
         """
         import re
         inst_upper = inst.upper()
@@ -484,37 +485,43 @@ class TradingEngine:
         base = re.sub(r'\d+$', '', base)
         base = base.strip()
 
+        # Index futures / commodity futures — not in the stock map
+        if base in self.INDEX_FUTURES:
+            return "INDEX_FUTURES"
+        if base in self.COMMODITY_FUTURES:
+            return "COMMODITY_FUTURES"
+
         sector_map = {
-            "SBIN": "PSU Bank", "CANBK": "PSU Bank", "BANK OF BARODA": "PSU Bank",
-            "UNIONBANK": "PSU Bank", "PNB": "PSU Bank", "CENTRALBK": "PSU Bank",
-            "INDIANB": "PSU Bank", "UCOBANK": "PSU Bank",
-            "HDFCBANK": "PVT Bank", "ICICIBANK": "PVT Bank", "KOTAKBANK": "PVT Bank",
-            "INDUSINDBK": "PVT Bank", "AXISBANK": "PVT Bank", "IDFCFIRSTB": "PVT Bank",
-            "BANDHANBNK": "PVT Bank", "RBLBANK": "PVT Bank",
-            "MARUTI": "Auto", "M&M": "Auto", "TATAMOTORS": "Auto", "BAJAJ-AUTO": "Auto",
-            "HEROMOTOCO": "Auto", "EICHERMOT": "Auto", "TVSMOTOR": "Auto",
-            "ASHOKLEY": "Auto", "BALKRISIND": "Auto",
-            "RELIANCE": "Energy", "ONGC": "Energy", "BPCL": "Energy", "IOC": "Energy",
-            "HPCL": "Energy", "GAIL": "Energy",
+            "SBIN": "PSU_BANK", "CANBK": "PSU_BANK", "BANK OF BARODA": "PSU_BANK",
+            "UNIONBANK": "PSU_BANK", "PNB": "PSU_BANK", "CENTRALBK": "PSU_BANK",
+            "INDIANB": "PSU_BANK", "UCOBANK": "PSU_BANK",
+            "HDFCBANK": "PVT_BANK", "ICICIBANK": "PVT_BANK", "KOTAKBANK": "PVT_BANK",
+            "INDUSINDBK": "PVT_BANK", "AXISBANK": "PVT_BANK", "IDFCFIRSTB": "PVT_BANK",
+            "BANDHANBNK": "PVT_BANK", "RBLBANK": "PVT_BANK",
+            "MARUTI": "AUTO", "M&M": "AUTO", "TATAMOTORS": "AUTO", "BAJAJ-AUTO": "AUTO",
+            "HEROMOTOCO": "AUTO", "EICHERMOT": "AUTO", "TVSMOTOR": "AUTO",
+            "ASHOKLEY": "AUTO", "BALKRISIND": "AUTO",
+            "RELIANCE": "ENERGY", "ONGC": "ENERGY", "BPCL": "ENERGY", "IOC": "ENERGY",
+            "HPCL": "ENERGY", "GAIL": "ENERGY",
             "HINDUNILVR": "FMCG", "NESTLE": "FMCG", "DABUR": "FMCG", "COLPAL": "FMCG",
             "BRITANNIA": "FMCG", "MARICO": "FMCG",
-            "TITAN": "Consumer", "HAVELLS": "Consumer", "VOLTAS": "Consumer", "CROMPTON": "Consumer",
-            "BAJFINANCE": "Financial Services", "BAJ FINSERV": "Financial Services",
-            "MUTHOOTFIN": "Financial Services",
+            "TITAN": "CONSUMER", "HAVELLS": "CONSUMER", "VOLTAS": "CONSUMER", "CROMPTON": "CONSUMER",
+            "BAJFINANCE": "FINANCIAL_SERVICES", "BAJ FINSERV": "FINANCIAL_SERVICES",
+            "MUTHOOTFIN": "FINANCIAL_SERVICES",
             "INFY": "IT", "TCS": "IT", "HCLTECH": "IT", "WIPRO": "IT",
             "TECHM": "IT", "LTIM": "IT", "COFORGE": "IT",
-            "TATASTEEL": "Metal", "JSWSTEEL": "Metal", "HINDALCO": "Metal",
-            "JSPL": "Metal", "NMDC": "Metal", "SAIL": "Metal",
-            "SUNPHARMA": "Pharma", "CIPLA": "Pharma", "DRREDDY": "Pharma",
-            "APOLLOPHARMA": "Pharma", "ZYDUSLIFE": "Pharma",
+            "TATASTEEL": "METAL", "JSWSTEEL": "METAL", "HINDALCO": "METAL",
+            "JSPL": "METAL", "NMDC": "METAL", "SAIL": "METAL",
+            "SUNPHARMA": "PHARMA", "CIPLA": "PHARMA", "DRREDDY": "PHARMA",
+            "APOLLOPHARMA": "PHARMA", "ZYDUSLIFE": "PHARMA",
             "NTPC": "PSE", "POWERGRID": "PSE", "COALINDIA": "PSE",
-            "BEL": "Defence", "HAL": "Defence", "BEML": "Defence",
-            "DLF": "Realty", "GODREJPROP": "Realty",
-            "ADANI PORTS": "Infrastructure", "ADANIPORTS": "Infrastructure",
-            "DELHIVERY": "Infrastructure", "CONCOR": "Infrastructure",
-            "ADANIENT": "Misc", "ADANIGREEN": "Misc",
+            "BEL": "DEFENCE", "HAL": "DEFENCE", "BEML": "DEFENCE",
+            "DLF": "REALTY", "GODREJPROP": "REALTY",
+            "ADANI PORTS": "INFRASTRUCTURE", "ADANIPORTS": "INFRASTRUCTURE",
+            "DELHIVERY": "INFRASTRUCTURE", "CONCOR": "INFRASTRUCTURE",
+            "ADANIENT": "MISC", "ADANIGREEN": "MISC",
         }
-        return sector_map.get(base, "Other")
+        return sector_map.get(base, "OTHER")
 
     def _resolve_futures(self, inst: str) -> str:
         """
@@ -2045,12 +2052,15 @@ class TradingEngine:
                     prev_bot_val = float(bots[-1][1])
 
             # ── TB-1: map recent_level to prev_top/bottom for dashboard display ──
+            # recent_level = most recent CONFIRMED swing point used as SL reference.
+            # LONG: entry above confirmed TOP → recent_level = confirmed TOP → shown as prev-top
+            # SHORT: entry below confirmed BOTTOM → recent_level = confirmed BOTTOM → shown as prev-bottom
             if pos.get("tb1_mode") and pos.get("recent_level"):
                 rl = float(pos["recent_level"])
                 if pos["side"] == "LONG":
-                    prev_top_val = rl    # most recent CONFIRMED bottom = pre-bottom for LONG
+                    prev_top_val = rl    # recent_level = confirmed TOP → shown as prev-top
                 else:
-                    prev_bot_val = rl    # most recent CONFIRMED top = pre-top for SHORT
+                    prev_bot_val = rl    # recent_level = confirmed BOTTOM → shown as prev-bottom
 
             positions_state[inst] = {
                 **pos,
@@ -2062,6 +2072,8 @@ class TradingEngine:
                 "sl_auto_price":   round(sl_auto, 2),
                 "current_sl":      current_sl,
                 "segment_type":    self._infer_segment(inst),
+                # Always re-infer sector (overrides stale DB values like "AUTO")
+                "sector":         self._infer_sector(inst),
                 # Ensure both field names exist for dashboard compatibility
                 "side":            side,
                 "direction":       direction,
@@ -3099,6 +3111,7 @@ class TradingEngine:
                 return
             self._positions[inst]["status"] = "REMOVED"
             self.paper._save_position(inst, self._positions[inst])
+            del self._positions[inst]   # Actually remove from live dict
             logger.info(f"[remove_position] Removed {inst} from trade log")
             await self.broadcast_state()
             await _safe_send(ws, {

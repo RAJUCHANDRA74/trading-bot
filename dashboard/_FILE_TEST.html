@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>WS File Test</title>
+<meta charset="UTF-8">
+<style>
+body { font-family: monospace; background: #111; color: #0f0; padding: 20px; }
+button { background: #0a5; color: #000; border: none; padding: 10px 16px; cursor: pointer; margin: 4px; font-size: 14px; }
+button:hover { background: #0c7; }
+#log { margin-top: 20px; border: 1px solid #333; padding: 10px; min-height: 200px; font-size: 13px; }
+.ok { color: #0f0; } .err { color: #f44; } .warn { color: #fa0; } .info { color: #8af; }
+</style>
+</head>
+<body>
+<h2>🔌 File-based WS Test (no server)</h2>
+<p style="color:#888">This page is opened via <b>file://</b> — no HTTP server involved.</p>
+<button onclick="testWS('127.0.0.1', 8766)">Test 127.0.0.1:8766</button>
+<button onclick="testWS('127.0.0.1', 8888)">Test 127.0.0.1:8888</button>
+<button onclick="testWS('localhost', 8766)">Test localhost:8766</button>
+<button onclick="clearLog()">Clear</button>
+<div id="log"></div>
+<script>
+var _ws = null;
+function log(msg, cls) {
+    var d = document.createElement('div');
+    d.className = cls || 'info';
+    d.textContent = new Date().toLocaleTimeString() + ' | ' + msg;
+    document.getElementById('log').prepend(d);
+}
+function clearLog() { document.getElementById('log').innerHTML = ''; }
+function testWS(host, port) {
+    var url = 'ws://' + host + ':' + port;
+    log('Trying: ' + url, 'info');
+    if(_ws) { try { _ws.close(); } catch(e) {} }
+    try {
+        _ws = new WebSocket(url);
+        _ws.onopen = function() {
+            log('✅ OPEN: ' + url, 'ok');
+            _ws.send(JSON.stringify({command: 'get_state'}));
+        };
+        _ws.onmessage = function(e) {
+            log('📥 ' + e.data.length + ' bytes received from ' + url, 'ok');
+            // Parse and show a snippet
+            try {
+                var d = JSON.parse(e.data);
+                log('   type: ' + d.type + ' | keys: ' + Object.keys(d.data||{}).join(', '), 'warn');
+            } catch(ex) {}
+            _ws.close();
+        };
+        _ws.onerror = function(e) {
+            log('❌ ERROR: ' + url + ' — ' + (e.message || 'connection refused'), 'err');
+        };
+        _ws.onclose = function(e) {
+            log('🔒 CLOSED: ' + url + ' | code=' + e.code + ' reason=' + (e.reason||'none'), 'warn');
+        };
+    } catch(ex) {
+        log('❌ EXCEPTION: ' + ex.message, 'err');
+    }
+}
+log('File URL test — WebSocket from file:// context', 'info');
+log('Location: ' + location.href, 'info');
+</script>
+</body>
+</html>
