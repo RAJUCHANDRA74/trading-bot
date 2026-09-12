@@ -3221,8 +3221,13 @@ class TradingEngine:
                         else:
                             from_ts = to_ts - (60 * 86400)
 
-                        # Try get_daily_price for the full instrument name (handles NFO futures internally)
-                        daily_bars = broker.get_daily_price(inst, None)
+                        # Get NFO token for this futures contract, then call get_daily_price correctly
+                        # Signature: get_daily_price(exchange, token, trading_symbol)
+                        nfo_token = broker.get_nfo_futures_token(inst)
+                        if nfo_token:
+                            daily_bars = broker.get_daily_price("NFO", nfo_token, inst)
+                        else:
+                            daily_bars = []
                         if daily_bars:
                             # Filter by date range and convert OHLC dataclass → [ts, o, h, l, c, v]
                             for c in daily_bars:

@@ -647,22 +647,24 @@ class MStockBroker(AbstractBroker):
     # ── Candles ─────────────────────────────────────────────────────────────
 
     def _strip_expiry(self, inst: str) -> str:
-        """Strip expiry suffix from contract names for token lookup.
-        Examples:
-          'CANBKSEPFUT26'    -> 'CANBK'
-          'NIFTY26SEPFUT'    -> 'NIFTY'
-          'BANKNIFTY26SEPFUT'-> 'BANKNIFTY'
-          'ICICIBANKSEPFUT26'-> 'ICICIBANK'
         """
-        s = inst.upper()
-        # Step 1: Remove 'FUT26', 'FUT27', 'FUT28', 'FUT29' (FUT + 2-digit year)
+        Strip expiry suffix from contract names for base symbol extraction.
+        Examples:
+          'SBINSEPFUT26'      -> 'SBIN'   (stock futures: SEP FUT 26 suffix)
+          'CANBKSEPFUT26'      -> 'CANBK'
+          'NIFTY26SEPFUT'      -> 'NIFTY'  (index futures: 26 prefix)
+          'BANKNIFTY26SEPFUT'  -> 'BANKNIFTY'
+          'ICICIBANKSEPFUT26'  -> 'ICICIBANK'
+        """
+        s = inst.strip().upper()
+        # Step 1: Remove trailing 'FUT26', 'FUT27', etc. (stock futures year suffix)
         s = re.sub(r'FUT\d{2}$', '', s)
-        # Step 2: Remove 'FUT' suffix (for contracts without year suffix)
+        # Step 2: Remove 'FUT' at end (no year suffix)
         if s.endswith('FUT'):
             s = s[:-3]
-        # Step 3: Remove trailing 2-digit year (26, 27, etc.)
-        s = re.sub(r'\d{2}$', '', s)
-        # Step 4: Remove month patterns (Sep26, 26Sep, Sep2026, 29Sep2026, Sep)
+        # Step 3: Remove leading 2-digit year prefix (index futures: BANKNIFTY26SEPFUT)
+        s = re.sub(r'^(\d{2})(?=(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))', '', s)
+        # Step 4: Remove month patterns at end (Sep26, 26Sep, Sep2026, Sep)
         s = re.sub(r'\d{2}(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)$', '', s, flags=re.IGNORECASE)
         s = re.sub(r'(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\d{4}$', '', s, flags=re.IGNORECASE)
         s = re.sub(r'(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\d{2}$', '', s, flags=re.IGNORECASE)
@@ -677,7 +679,21 @@ class MStockBroker(AbstractBroker):
         Returns e.g. '29Sep2026' or None.
         """
         import re, calendar
-        inst_upper = inst.upper()
+        inst_upper = inst.strip().upper()
+
+        # Extract month+year BEFORE stripping — needed for correct token_map matching.
+        # Stock futures: "SBINSEPFUT26"  → SEP + 26
+        # Index futures: "BANKNIFTY26SEPFUT" → SEP + 26
+        m = re.search(
+            r'(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(\d{2})',
+            inst_upper
+        )
+        exp_mon, exp_yr = None, None
+        if m:
+            exp_mon = m.group(1).title()   # 'Sep'
+            exp_yr  = m.group(2)            # '26'
+
+        # Get base from full name (strip only trailing FUT + year suffix carefully)
         base = self._strip_expiry(inst)
 
         # Find matching entries in token_map for this base symbol
@@ -688,28 +704,21 @@ class MStockBroker(AbstractBroker):
                 matching_keys.append(key)
 
         if matching_keys:
-            # Pick the entry matching the month/year from the instrument name
-            # Extract expected month/year from instrument
-            m = re.search(r'(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(\d{2})', inst_upper)
-            if m:
-                exp_mon = m.group(1).title()  # 'Sep'
-                exp_yr = m.group(2)  # '26'
+            if exp_mon and exp_yr:
+                # Match month + year against token_map expiry strings
                 for key in matching_keys:
-                    parts = key.split(":")
-                    expiry_in_key = parts[1]  # e.g. '29Sep2026'
-                    # Check if month and 2-digit year match
+                    expiry_in_key = key.split(":")[1]   # e.g. '29Sep2026'
                     if exp_mon.lower() in expiry_in_key.lower() and exp_yr in expiry_in_key:
-                        return expiry_in_key  # Return the actual token map expiry string
-            # Fallback: return the first matching expiry (e.g. current month)
-            parts = matching_keys[0].split(":")
-            return parts[1]
+                        return expiry_in_key
+            # Fallback: return the first matching expiry
+            return matching_keys[0].split(":")[1]
 
         # Fallback: compute last Thursday (old logic)
-        # Pattern 1: BASEMONSEPYY
-        m = re.match(r'^([A-Z]+)(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(FUT|26|27|28|29)?(\d{2})?F?$', inst_upper)
-        if m:
-            mon = m.group(2)
-            yy = m.group(4)
+        # Pattern 1: BASEMONSEPYY  e.g. SBINSEPFUT26
+        m1 = re.match(r'^([A-Z]+)(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(FUT|26|27|28|29)?(\d{2})?F?$', inst_upper)
+        if m1:
+            mon = m1.group(2)
+            yy = m1.group(4)
             if yy:
                 year = 2000 + int(yy)
                 month_map = {'JAN':1,'FEB':2,'MAR':3,'APR':4,'MAY':5,'JUN':6,
@@ -725,7 +734,7 @@ class MStockBroker(AbstractBroker):
                     last_thursday -= 1
                 return f"{last_thursday}{mon}{year}"
 
-        # Pattern 2: BASEYYMONFUT
+        # Pattern 2: BASEYYMONFUT  e.g. BANKNIFTY26SEPFUT
         m2 = re.match(r'^([A-Z]+)(\d{2})(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)FUT$', inst_upper)
         if m2:
             mon = m2.group(3)
@@ -768,6 +777,30 @@ class MStockBroker(AbstractBroker):
             if len(parts) >= 3 and parts[0].upper() == base_upper and parts[1].upper() == expiry_upper and parts[2] == inst_type:
                 return token
         return None
+
+    def get_nfo_futures_token(self, instrument: str) -> Optional[str]:
+        """
+        Resolve a full NFO futures contract name → NFO token.
+        Handles both index futures (BANKNIFTY26SEPFUT) and stock futures (SBINSEPFUT26).
+        Returns token string or None if not found.
+        """
+        inst = instrument.strip().upper()
+        # is_fut: ends with FUT, or has month+year in SEP26 / SEPFUT26 / 26SEP format
+        is_fut = bool(
+            inst.endswith("FUT") or
+            re.search(r'(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC).*\d{2}$', inst)
+        )
+        if not is_fut:
+            return None
+
+        base = self._strip_expiry(inst)
+        expiry = self._extract_expiry_for_nfo(inst)  # Pass full name for correct parsing
+        if not expiry:
+            return None
+
+        INDEX_FUTURES = {"NIFTY", "BANKNIFTY", "FINNIFTY", "SENSEX", "MIDCPNIFTY"}
+        inst_type = "FUTIDX" if any(base.startswith(f) for f in INDEX_FUTURES) else "FUTSTK"
+        return self._find_nfo_futures_token(base, expiry, inst_type)
 
     def get_daily_price(self, exchange: str, token: str, trading_symbol: str = "") -> List[list]:
         """
