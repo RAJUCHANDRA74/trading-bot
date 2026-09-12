@@ -88,19 +88,64 @@ async def websocket_handler(websocket, path, engine_ref):
         await engine.remove_client(websocket)
 
 
-async def ws_server(engine_ref, host="localhost", port=8765):
-    """Run WebSocket server using asyncio."""
+async def ws_server(engine_ref, host="127.0.0.1", port=8765):
+    """
+    Run WebSocket server in a dedicated thread with its own asyncio event loop.
+    websockets 17.1 Server.__init__ calls asyncio.get_running_loop() so we need
+    a running loop in the thread — achieved by running an async task inside it.
+    """
     import websockets
-    import functools
+    import threading
 
-    # In websockets 13+, handler receives only (websocket)
-    # Capture engine_ref via closure
     async def handler(websocket):
         await websocket_handler(websocket, "", engine_ref)
 
-    async with websockets.serve(handler, host, port):
-        logger.info(f"WebSocket server running: ws://{host}:{port}")
-        await asyncio.Future()   # Run forever
+    ready_event = threading.Event()
+    error_holder = [None]  # mutablelist to capture exception
+
+    def ws_run_loop():
+        """
+        Own event loop in a thread. schedule_server() is an async coroutine that
+        calls websockets.serve() — it needs a running loop (get_running_loop is
+        called inside Server.__init__). We give it one via ensure_future.
+        """
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        async def schedule_server():
+            # This coroutine runs INSIDE the running loop — get_running_loop() works here
+            server = websockets.serve(handler, host, port, ping_interval=None)
+            async with server:
+                logger.info(f"WebSocket server running: ws://{host}:{port}")
+                ready_event.set()
+                await asyncio.Future()   # run forever
+
+        async def run():
+            try:
+                await schedule_server()
+            except Exception as e:
+                error_holder[0] = e
+                logger.error(f"[WS] Server error: {e}")
+            finally:
+                ready_event.set()
+
+        # Run the async task in this loop — get_running_loop() is available
+        loop.run_until_complete(run())
+
+    thread = threading.Thread(target=ws_run_loop, daemon=True, name="ws-server")
+    thread.start()
+
+    # Wait for server to start (non-blocking via event loop)
+    await asyncio.get_event_loop().run_in_executor(None, ready_event.wait)
+
+    if error_holder[0]:
+        raise error_holder[0]
+
+    # Server is running in background thread — keep this coroutine alive
+    try:
+        await asyncio.sleep(float('inf'))
+    except asyncio.CancelledError:
+        pass
 
 
 # ── R1 Daily Levels Monitor ────────────────────────────────────────────────────
@@ -963,8 +1008,8 @@ class TradingEngine:
                     from_ts = to_ts - (50 * 15 * 60)
                     candles = broker.get_candles(inst_key, "15m", from_ts, to_ts)
 
-                # Fall back to Yahoo Finance (free, no auth needed)
-                if not candles:
+                # Fall back to Yahoo Finance — but skip in PAPER mode (avoids DNS/timeouts)
+                if not candles and self.mode != "PAPER":
                     candles = self._fetch_yahoo_candles(inst_key)
 
                 if not candles:
@@ -1869,7 +1914,10 @@ class TradingEngine:
                         }
                 except Exception:
                     pass
-            # Yahoo Finance quote fallback (used when broker is not connected OR broker has no quote)
+            # Yahoo Finance quote fallback — skip in PAPER mode since M-Stock provides live quotes
+            # for index futures and NSE cash; SEPFUT symbols return 404 from Yahoo anyway
+            if self.mode == "PAPER":
+                continue
             try:
                 sym = self._resolve_yf_symbol(inst_key)
                 import urllib.request, json
@@ -3470,16 +3518,16 @@ async def main_async():
     await server_ready.wait()
     logger.info("Servers ready — starting tick loop")
 
-    # Capture the running async loop, then start tick loop
+    # Capture the running async loop, then start tick loop (its own thread — no asyncio interference)
     engine._loop = asyncio.get_running_loop()
     engine.start()
 
-    # Connect brokers on startup (only if enabled in config) — run in thread pool so we don't block the event loop
-    async def connect_brokers():
+    # Connect brokers in a background thread so we don't block the event loop
+    def _connect_brokers_bg():
         for name in list(engine.brokers.keys()):
             logger.info(f"Attempting {name} connection (TOTP required daily)...")
             try:
-                ok = await asyncio.to_thread(engine.connect_broker, name)
+                ok = engine.connect_broker(name)
                 if ok:
                     logger.info(f"{name} connected successfully")
                 else:
@@ -3487,16 +3535,15 @@ async def main_async():
             except Exception as e:
                 logger.warning(f"{name} connection error: {e}")
 
-    # Start async tick loop (runs inside event loop so it cooperates with HTTP/WS servers)
-    tick_task = asyncio.create_task(engine._run_loop_async())
+    import threading
+    threading.Thread(target=_connect_brokers_bg, daemon=True).start()
 
-    # Run broker connect + servers all together
+    # Run HTTP + WebSocket servers — event loop stays clean for WebSocket handling only
     try:
-        await asyncio.gather(http_task, ws_task, connect_brokers())
+        await asyncio.gather(http_task, ws_task)
     except KeyboardInterrupt:
         logger.info("Shutting down...")
     finally:
-        tick_task.cancel()
         engine.stop()
 
 
