@@ -1758,8 +1758,21 @@ class TradingEngine:
 
     def _run_loop(self):
         while self._running:
-            self._fetch_and_process()
+            try:
+                self._fetch_and_process()
+            except Exception as e:
+                logger.error(f"[Tick] _fetch_and_process error: {e}")
             time.sleep(self._tick_interval)
+
+    async def _run_loop_async(self):
+        """Async tick loop — runs inside asyncio event loop so it cooperates with HTTP/WS servers."""
+        while self._running:
+            try:
+                # Run the heavy synchronous work in a thread pool so it doesn't block the event loop
+                await asyncio.to_thread(self._fetch_and_process)
+            except Exception as e:
+                logger.error(f"[Tick] _fetch_and_process error: {e}")
+            await asyncio.sleep(self._tick_interval)
 
     # ── WebSocket clients ─────────────────────────────────────────────────────
 
@@ -3338,27 +3351,72 @@ class TradingEngine:
 
 
 # ── HTTP Server (for dashboard) ────────────────────────────────────────────────
+# Uses Python's built-in http.server (threaded) so it runs independently of
+# the asyncio event loop and never blocks dashboard responses.
+
+import http.server, socketserver, urllib.parse
+
+class DashboardHTTPHandler(http.server.SimpleHTTPRequestHandler):
+    """Serves the dashboard HTML. Runs in its own thread — no asyncio interference."""
+
+    dashboard_path = str(BASE_DIR / "dashboard")
+    dash_file     = str(BASE_DIR / "dashboard" / "index.html")
+    _html_cache: str = ""
+
+    @classmethod
+    def load_html(cls):
+        try:
+            with open(cls.dash_file, "r", encoding="utf-8") as f:
+                cls._html_cache = f.read()
+            logger.info(f"[HTTP] Dashboard loaded ({len(cls._html_cache)} bytes)")
+        except Exception as e:
+            logger.error(f"[HTTP] Failed to load dashboard: {e}")
+            cls._html_cache = "<html><body><h1>Dashboard not found</h1></body></html>"
+
+    def do_GET(self):
+        if self.path == "/" or self.path == "":
+            if not DashboardHTTPHandler._html_cache:
+                DashboardHTTPHandler.load_html()
+            body = DashboardHTTPHandler._html_cache.encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        else:
+            # Serve static files from dashboard dir
+            return super().do_GET()
+
+    def log_message(self, format, *args):
+        pass  # Keep logs clean — we only log important events
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, directory=self.dashboard_path, **kwargs)
+
+
+def run_http_dashboard_in_thread(host, port, server_ready):
+    """Start the HTTP server in a background thread and signal when ready."""
+    DashboardHTTPHandler.load_html()
+    class ReuseAddrTCPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
+        allow_reuse_address = True
+        daemon_threads = True
+
+    try:
+        httpd = ReuseAddrTCPServer((host, port), DashboardHTTPHandler)
+        logger.info(f"HTTP dashboard: http://{host}:{port}")
+        if server_ready:
+            server_ready.set()
+        httpd.serve_forever()
+    except Exception as e:
+        logger.error(f"[HTTP] Server error: {e}")
+
 
 async def run_http_dashboard(engine_ref, host="localhost", port=8765, server_ready=None):
-    """Simple HTTP server serving the dashboard HTML."""
-    import aiohttp
-    from aiohttp import web
-
-    dashboard_path = BASE_DIR / "dashboard"
-    if not dashboard_path.exists():
-        dashboard_path.mkdir(parents=True, exist_ok=True)
-
-    # Write the dashboard HTML if not exists
-    dash_file = dashboard_path / "index.html"
-    if not dash_file.exists():
-        # Copy from the dark theme we built earlier
-        dark_src = BASE_DIR / "dashboards" / "dark_theme.html"
-        if dark_src.exists():
-            import shutil
-            shutil.copy(dark_src, dash_file)
-
-    async def serve_dashboard(request):
-        return web.FileResponse(str(dash_file))
+    """Launch HTTP server in a background thread (runs outside asyncio)."""
+    from concurrent.futures import ThreadPoolExecutor
+    loop = asyncio.get_running_loop()
+    with ThreadPoolExecutor(max_workers=1, thread_name_prefix="httpd") as executor:
+        await loop.run_in_executor(executor, run_http_dashboard_in_thread, host, port, server_ready)
 
     app = web.Application()
     app.router.add_get("/", serve_dashboard)
@@ -3416,23 +3474,29 @@ async def main_async():
     engine._loop = asyncio.get_running_loop()
     engine.start()
 
-    # Connect brokers on startup (only if enabled in config)
-    for name in list(engine.brokers.keys()):
-        logger.info(f"Attempting {name} connection (TOTP required daily)...")
-        try:
-            ok = engine.connect_broker(name)
-            if ok:
-                logger.info(f"{name} connected successfully")
-            else:
-                logger.warning(f"{name} connection failed — will retry on next tick")
-        except Exception as e:
-            logger.warning(f"{name} connection error: {e}")
+    # Connect brokers on startup (only if enabled in config) — run in thread pool so we don't block the event loop
+    async def connect_brokers():
+        for name in list(engine.brokers.keys()):
+            logger.info(f"Attempting {name} connection (TOTP required daily)...")
+            try:
+                ok = await asyncio.to_thread(engine.connect_broker, name)
+                if ok:
+                    logger.info(f"{name} connected successfully")
+                else:
+                    logger.warning(f"{name} connection failed — will retry on next tick")
+            except Exception as e:
+                logger.warning(f"{name} connection error: {e}")
 
+    # Start async tick loop (runs inside event loop so it cooperates with HTTP/WS servers)
+    tick_task = asyncio.create_task(engine._run_loop_async())
+
+    # Run broker connect + servers all together
     try:
-        await asyncio.gather(http_task, ws_task)
+        await asyncio.gather(http_task, ws_task, connect_brokers())
     except KeyboardInterrupt:
         logger.info("Shutting down...")
     finally:
+        tick_task.cancel()
         engine.stop()
 
 
