@@ -1092,37 +1092,38 @@ function renderTlChart(inst, symbol, candles, interval, range){
         <span>${new Date(lastTs*1000).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'})}</span>
       </div>
       <button onclick="closeChartModal()" style="margin-top:10px;width:100%;padding:8px;background:var(--bg-card2);border:1px solid var(--border);color:var(--text-primary);border-radius:8px;cursor:pointer;font-size:13px">Close</button>
-    </div>`;
+    </div>`);
 
     // Timeframe pill clicks
     modal.querySelectorAll('.tl-tf-btn').forEach(btn=>{
       btn.addEventListener('click',()=>{
-      const tf=btn.dataset.tf;
-      if(tf===window._chartCfg.interval) return;
-      if(window._chartCache[tf]){
-        window._chartCfg.interval=tf;
-        const cached=window._chartCache[tf];
-        renderTlChart(window._chartCfg.inst,window._chartCfg.symbol,cached.candles,cached.interval,cached.range);
-      } else {
-        const rangeMap={'1d':'60d','60m':'5d','15m':'5d'};
-        window._chartCfg.interval=tf;
-        ws.send(JSON.stringify({command:'get_candles',instrument:window._chartCfg.inst,symbol:window._chartCfg.symbol,interval:tf,range:rangeMap[tf]||'60d'}));
-        showToast('📊 Fetching '+tf+' candles...','var(--blue)');
-      }
+        const tf=btn.dataset.tf;
+        if(tf===window._chartCfg.interval) return;
+        if(window._chartCache[tf]){
+          window._chartCfg.interval=tf;
+          const cached=window._chartCache[tf];
+          renderTlChart(window._chartCfg.inst,window._chartCfg.symbol,cached.candles,cached.interval,cached.range);
+        } else {
+          const rangeMap={'1d':'60d','60m':'5d','15m':'5d'};
+          window._chartCfg.interval=tf;
+          ws.send(JSON.stringify({command:'get_candles',instrument:window._chartCfg.inst,symbol:window._chartCfg.symbol,interval:tf,range:rangeMap[tf]||'60d'}));
+          showToast('📊 Fetching '+tf+' candles...','var(--blue)');
+        }
+      });
     });
-  });
 
-  // Chart type pill clicks
-  modal.querySelectorAll('.tl-ct-btn').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      const ct=btn.dataset.ct;
-      window._chartCfg.chartType=ct;
-      const cached=window._chartCache[window._chartCfg.interval];
-      if(cached){
-        renderTlChart(window._chartCfg.inst,window._chartCfg.symbol,cached.candles,cached.interval,cached.range);
-      }
+    // Chart type pill clicks
+    modal.querySelectorAll('.tl-ct-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const ct=btn.dataset.ct;
+        window._chartCfg.chartType=ct;
+        const cached=window._chartCache[window._chartCfg.interval];
+        if(cached){
+          renderTlChart(window._chartCfg.inst,window._chartCfg.symbol,cached.candles,cached.interval,cached.range);
+        }
+      });
     });
-  });
+  }
 }
 
 /* ════════════════════════════════════════

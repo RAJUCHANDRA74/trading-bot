@@ -3404,42 +3404,72 @@ class TradingEngine:
 
 import http.server, socketserver, urllib.parse
 
-class DashboardHTTPHandler(http.server.SimpleHTTPRequestHandler):
-    """Serves the dashboard HTML. Runs in its own thread — no asyncio interference."""
+class DashboardHTTPHandler(http.server.BaseHTTPRequestHandler):
+    """Serves the dashboard HTML from memory. No file I/O per request."""
 
-    dashboard_path = str(BASE_DIR / "dashboard")
-    dash_file     = str(BASE_DIR / "dashboard" / "index.html")
-    _html_cache: str = ""
+    _html_cache: bytes = b""
+    _html_loaded: bool = False
+
+    def log_message(self, format, *args):
+        pass  # Keep logs clean
 
     @classmethod
     def load_html(cls):
+        if cls._html_loaded:
+            return
+        dash_file = str(BASE_DIR / "dashboard" / "index.html")
         try:
-            with open(cls.dash_file, "r", encoding="utf-8") as f:
+            with open(dash_file, "rb") as f:  # Binary read — no encoding issues
                 cls._html_cache = f.read()
             logger.info(f"[HTTP] Dashboard loaded ({len(cls._html_cache)} bytes)")
+            cls._html_loaded = True
         except Exception as e:
             logger.error(f"[HTTP] Failed to load dashboard: {e}")
-            cls._html_cache = "<html><body><h1>Dashboard not found</h1></body></html>"
+            cls._html_cache = b"<html><body><h1>Dashboard not found</h1></body></html>"
+            cls._html_loaded = True
 
     def do_GET(self):
-        if self.path == "/" or self.path == "":
-            if not DashboardHTTPHandler._html_cache:
-                DashboardHTTPHandler.load_html()
-            body = DashboardHTTPHandler._html_cache.encode("utf-8")
-            self.send_response(200)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
-            self.send_header("Content-Length", str(len(body)))
+        path = urllib.parse.urlparse(self.path).path
+
+        # Serve dashboard.js directly from disk (not from HTML cache)
+        if path == "/dashboard.js":
+            js_file = str(BASE_DIR / "dashboard" / "dashboard.js")
+            try:
+                with open(js_file, "rb") as f:
+                    body = f.read()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/javascript; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Cache-Control", "no-cache")
+                self.end_headers()
+                self.wfile.write(body)
+                self.wfile.flush()
+                return
+            except Exception as e:
+                logger.error(f"[HTTP] Failed to serve dashboard.js: {e}")
+
+        # Serve favicon.ico if requested (avoid 404 noise)
+        if path == "/favicon.ico":
+            self.send_response(204)
             self.end_headers()
-            self.wfile.write(body)
-        else:
-            # Serve static files from dashboard dir
-            return super().do_GET()
+            return
 
-    def log_message(self, format, *args):
-        pass  # Keep logs clean — we only log important events
+        # Serve index.html for all other paths
+        self.load_html()
+        body = DashboardHTTPHandler._html_cache
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+        self.wfile.flush()
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=self.dashboard_path, **kwargs)
+    def do_POST(self):
+        # Block all POST requests
+        self.send_response(405)
+        self.send_header("Content-Type", "text/plain")
+        self.end_headers()
+        self.wfile.write(b"Method Not Allowed")
 
 
 def run_http_dashboard_in_thread(host, port, server_ready):
