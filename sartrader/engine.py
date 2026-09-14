@@ -524,10 +524,11 @@ class TradingEngine:
         import re
         inst_upper = inst.upper()
         # Strip contract suffixes to get base symbol
-        base = re.sub(r'(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\d{0,2}\d{2}$', '', inst_upper)
-        base = re.sub(r'^\d+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)', '', base)
-        base = re.sub(r'FUT(FUTURES)?$', '', base)
-        base = re.sub(r'\d+$', '', base)
+        # ORDER MATTERS: strip trailing digits first, then FUT suffix
+        # This correctly handles both "TATAMOTORSEPFUT26" -> "TATAMOTORS"
+        # and "TATAMOTORS26" -> "TATAMOTORS" and "BHELSEPFUT26" -> "BHELSEP"
+        base = re.sub(r'\d+$', '', inst_upper)          # strip trailing digits: 26/2026
+        base = re.sub(r'FUT(FUTURES)?$', '', base)       # strip FUT/FUTURES suffix
         base = base.strip()
 
         # Index futures / commodity futures — not in the stock map
@@ -1961,6 +1962,17 @@ class TradingEngine:
             if contract_key in quotes and base_key not in quotes:
                 quotes[base_key] = quotes[contract_key]
 
+        # ── Stock futures: also store quotes under base symbol keys ─────────────────
+        # Dashboard's getBaseSymbol() strips month+digit+FUT, producing base symbols
+        # like "BHEL" from "BHELSEPFUT26". Ensure both key forms exist in the broadcast.
+        import re as _re
+        for full_key, qdata in list(quotes.items()):
+            base = _re.sub(r'\d+$', '', full_key)
+            base = _re.sub(r'FUT(FUTURES)?$', '', base).strip()
+            base = base.strip()
+            if base and base != full_key and base not in quotes:
+                quotes[base] = qdata
+
         # ── Always fetch change_pct from Yahoo Finance for ticker bar ─────────────
         # Broker quotes don't carry change_pct — merge it in from YF for the 4 tickers
         _TICKER_SYMBOLS = {
@@ -2120,13 +2132,13 @@ class TradingEngine:
                     prev_top_val = float(tops[-1][1])
                 if bots:
                     prev_bot_val = float(bots[-1][1])
-            # Fallback: also check R1 monitor directly (always keyed by base symbol)
+            # Fallback: also check R1 monitor directly (keyed by full instrument name, not base)
             if prev_top_val == 0:
-                m_top = self._r1_monitor.get_confirmed_top(base_sym)
+                m_top = self._r1_monitor.get_confirmed_top(inst)
                 if m_top:
                     prev_top_val = float(m_top)
             if prev_bot_val == 0:
-                m_bot = self._r1_monitor.get_confirmed_bot(base_sym)
+                m_bot = self._r1_monitor.get_confirmed_bot(inst)
                 if m_bot:
                     prev_bot_val = float(m_bot)
 
@@ -3314,10 +3326,11 @@ class TradingEngine:
                             from_ts = to_ts - (60 * 86400)
 
                         # Get NFO token for this futures contract, then call get_daily_price correctly
-                        # Signature: get_daily_price(exchange, token, trading_symbol)
-                        nfo_token = broker.get_nfo_futures_token(inst)
+                        # Resolve base symbol -> full contract name first (inst might be "BHEL", not "BHELSEPFUT26")
+                        full_inst = self._resolve_futures(inst)
+                        nfo_token = broker.get_nfo_futures_token(full_inst)
                         if nfo_token:
-                            daily_bars = broker.get_daily_price("NFO", nfo_token, inst)
+                            daily_bars = broker.get_daily_price("NFO", nfo_token, full_inst)
                         else:
                             daily_bars = []
                         if daily_bars:

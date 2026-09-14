@@ -1,0 +1,30 @@
+961:     ctx.beginPath();ctx.moveTo(padL,y);ctx.lineTo(padL+chartW,y);ctx.stroke();
+962:     const p=minP+rng*(1-i/4);
+963:     ctx.fillStyle='rgba(255,255,255,0.3)';ctx.font='10px monospace';ctx.textAlign='right';
+964:     ctx.fillText('Rs'+p.toFixed(0),padL-4,y+3);
+965:   }
+966:   ctx.fillStyle='rgba(255,255,255,0.3)';ctx.font='10px monospace';ctx.textAlign='left';
+967:   ctx.fillText('Rs'+maxP.toFixed(0),padL+chartW+4,padT+10);
+968:   ctx.fillText('Rs'+minP.toFixed(0),padL+chartW+4,padT+chartH);
+969: 
+970:   if(chartType==='line'){
+971:     // Line chart — single polyline of closes
+972:     ctx.beginPath();
+973:     ohlc.forEach((c,i)=>{
+974:       const y=px(c.c);
+975:       i===0?ctx.moveTo(py(i),y):ctx.lineTo(py(i),y);
+976:     });
+977:     ctx.strokeStyle='#00c896';ctx.lineWidth=1.5;ctx.stroke();
+978:     // Filled area below line
+979:     ctx.lineTo(py(ohlc.length-1),padT+chartH);
+980:     ctx.lineTo(py(0),padT+chartH);
+981:     ctx.closePath();
+982:     ctx.fillStyle='rgba(0,200,150,0.08)';ctx.fill();
+983:   } else {
+984:     // Candlestick chart
+985:     ohlc.forEach((c,i)=>{
+986:       const cx=py(i);
+987:       const bodyTop=px(Math.max(c.o,c.c)),bodyBot=px(Math.min(c.o,c.c));
+988:       const isGreen=c.c>=c.o;
+989:       const col=isGreen?'#00c896':'#ff4d6a';
+990:       const bodyH=Math.max(1,bodyBot-bodyTop);

@@ -657,18 +657,15 @@ class MStockBroker(AbstractBroker):
           'ICICIBANKSEPFUT26'  -> 'ICICIBANK'
         """
         s = inst.strip().upper()
-        # Step 1: Remove trailing 'FUT26', 'FUT27', etc. (stock futures year suffix)
-        s = re.sub(r'FUT\d{2}$', '', s)
-        # Step 2: Remove 'FUT' at end (no year suffix)
-        if s.endswith('FUT'):
-            s = s[:-3]
-        # Step 3: Remove leading 2-digit year prefix (index futures: BANKNIFTY26SEPFUT)
+        # Step 1: Remove trailing year suffix (FUT26, FUT2026)
+        s = re.sub(r'FUT\d{2,4}$', '', s)
+        # Step 2: Remove 'FUT' or 'FUTURES' at end (no year suffix)
+        s = re.sub(r'FUTURES?$', '', s)
+        # Step 3: Remove leading 2-digit year prefix (index futures: 26SEPFUT)
         s = re.sub(r'^(\d{2})(?=(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))', '', s)
-        # Step 4: Remove month patterns at end (Sep26, 26Sep, Sep2026, Sep)
-        s = re.sub(r'\d{2}(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)$', '', s, flags=re.IGNORECASE)
-        s = re.sub(r'(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\d{4}$', '', s, flags=re.IGNORECASE)
-        s = re.sub(r'(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\d{2}$', '', s, flags=re.IGNORECASE)
-        s = re.sub(r'(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)$', '', s, flags=re.IGNORECASE)
+        # Step 4: Remove trailing 2-digit year (26, 27) from base
+        s = re.sub(r'\d{2}$', '', s)
+        # DO NOT strip month codes — token_map stores "TATAMOTORS" (not "TATAMOTORSEP")
         return s.strip()
 
     def _extract_expiry_for_nfo(self, inst: str) -> Optional[str]:

@@ -1,0 +1,108 @@
+=== renderTradeLog full function ===
+function renderTradeLog(){
+  const positions=window._positions||{};
+  const tb=document.getElementById('tlBody');
+  if(!tb)return;
+
+  // Friendly sector name map — keys must match engine's _infer_sector output
+  const sectorMap={
+    'AUTO':'Auto','PVT_BANK':'PVT Bank','PSU_BANK':'PSU Bank',
+    'IT':'IT','PHARMA':'Pharma','METAL':'Metal','FMCG':'FMCG',
+    'REAL_ESTATE':'Real Estate','INDEX_FUTURES':'Idx Futures',
+    'STOCK_FUTURES':'Stock','COMMODITY_FUTURES':'Commodity',
+    'ENERGY':'Energy','CONSUMER':'Consumer','FINANCIAL_SERVICES':'Financial Services',
+    'PSE':'PSE','DEFENCE':'Defence','REALTY':'Realty','INFRASTRUCTURE':'Infrastructure',
+    'MISC':'Misc','OTHER':'Other','INFRA':'Infra',
+  };
+
+  // Count active/waiting
+  let ac=0,wc=0;
+  Object.values(positions).forEach(p=>{
+    if(p.status==='ACTIVE')ac++;
+    else if(p.status==='WAITING')wc++;
+  });
+  const ae=document.getElementById('tlActiveCount');
+  const we=document.getElementById('tlWaitingCount');
+  if(ae)ae.textContent=ac;
+  if(we)we.textContent=wc;
+
+  const list=_tlFiltered();
+  if(!list.length){
+    tb.innerHTML='<tr><td colspan="21" class="empty-state">No positions. Use the form below or go to Watchlist → GO.</td></tr>';
+    return;
+  }
+
+  let html='';
+  list.forEach(([inst,p],i)=>{
+    // Show LONG/SHORT/WAITING — engine sets side="WAITING" for WAITING positions
+    // Fallback: if both null, show status-based label
+    const rawDir=p.direction||p.side||null;
+    const dir=(rawDir&&rawDir!=='null'&&rawDir!=='undefined')?rawDir:(p.status==='WAITING'?'WAITING':'—');
+    const dirCls=dir==='LONG'?'badge-green':dir==='SHORT'?'badge-red':'badge-gold';
+    const status=p.status||'—';
+    const segType=p.segment_type||'STOCK_FUTURES';
+    const segLabel=segType==='INDEX_FUTURES'?'Idx':segType==='STOCK_FUTURES'?'Stock':segType==='OPTIONS'?'Opt':'Cash';
+    const isWaiting=status==='WAITING';
+    const isStopped=status==='STOPPED';
+    const rowBg=isWaiting?'rgba(200,160,0,0.04)':isStopped?'rgba(255,60,60,0.04)':'transparent';
+    // Support both DB field (initial_lots) and engine field (qty)
+    const lots=p.initial_lots||p.qty||1;
+    const ep=p.entry_price?'₹'+Number(p.entry_price).toLocaleString('en-IN',{minimumFractionDigits:2}):'—';
+    const reason=p.entry_reason||'—';
+    const base=getBaseSymbol(inst);
+    const q=getQuote(inst);
+    const ltp=q?(q.last_price||q.price||0):null;
+    const ltpStr=ltp?'₹'+Number(ltp).toLocaleString('en-IN',{minimumFractionDigits:2}):'<span style="color:var(--text-muted)">—</span>';
+    const pnl=(ltp&&p.entry_price&&dir!=='—')?(dir==='LONG'?(ltp-p.entry_price)*lots:(p.entry_price-ltp)*lots):null;
+    const pnlStr=pnl!==null?(pnl>=0?'+₹':'₹')+Math.abs(pnl).toFixed(0):'—';
+    const pnlCls=pnl===null?'':(pnl>=0?'var(--green)':'var(--red)');
+    const slVal=p.current_sl?'₹'+Number(p.current_sl).toLocaleString('en-IN',{minimumFractionDigits:2}):'—';
+    const prevT=p.prev_top>0?'₹'+Number(p.prev_top).toLocaleString('en-IN',{minimumFractionDigits:2}):'—';
+    const prevB=p.prev_bottom>0?'₹'+Number(p.prev_bottom).toLocaleString('en-IN',{minimumFractionDigits:2}):'—';
+    const pyOn=p.pyramiding_mode==='on'||p.pyramiding_mode==='auto';
+    const canStop=!isWaiting&&!isStopped;
+    const canRestart=isStopped||isWaiting;
+    const canRemove=!isStopped;
+    const stratLabel=p.strategy==='SAR_TOP_BOTTOM'?'TB':p.strategy||'—';
+    const gapRule=p.gap_rule||'inactive';
+    const gapActive=gapRule==='active';
+    const rollVal=p.rollover?'Yes':'No';
+    // Friendly sector label — null/undefined → '—', unknown code → 'Other'
+    const rawSector=p.sector;
+    const sectorLabel=!rawSector?'—':(sectorMap[rawSector]||(rawSector==='OTHER'?'Other':rawSector));
+    // Pyramiding lots: DB uses pyramid_lots, engine uses pyramids
+    const pyrLots=p.pyramiding_lots||p.pyramids||1;
+
+    html+=`<tr data-inst="${inst}" style="background:${rowBg}">
+      <td style="text-align:center;color:var(--text-muted)">${i+1}</td>
+      <td style="font-size:11px">${p.entry_date?(p.entry_date.includes('T')?p.entry_date.split('T')[0]+' '+p.entry_date.split('T')[1]?.substring(0,5):p.entry_date):'—'}</td>
+      <td style="text-align:center">
+        <span style="cursor:pointer;color:var(--text-muted)" onclick="tlAdjLots('${inst}',${i},-1)">−</span>
+        <span id="tlLots_${i}" style="font-weight:700;color:var(--accent);padding:0 4px">${lots}</span>
+        <span style="cursor:pointer;color:var(--text-muted)" onclick="tlAdjLots('${inst}',${i},1)">+</span>
+      </td>
+      <td style="font-size:11px;color:var(--accent)">${stratLabel}</td>
+      <td><span class="wl-name">${base}</span><span style="font-size:9px;color:var(--text-muted)">${segLabel}</span></td>
+      <td style="font-size:11px">${sectorLabel}</td>
+      <td><span class="${dirCls}" style="font-size:11px">${dir}</span></td>
+      <td><div style="font-size:11px">${ep}</div><div style="font-size:10px;color:var(--text-muted)">${reason}</div></td>
+      <td id="tlLTP_${i}" style="font-weigh
+
+=== openTlChart full (in renderTradeLog context) ===
+ointer;font-size:11px" onclick="tlToggleRoll('${inst}',${i})">${rollVal}</td>
+      <td style="font-size:12px;font-weight:600;color:${pnlCls}">${pnlStr}</td>
+      <td id="tlTPnl_${i}" style="font-weight:700;font-size:13px;color:var(--text-muted)">—</td>
+      <td><button class="btn-chart" onclick="openTlChart('${inst}','${base}')" style="padding:3px 8px;font-size:11px;background:var(--blue-dim);color:var(--blue);border:1px solid rgba(59,130,246,0.3);border-radius:6px;cursor:pointer">📊</button></td>
+      <td>${canStop?`<button class="btn-stop" onclick="onTlStop('${inst}')" style="padding:3px 
+
+=== engine.py _infer_sector ===
+def _infer_sector(self, inst: str) -> str:
+        """
+        Map a base stock symbol to a sector
+
+=== engine.py get_candles full (1d block) ===
+elif cmd == "get_candles":
+            """
+            Fetch OHLC candles for an instrument and send back to dashboard.
+            Sends: { command: 'get_candles', instrument: 'BHELSEPFUT26', symbol: 'BHEL',
+                     interval: '1d', 

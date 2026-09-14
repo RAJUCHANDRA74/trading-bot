@@ -1,0 +1,16 @@
+=== prev_top in dashboard.js ===
+L737:     const prevT=p.prev_top>0?'₹'+Number(p.prev_top).toLocaleString('en-IN',{minimumFractionDigits:2}):'—';
+
+=== prev_top/bottom in engine.py ===
+L2101:             # Get prev_top / prev_bottom from strategy's swing points.
+L2104:             prev_top_val = float(pos.get("prev_top") or 0)
+L2105:             prev_bot_val = float(pos.get("prev_bottom") or 0)
+L2120:                     prev_top_val = float(tops[-1][1])
+L2124:             if prev_top_val == 0:
+L2127:                     prev_top_val = float(m_top)
+L2133:             # ── TB-1: map recent_level to prev_top/bottom for dashboard display ──
+L2140:                     prev_top_val = rl    # recent_level = confirmed TOP → shown as prev-top
+L2148:                 "prev_top":        prev_top_val,
+L2149:                 "prev_bottom":     prev_bot_val,
+L2947:                     "prev_top": 0.0,
+L2948:                     "prev_bottom": 0.0,

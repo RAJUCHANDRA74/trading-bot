@@ -1,0 +1,47 @@
+=== dashboard.js prev_top + prev_bottom occurrences ===
+prev_top: 2
+prev_bottom: 2
+prevBot: 0
+prevB: 0
+
+=== renderTradeLog context lines with prev_top/bottom ===
+L737: const prevT=p.prev_top>0?'₹'+Number(p.prev_top).toLocaleString('en-IN',{minimumFractionDigits:2}):'—';
+L738: const prevB=p.prev_bottom>0?'₹'+Number(p.prev_bottom).toLocaleString('en-IN',{minimumFractionDigits:2}):'—';
+
+=== openTlChart function ===
+function openTlChart(inst, base){
+  console.log('[Chart] openTlChart called — inst:', inst, 'base:', base);
+  if(!ws||ws.readyState!==WebSocket.OPEN){
+    showToast('Engine not connected','var(--red)');return;
+  }
+  // Default: 60-day daily candles (TB strategy uses daily line chart)
+  window._chartCfg = { inst, symbol: base, interval: '1d', range: '60d', chartType: 'candle' };
+  window._chartCache = {};
+  // Clear any existing refresh timer
+  if(window._chartTimer){ clearInterval(window._chartTimer); window._chartTimer=null; }
+  ws.send(JSON.stringify({command:'get_candles',instrument:inst,symbol:base,interval:'1d',range:'60d'}));
+  showToast('📊 '+base+' daily chart — loading...','var(--blue)');
+}
+
+
+=== engine.py _build_state prev_top full block ===
+# Get prev_top / prev_bottom from strategy's swing points.
+            # strategies dict keyed by BASE symbol (see add_to_watchlist), not full contract.
+            # R1 monitor also uses base symbol. Convert inst (full contract) to base for lookup.
+            prev_top_val = float(pos.get("prev_top") or 0)
+            prev_bot_val = float(pos.get("prev_bottom") or 0)
+            # Derive base symbol from full contract name (e.g. BHELSEPFUT26 → BHEL)
+            base_sym = inst
+          
+
+=== engine.py position prev_top default (add_position) ===
+ 0,
+                    "pyramiding_mode": "auto",
+                    "pyramiding_lots": 1,
+                    "rollover": True,
+                    "gap_rule": "inactive",
+                    "prev_top": 0.0,
+                    "prev_bottom": 0.0,
+                }
+                self.paper._save_position(inst, self._positions[inst])
+                logger.info(f"[add_position] Added

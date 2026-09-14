@@ -1,0 +1,31 @@
+Suspicious chars: 1909
+Pos 0 U+000A line 1:   /* ═══════════════════════════════════
+Pos 1 U+000A line 2:   /* ════════════════════════════════════
+Pos 45 U+000A line 3: ════════════════════════════════════════    CONSTANTS ══════════════════════════
+Pos 58 U+000A line 4: ═══════════════════════════    CONSTANTS ═══════════════════════════════════════
+Pos 102 U+000A line 5: ═════════════════════════════════════ */ const CASH_SYSTEMS = {   ABCT:    { lab
+Pos 125 U+000A line 6: ══════════════ */ const CASH_SYSTEMS = {   ABCT:    { label: 'ABCT System-1',  s
+Pos 290 U+000A line 7: ','LT','SUNPHARMA'], category: 'CASH' },   CUP:     { label: 'CUP Strategy',   s
+Pos 436 U+000A line 8: AN','MARUTI','M&M'], category: 'CASH' },   TOPBTM:  { label: 'Top Bottom-1',   s
+Pos 625 U+000A line 9: BANK','INDUSINDBK'], category: 'CASH' },   TOPBTM2: { label: 'Top Bottom-2',   s
+Pos 695 U+000A line 10: om-2',   stocks: [], category: 'CASH' },   VALUE:   { label: 'Value Buy',      s
+Pos 860 U+000A line 11: 'NTPC','POWERGRID'], category: 'CASH' },   MONSTER: { label: 'Monster Move',   s
+Pos 1002 U+000A line 12: ANCE','HINDUNILVR'], category: 'CASH' }, }; const FUTURE_SYSTEMS = {   IDXFUT:  
+Pos 1005 U+000A line 13: E','HINDUNILVR'], category: 'CASH' }, }; const FUTURE_SYSTEMS = {   IDXFUT:    {
+Pos 1030 U+000A line 14: y: 'CASH' }, }; const FUTURE_SYSTEMS = {   IDXFUT:    { label: 'Index Futures', 
+Pos 1160 U+000A line 15: '], category: 'FUTURE', type: 'INDEX' },   COMMOFUT:  { label: 'Commodity Future
+Pos 1291 U+000A line 16: '], category: 'FUTURE', type: 'COMMO' },   TOPBTM:    { label: 'Top Bottom-1',  
+Pos 1365 U+000A line 17: -1',   stocks: [], category: 'FUTURE' },   TOPBTM2:   { label: 'Top Bottom-2',  
+Pos 1439 U+000A line 18: -2',   stocks: [], category: 'FUTURE' }, }; const FUT_SECTORS = {   'Auto':     
+Pos 1442 U+000A line 19: ,   stocks: [], category: 'FUTURE' }, }; const FUT_SECTORS = {   'Auto':        
+Pos 1464 U+000A line 20: ry: 'FUTURE' }, }; const FUT_SECTORS = {   'Auto':              ['MARUTI','M&M',
+Pos 1591 U+000A line 21: OT','TVSMOTOR','ASHOKLEY','BALKRISIND'],   'PSU Bank':         ['SBI','BANK OF B
+Pos 1697 U+000A line 22: ,'PNB','CENTRALBK','INDIANB','UCOBANK'],   'PVT Bank':         ['HDFCBANK','ICIC
+Pos 1817 U+000A line 23: K','IDFCFIRSTB','BANDHANBNK','RBLBANK'],   'Consumer Durable':  ['TITAN','HAVELL
+Pos 1914 U+000A line 24: PTON','WHIRLPOOL','SYMPHONY','KAJARIA'],   'Energy':           ['RELIANCE','ONGC
+Pos 1984 U+000A line 25: NCE','ONGC','BPCL','IOC','HPCL','GAIL'],   'FMCG':             ['HINDUNILVR','NE
+Pos 2093 U+000A line 26: NNIA','MARICO','GODREJCP','TATACONSUM'],   'Financial Services':['BAJFINANCE','B
+Pos 2210 U+000A line 27: SHRIRAMFIN','LICHSGFIN','PFC','RECLTD'],   'IT':               ['INFY','TCS','HC
+Pos 2291 U+000A line 28: TECH','WIPRO','TECHM','LTIM','COFORGE'],   'Infrastructure':    ['ADANI PORTS','
+Pos 2372 U+000A line 29: ELHIVERY','CONCOR','CGCL','KALPATPOWR'],   'Defence':          ['HAL','BEL','BEM
+Pos 2439 U+000A line 30: L','BEL','BEML','GRSE','MAZAGON','BDL'],   'Metal':            ['TATASTEEL','JSW
