@@ -318,6 +318,7 @@ class TradingEngine:
             brokerage_per_lot=config.PAPER["brokerage_per_lot"],
             db_path=str(BASE_DIR / "data" / "paper_trades.db"),
         )
+        logger.info(f"[Engine] paper._db_positions = {len(self.paper._db_positions)} | keys = {list(self.paper._db_positions.keys())}")
         self._running   = False
         self._live_trades: List[dict] = []   # Live trade history
         self._tick_thread: Optional[threading.Thread] = None
@@ -3148,18 +3149,35 @@ class TradingEngine:
                 "success": True,
             }))
 
+        # ── Helper: merged position lookup (engine live + DB) ───────────────────
+        def _all_pos() -> dict:
+            """Return merged dict of engine live positions + DB-loaded positions."""
+            merged = dict(self.paper._db_positions)  # snapshot of DB positions
+            for inst, pos in self._positions.items():
+                if inst in merged:
+                    merged[inst].update(pos)   # engine fields override DB fields
+                else:
+                    merged[inst] = dict(pos)
+            return merged
+
+        # ── Helper: persist a position to both engine dict and DB ──────────────
+        def _persist(inst: str, pos: dict):
+            self._positions[inst] = pos
+            self.paper._save_position(inst, pos)
+
+        # ── Stop ────────────────────────────────────────────────────────────────
         elif cmd == "stop_position":
             """
             Mark a position as STOPPED (prevents auto-close triggers).
             Sends: { command: 'stop_position', instrument: 'M&MSEPFUT26', mode: 'PAPER' }
             """
             inst = data.get("instrument", "")
-            mode = data.get("mode", "PAPER")
-            if inst not in self._positions:
+            all_p = _all_pos()
+            if inst not in all_p:
                 await _safe_send(ws, {"type": "notification", "success": False, "message": f"{inst} not found"})
                 return
-            self._positions[inst]["status"] = "STOPPED"
-            self.paper._save_position(inst, self._positions[inst])
+            _persist(inst, {**all_p[inst], "status": "STOPPED"})
+            mode = data.get("mode", "PAPER")
             logger.info(f"[stop_position] Stopped {inst} ({mode})")
             await self.broadcast_state()
             await _safe_send(ws, {
@@ -3168,6 +3186,7 @@ class TradingEngine:
                 "success": True,
             })
 
+        # ── Restart ─────────────────────────────────────────────────────────────
         elif cmd == "restart_position":
             """
             Restart a STOPPED or WAITING position back to ACTIVE.
@@ -3175,14 +3194,13 @@ class TradingEngine:
             """
             inst = data.get("instrument", "")
             mode = data.get("mode", "PAPER")
-            if inst not in self._positions:
+            all_p = _all_pos()
+            if inst not in all_p:
                 await _safe_send(ws, {"type": "notification", "success": False, "message": f"{inst} not found"})
                 return
-            pos = self._positions[inst]
-            # Restart back to ACTIVE if it has an entry, otherwise keep WAITING
+            pos = all_p[inst]
             new_status = "ACTIVE" if pos.get("entry_price") else "WAITING"
-            pos["status"] = new_status
-            self.paper._save_position(inst, pos)
+            _persist(inst, {**pos, "status": new_status})
             logger.info(f"[restart_position] Restarted {inst} → {new_status} ({mode})")
             await self.broadcast_state()
             await _safe_send(ws, {
@@ -3191,18 +3209,18 @@ class TradingEngine:
                 "success": True,
             })
 
+        # ── Remove ──────────────────────────────────────────────────────────────
         elif cmd == "remove_position":
             """
             Remove a position from the Trade Log (sets status=REMOVED).
             Sends: { command: 'remove_position', instrument: 'M&MSEPFUT26' }
             """
             inst = data.get("instrument", "")
-            if inst not in self._positions:
+            all_p = _all_pos()
+            if inst not in all_p:
                 await _safe_send(ws, {"type": "notification", "success": False, "message": f"{inst} not found"})
                 return
-            self._positions[inst]["status"] = "REMOVED"
-            self.paper._save_position(inst, self._positions[inst])
-            del self._positions[inst]   # Actually remove from live dict
+            _persist(inst, {**all_p[inst], "status": "REMOVED"})
             logger.info(f"[remove_position] Removed {inst} from trade log")
             await self.broadcast_state()
             await _safe_send(ws, {

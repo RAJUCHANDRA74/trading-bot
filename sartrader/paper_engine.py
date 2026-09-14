@@ -194,16 +194,22 @@ class PaperEngine:
 
     def _load_positions(self):
         """Load all instrument positions from DB."""
+        import os as _os
+        logger.info(f"[_load_positions] DB path: {self._db_path} | exists: {_os.path.exists(self._db_path)}")
         conn = sqlite3.connect(self._db_path, check_same_thread=False)
         cur = conn.execute("SELECT * FROM positions")
         cols = [desc[0] for desc in cur.description]
-        for row in cur.fetchall():
+        logger.info(f"[_load_positions] positions table cols: {cols}")
+        rows = cur.fetchall()
+        logger.info(f"[_load_positions] raw row count: {len(rows)}")
+        for row in rows:
             pos = dict(zip(cols, row))
             inst = pos["instrument"]
             pos["mode"] = pos.get("mode") or "PAPER"  # Default to PAPER for backward compat
             # Build engine-compatible position dict
             self._db_positions[inst] = pos
         conn.close()
+        logger.info(f"[_load_positions] loaded {len(self._db_positions)} position(s) | keys: {list(self._db_positions.keys())}")
         if self._db_positions:
             logger.info(f"[PaperEngine] Loaded {len(self._db_positions)} position(s) from DB")
 
