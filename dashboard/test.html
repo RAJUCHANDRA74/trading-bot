@@ -1,13 +1,17 @@
 <!DOCTYPE html>
 <html>
-<head><title>JS Test</title></head>
+<head>
+<meta charset="utf-8">
+<title>Minimal Test</title>
+</head>
 <body>
-<h1 id="status">Loading...</h1>
-<script src="sartrader.js?v=1725809999"></script>
+<input type="password" id="loginPassword" placeholder="Password" onkeydown="if(event.key==='Enter')attemptLogin()">
+<button class="login-btn" onclick="attemptLogin()">Enter Dashboard</button>
 <script>
-  document.getElementById('status').innerHTML =
-    'attemptLogin: ' + (typeof attemptLogin !== 'undefined') +
-    ' | CASH_SYSTEMS: ' + (typeof CASH_SYSTEMS !== 'undefined');
+const DASHBOARD_PASSWORD = 'sartrader2026';
+function attemptLogin() {
+  alert('works');
+}
 </script>
 </body>
 </html>

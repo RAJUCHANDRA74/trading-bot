@@ -1073,41 +1073,83 @@ function renderTlChart(inst, symbol, candles, interval, range){
   const tfLabel=interval==='1d'?'Daily':interval==='60m'?'1 Hour':interval==='15m'?'15 Min':'5 Min';
 
   if(isFirstOpen){
-    // Build full modal shell on first open only
-    modal.innerHTML=`<div style="background:var(--bg-card);border-radius:12px;padding:16px;max-width:740px;width:95vw;user-select:none">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;flex-wrap:wrap">
-        <div style="font-size:16px;font-weight:700;color:var(--text-primary)">📊 ${symbol} — <span id="tlTfLabel">${tfLabel}</span> <span style="font-size:11px;color:var(--green);font-weight:400;margin-left:6px">● LIVE</span></div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          ${['1d','60m','15m'].map(tf=>`<button class="tl-tf-btn${tf===interval?' tl-tf-active':''}" data-tf="${tf}" style="padding:4px 10px;font-size:11px;border-radius:6px;border:1px solid;cursor:pointer;font-weight:600;background:${tf===interval?'var(--accent)':'var(--bg-card2)'};color:${tf===interval?'#fff':'var(--text-muted)'};border-color:${tf===interval?'var(--accent)':'var(--border)'}">${tf==='1d'?'1D':tf==='60m'?'1H':'15m'}</button>`).join('')}
-          <div style="width:1px;height:20px;background:var(--border)"></div>
-          <button class="tl-ct-btn${chartType==='candle'?' tl-ct-active':''}" data-ct="candle" style="padding:4px 10px;font-size:11px;border-radius:6px;border:1px solid;cursor:pointer;font-weight:600;color:${chartType==='candle'?'#fff':'var(--text-muted)'};background:${chartType==='candle'?'var(--accent)':'var(--bg-card2)'};border-color:${chartType==='candle'?'var(--accent)':'var(--border)'}">Candle</button>
-          <button class="tl-ct-btn${chartType==='line'?' tl-ct-active':''}" data-ct="line" style="padding:4px 10px;font-size:11px;border-radius:6px;border:1px solid;cursor:pointer;font-weight:600;color:${chartType==='line'?'#fff':'var(--text-muted)'};background:${chartType==='line'?'var(--accent)':'var(--bg-card2)'};border-color:${chartType==='line'?'var(--accent)':'var(--border)'}">Line</button>
-        </div>
-      </div>
-      <canvas id="tlCanvas" width="700" height="340" style="display:block;border-radius:8px;background:var(--bg-card2)"></canvas>
-      <div style="margin-top:8px;display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted)" id="tlChartStats">
-        <span>${new Date(firstTs*1000).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'})}</span>
-        <span style="color:var(--green)">Auto-refreshes every 1s</span>
-        <span>${ohlc.length} bars</span>
-        <span>${new Date(lastTs*1000).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'})}</span>
-      </div>
-      <button onclick="closeChartModal()" style="margin-top:10px;width:100%;padding:8px;background:var(--bg-card2);border:1px solid var(--border);color:var(--text-primary);border-radius:8px;cursor:pointer;font-size:13px">Close</button>
-    </div>`);
+    // Build full modal shell using DOM (no template literals to avoid parser issues)
+    const shell=document.createElement('div');
+    shell.style.cssText='background:var(--bg-card);border-radius:12px;padding:16px;max-width:740px;width:95vw;user-select:none';
+    const hdr=document.createElement('div');
+    hdr.style.cssText='display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;flex-wrap:wrap';
+    const titleDiv=document.createElement('div');
+    titleDiv.style.cssText='font-size:16px;font-weight:700;color:var(--text-primary)';
+    titleDiv.innerHTML='<span style="font-size:18px;margin-right:6px">&#x1F4CA;</span> '+symbol;
+    const labelSpan=document.createElement('span');
+    labelSpan.id='tlTfLabel';
+    labelSpan.style.cssText='font-size:12px;font-weight:400;color:var(--green);margin-left:4px';
+    labelSpan.textContent=tfLabel;
+    titleDiv.appendChild(labelSpan);
+    const liveSpan=document.createElement('span');
+    liveSpan.style.cssText='font-size:11px;color:var(--green);font-weight:400;margin-left:6px';
+    liveSpan.textContent='\u25CF LIVE';
+    titleDiv.appendChild(liveSpan);
+    hdr.appendChild(titleDiv);
+    const tfDiv=document.createElement('div');
+    tfDiv.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap';
+    ['1d','60m','15m'].forEach(tf=>{
+      const btn=document.createElement('button');
+      const isActive=tf===interval;
+      btn.className='tl-tf-btn'+(isActive?' tl-tf-active':'');
+      btn.dataset.tf=tf;
+      btn.style.cssText='padding:4px 10px;font-size:11px;border-radius:6px;border:1px solid;cursor:pointer;font-weight:600;background:'+(isActive?'var(--accent)':'var(--bg-card2)')+';color:'+(isActive?'#fff':'var(--text-muted)')+';border-color:'+(isActive?'var(--accent)':'var(--border)');
+      btn.textContent=tf==='1d'?'1D':tf==='60m'?'1H':'15m';
+      tfDiv.appendChild(btn);
+    });
+    const div2=document.createElement('div');
+    div2.style.cssText='width:1px;height:20px;background:var(--border)';
+    tfDiv.appendChild(div2);
+    ['candle','line'].forEach(ct=>{
+      const btn=document.createElement('button');
+      const isActive=ct===chartType;
+      btn.className='tl-ct-btn'+(isActive?' tl-ct-active':'');
+      btn.dataset.ct=ct;
+      btn.style.cssText='padding:4px 10px;font-size:11px;border-radius:6px;border:1px solid;cursor:pointer;font-weight:600;color:'+(isActive?'#fff':'var(--text-muted)')+';background:'+(isActive?'var(--accent)':'var(--bg-card2)')+';border-color:'+(isActive?'var(--accent)':'var(--border)');
+      btn.textContent=ct==='candle'?'Candle':'Line';
+      tfDiv.appendChild(btn);
+    });
+    hdr.appendChild(tfDiv);
+    shell.appendChild(hdr);
+    const canvas=document.createElement('canvas');
+    canvas.id='tlCanvas';
+    canvas.width=700;
+    canvas.height=340;
+    canvas.style.cssText='display:block;border-radius:8px;background:var(--bg-card2)';
+    shell.appendChild(canvas);
+    const stats=document.createElement('div');
+    stats.id='tlChartStats';
+    stats.style.cssText='margin-top:8px;display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted)';
+    stats.innerHTML='<span>'+new Date(firstTs*1000).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'})+'</span><span style="color:var(--green)">Auto-refreshes every 1s</span><span>'+ohlc.length+' bars</span><span>'+new Date(lastTs*1000).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'})+'</span>';
+    shell.appendChild(stats);
+    const closeBtn=document.createElement('button');
+    closeBtn.onclick=closeChartModal;
+    closeBtn.style.cssText='margin-top:10px;width:100%;padding:8px;background:var(--bg-card2);border:1px solid var(--border);color:var(--text-primary);border-radius:8px;cursor:pointer;font-size:13px';
+    closeBtn.textContent='Close';
+    shell.appendChild(closeBtn);
+    modal.innerHTML='';
+    modal.appendChild(shell);
 
     // Timeframe pill clicks
     modal.querySelectorAll('.tl-tf-btn').forEach(btn=>{
       btn.addEventListener('click',()=>{
         const tf=btn.dataset.tf;
         if(tf===window._chartCfg.interval) return;
-        if(window._chartCache[tf]){
+        if(window._chartCfg){
           window._chartCfg.interval=tf;
           const cached=window._chartCache[tf];
-          renderTlChart(window._chartCfg.inst,window._chartCfg.symbol,cached.candles,cached.interval,cached.range);
-        } else {
-          const rangeMap={'1d':'60d','60m':'5d','15m':'5d'};
-          window._chartCfg.interval=tf;
-          ws.send(JSON.stringify({command:'get_candles',instrument:window._chartCfg.inst,symbol:window._chartCfg.symbol,interval:tf,range:rangeMap[tf]||'60d'}));
-          showToast('📊 Fetching '+tf+' candles...','var(--blue)');
+          if(cached){
+            renderTlChart(window._chartCfg.inst,window._chartCfg.symbol,cached.candles,cached.interval,cached.range);
+          } else {
+            const rangeMap={'1d':'60d','60m':'5d','15m':'5d'};
+            ws.send(JSON.stringify({command:'get_candles',instrument:window._chartCfg.inst,symbol:window._chartCfg.symbol,interval:tf,range:rangeMap[tf]||'60d'}));
+            showToast('\uD83D\uDCCA Fetching '+tf+' candles...','var(--blue)');
+          }
         }
       });
     });
@@ -1116,13 +1158,17 @@ function renderTlChart(inst, symbol, candles, interval, range){
     modal.querySelectorAll('.tl-ct-btn').forEach(btn=>{
       btn.addEventListener('click',()=>{
         const ct=btn.dataset.ct;
-        window._chartCfg.chartType=ct;
-        const cached=window._chartCache[window._chartCfg.interval];
-        if(cached){
-          renderTlChart(window._chartCfg.inst,window._chartCfg.symbol,cached.candles,cached.interval,cached.range);
+        if(window._chartCfg){
+          window._chartCfg.chartType=ct;
+          const cached=window._chartCache[window._chartCfg.interval];
+          if(cached){
+            renderTlChart(window._chartCfg.inst,window._chartCfg.symbol,cached.candles,cached.interval,cached.range);
+          }
         }
       });
     });
+
+    _startChartRefresh();
   }
 }
 
