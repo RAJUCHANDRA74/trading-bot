@@ -332,6 +332,23 @@ class TradingEngine:
         # In-memory signal log
         self._signals: List[dict] = []
 
+    # ── Position helpers (used by WS command handlers) ──────────────────────────
+
+    def _all_pos(self) -> dict:
+        """Return merged dict: DB-loaded positions + engine live positions."""
+        merged = dict(self.paper._db_positions)  # snapshot of DB positions
+        for inst, pos in self._positions.items():
+            if inst in merged:
+                merged[inst].update(pos)   # engine fields override DB fields
+            else:
+                merged[inst] = dict(pos)
+        return merged
+
+    def _persist_pos(self, inst: str, pos: dict):
+        """Write a position to both engine dict and DB."""
+        self._positions[inst] = pos
+        self.paper._save_position(inst, pos)
+
         # Signal deduplication — prevent same signal firing on every tick
         # Key: (instrument, signal_type) → last fired timestamp
         self._signal_fired: Dict[str, float] = {}
@@ -3149,22 +3166,6 @@ class TradingEngine:
                 "success": True,
             }))
 
-        # ── Helper: merged position lookup (engine live + DB) ───────────────────
-        def _all_pos() -> dict:
-            """Return merged dict of engine live positions + DB-loaded positions."""
-            merged = dict(self.paper._db_positions)  # snapshot of DB positions
-            for inst, pos in self._positions.items():
-                if inst in merged:
-                    merged[inst].update(pos)   # engine fields override DB fields
-                else:
-                    merged[inst] = dict(pos)
-            return merged
-
-        # ── Helper: persist a position to both engine dict and DB ──────────────
-        def _persist(inst: str, pos: dict):
-            self._positions[inst] = pos
-            self.paper._save_position(inst, pos)
-
         # ── Stop ────────────────────────────────────────────────────────────────
         elif cmd == "stop_position":
             """
@@ -3172,11 +3173,11 @@ class TradingEngine:
             Sends: { command: 'stop_position', instrument: 'M&MSEPFUT26', mode: 'PAPER' }
             """
             inst = data.get("instrument", "")
-            all_p = _all_pos()
+            all_p = self._all_pos()
             if inst not in all_p:
                 await _safe_send(ws, {"type": "notification", "success": False, "message": f"{inst} not found"})
                 return
-            _persist(inst, {**all_p[inst], "status": "STOPPED"})
+            self._persist_pos(inst, {**all_p[inst], "status": "STOPPED"})
             mode = data.get("mode", "PAPER")
             logger.info(f"[stop_position] Stopped {inst} ({mode})")
             await self.broadcast_state()
@@ -3194,13 +3195,13 @@ class TradingEngine:
             """
             inst = data.get("instrument", "")
             mode = data.get("mode", "PAPER")
-            all_p = _all_pos()
+            all_p = self._all_pos()
             if inst not in all_p:
                 await _safe_send(ws, {"type": "notification", "success": False, "message": f"{inst} not found"})
                 return
             pos = all_p[inst]
             new_status = "ACTIVE" if pos.get("entry_price") else "WAITING"
-            _persist(inst, {**pos, "status": new_status})
+            self._persist_pos(inst, {**pos, "status": new_status})
             logger.info(f"[restart_position] Restarted {inst} → {new_status} ({mode})")
             await self.broadcast_state()
             await _safe_send(ws, {
@@ -3216,11 +3217,11 @@ class TradingEngine:
             Sends: { command: 'remove_position', instrument: 'M&MSEPFUT26' }
             """
             inst = data.get("instrument", "")
-            all_p = _all_pos()
+            all_p = self._all_pos()
             if inst not in all_p:
                 await _safe_send(ws, {"type": "notification", "success": False, "message": f"{inst} not found"})
                 return
-            _persist(inst, {**all_p[inst], "status": "REMOVED"})
+            self._persist_pos(inst, {**all_p[inst], "status": "REMOVED"})
             logger.info(f"[remove_position] Removed {inst} from trade log")
             await self.broadcast_state()
             await _safe_send(ws, {
