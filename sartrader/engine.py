@@ -332,23 +332,6 @@ class TradingEngine:
         # In-memory signal log
         self._signals: List[dict] = []
 
-    # ── Position helpers (used by WS command handlers) ──────────────────────────
-
-    def _all_pos(self) -> dict:
-        """Return merged dict: DB-loaded positions + engine live positions."""
-        merged = dict(self.paper._db_positions)  # snapshot of DB positions
-        for inst, pos in self._positions.items():
-            if inst in merged:
-                merged[inst].update(pos)   # engine fields override DB fields
-            else:
-                merged[inst] = dict(pos)
-        return merged
-
-    def _persist_pos(self, inst: str, pos: dict):
-        """Write a position to both engine dict and DB."""
-        self._positions[inst] = pos
-        self.paper._save_position(inst, pos)
-
         # Signal deduplication — prevent same signal firing on every tick
         # Key: (instrument, signal_type) → last fired timestamp
         self._signal_fired: Dict[str, float] = {}
@@ -383,6 +366,24 @@ class TradingEngine:
         self._init_brokers()
 
         logger.info(f"TradingEngine initialized in {self.mode} mode")
+
+    # ── Position helpers (used by WS command handlers) ──────────────────────────
+
+    def _all_pos(self) -> dict:
+        """Return merged dict: DB-loaded positions + engine live positions."""
+        merged = dict(self.paper._db_positions)  # snapshot of DB positions
+        for inst, pos in self._positions.items():
+            if inst in merged:
+                merged[inst].update(pos)   # engine fields override DB fields
+            else:
+                merged[inst] = dict(pos)
+        return merged
+
+    def _persist_pos(self, inst: str, pos: dict):
+        """Write a position to both engine dict and DB."""
+        self._positions[inst] = pos
+        self.paper._save_position(inst, pos)
+        return
 
     # ── Broker setup ─────────────────────────────────────────────────────────
 
@@ -546,6 +547,9 @@ class TradingEngine:
         # This correctly handles both "TATAMOTORSEPFUT26" -> "TATAMOTORS"
         # and "TATAMOTORS26" -> "TATAMOTORS" and "BHELSEPFUT26" -> "BHELSEP"
         base = re.sub(r'\d+$', '', inst_upper)          # strip trailing digits: 26/2026
+        # Strip month codes + year BEFORE stripping FUT — critical order!
+        # This handles "BHELSEPFUT26" -> strip SEP+26 -> "BHELFUT" -> strip FUT -> "BHEL"
+        base = re.sub(r'(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\d{2}$', '', base)  # strip month+2-digit-year: SEP26/OCT26/DEC26
         base = re.sub(r'FUT(FUTURES)?$', '', base)       # strip FUT/FUTURES suffix
         base = base.strip()
 
@@ -556,7 +560,7 @@ class TradingEngine:
             return "COMMODITY_FUTURES"
 
         sector_map = {
-            "SBIN": "PSU_BANK", "CANBK": "PSU_BANK", "BANK OF BARODA": "PSU_BANK",
+            "SBIN": "PSU_BANK", "SBI": "PSU_BANK", "CANBK": "PSU_BANK", "BANK OF BARODA": "PSU_BANK",
             "UNIONBANK": "PSU_BANK", "PNB": "PSU_BANK", "CENTRALBK": "PSU_BANK",
             "INDIANB": "PSU_BANK", "UCOBANK": "PSU_BANK",
             "HDFCBANK": "PVT_BANK", "ICICIBANK": "PVT_BANK", "KOTAKBANK": "PVT_BANK",
@@ -2137,7 +2141,7 @@ class TradingEngine:
             base_sym = inst
             for suf in ("FUT", "FUTURES"):
                 base_sym = base_sym.replace(suf, "")
-            base_sym = re.sub(r"(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\d{0,2}\d{2}$", "", base_sym)
+            base_sym = re.sub(r"(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\d{2}$", "", base_sym)
             base_sym = re.sub(r"^\d+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)", "", base_sym)
             base_sym = re.sub(r"\d+$", "", base_sym).strip()
             # Try base-symbol lookup in strategies (engine stores by base symbol)
@@ -2150,13 +2154,13 @@ class TradingEngine:
                     prev_top_val = float(tops[-1][1])
                 if bots:
                     prev_bot_val = float(bots[-1][1])
-            # Fallback: also check R1 monitor directly (keyed by full instrument name, not base)
+            # Fallback: also check R1 monitor using base symbol (strategies are keyed by base sym)
             if prev_top_val == 0:
-                m_top = self._r1_monitor.get_confirmed_top(inst)
+                m_top = self._r1_monitor.get_confirmed_top(base_sym)
                 if m_top:
                     prev_top_val = float(m_top)
             if prev_bot_val == 0:
-                m_bot = self._r1_monitor.get_confirmed_bot(inst)
+                m_bot = self._r1_monitor.get_confirmed_bot(base_sym)
                 if m_bot:
                     prev_bot_val = float(m_bot)
 

@@ -746,7 +746,7 @@ function renderTradeLog(){
     const rollVal=p.rollover?'Yes':'No';
     // Friendly sector label — null/undefined → '—', unknown code → 'Other'
     const rawSector=p.sector;
-    const sectorLabel=!rawSector?'—':(sectorMap[rawSector]||(rawSector==='OTHER'?'Other':rawSector));
+    const sectorLabel=!rawSector?'—':(sectorMap[rawSector]||'Other');
     // Pyramiding lots: DB uses pyramid_lots, engine uses pyramids
     const pyrLots=p.pyramiding_lots||p.pyramids||1;
 
@@ -920,7 +920,17 @@ function tlQuickAdd(){
   input.value='';
 }
 function onTlRestart(inst){if(!confirm('Restart '+inst+'?'))return;if(ws&&ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify({command:'restart_position',instrument:inst,mode:'PAPER'}));}
-function onTlRemove(inst){if(!confirm('Remove '+inst+' from log?'))return;if(ws&&ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify({command:'remove_position',instrument:inst}));}
+function onTlRemove(inst){
+  if(!confirm('Remove '+inst+' from log?'))return;
+  // Remove from local state immediately for instant UI feedback
+  if(window._positions&&window._positions[inst]){
+    delete window._positions[inst];
+    renderTradeLog();
+  }
+  if(ws&&ws.readyState===WebSocket.OPEN){
+    ws.send(JSON.stringify({command:'remove_position',instrument:inst}));
+  }
+}
 // ── Chart modal — requests candle data from engine and renders OHLC chart
 window._chartCache = {};   // { interval: { candles, interval, range } }
 window._chartCfg  = { inst: '', symbol: '', interval: '1d', range: '60d', chartType: 'candle' };
@@ -1263,7 +1273,7 @@ function _inferSector(stock){
   if(/^(NIFTY|BANKNIFTY|FINNIFTY|SENSEX|MIDCPNIFTY)$/.test(s))return'INDEX_FUTURES';
   if(/^(GOLD|SILVER|CRUDEOIL|NATURALGAS)$/.test(s))return'COMMODITY_FUTURES';
   const map={
-    'CANBK':'PSU_BANK','SBIN':'PSU_BANK','BANK OF BARODA':'PSU_BANK','UNIONBANK':'PSU_BANK',
+    'CANBK':'PSU_BANK','SBIN':'PSU_BANK','SBI':'PSU_BANK','BANK OF BARODA':'PSU_BANK','UNIONBANK':'PSU_BANK',
     'PNB':'PSU_BANK','CENTRALBK':'PSU_BANK','INDIANB':'PSU_BANK','UCOBANK':'PSU_BANK',
     'HDFCBANK':'PVT_BANK','ICICIBANK':'PVT_BANK','KOTAKBANK':'PVT_BANK','INDUSINDBK':'PVT_BANK',
     'AXISBANK':'PVT_BANK','IDFCFIRSTB':'PVT_BANK','BANDHANBNK':'PVT_BANK','RBLBANK':'PVT_BANK',
