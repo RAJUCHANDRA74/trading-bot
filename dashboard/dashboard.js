@@ -689,7 +689,7 @@ function renderTradeLog(){
     'STOCK_FUTURES':'Stock','COMMODITY_FUTURES':'Commodity',
     'ENERGY':'Energy','CONSUMER':'Consumer','FINANCIAL_SERVICES':'Financial Services',
     'PSE':'PSE','DEFENCE':'Defence','REALTY':'Realty','INFRASTRUCTURE':'Infrastructure',
-    'MISC':'Misc','OTHER':'Other',
+    'MISC':'Misc','OTHER':'Other','INFRA':'Infra',
   };
 
   // Count active/waiting
@@ -711,7 +711,10 @@ function renderTradeLog(){
 
   let html='';
   list.forEach(([inst,p],i)=>{
-    const dir=p.direction||p.side||'—';
+    // Show LONG/SHORT/WAITING — engine sets side="WAITING" for WAITING positions
+    // Fallback: if both null, show status-based label
+    const rawDir=p.direction||p.side||null;
+    const dir=(rawDir&&rawDir!=='null'&&rawDir!=='undefined')?rawDir:(p.status==='WAITING'?'WAITING':'—');
     const dirCls=dir==='LONG'?'badge-green':dir==='SHORT'?'badge-red':'badge-gold';
     const status=p.status||'—';
     const segType=p.segment_type||'STOCK_FUTURES';
@@ -741,8 +744,9 @@ function renderTradeLog(){
     const gapRule=p.gap_rule||'inactive';
     const gapActive=gapRule==='active';
     const rollVal=p.rollover?'Yes':'No';
-    // Friendly sector label
-    const sectorLabel=sectorMap[p.sector]||p.sector||'—';
+    // Friendly sector label — null/undefined → '—', unknown code → 'Other'
+    const rawSector=p.sector;
+    const sectorLabel=!rawSector?'—':(sectorMap[rawSector]||(rawSector==='OTHER'?'Other':rawSector));
     // Pyramiding lots: DB uses pyramid_lots, engine uses pyramids
     const pyrLots=p.pyramiding_lots||p.pyramids||1;
 

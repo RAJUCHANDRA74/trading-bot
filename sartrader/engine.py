@@ -2098,12 +2098,21 @@ class TradingEngine:
             else:
                 current_sl = round(sl_auto, 2)   # fallback to auto
 
-            # Get prev_top / prev_bottom from strategy's swing points;
-            # if strategy not loaded for this position (DB position), fall back to DB values
+            # Get prev_top / prev_bottom from strategy's swing points.
+            # strategies dict keyed by BASE symbol (see add_to_watchlist), not full contract.
+            # R1 monitor also uses base symbol. Convert inst (full contract) to base for lookup.
             prev_top_val = float(pos.get("prev_top") or 0)
             prev_bot_val = float(pos.get("prev_bottom") or 0)
-            strat_entry = self.strategies.get(inst, {})
-            strat_obj = strat_entry.get("strategy")
+            # Derive base symbol from full contract name (e.g. BHELSEPFUT26 → BHEL)
+            base_sym = inst
+            for suf in ("FUT", "FUTURES"):
+                base_sym = base_sym.replace(suf, "")
+            base_sym = re.sub(r"(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\d{0,2}\d{2}$", "", base_sym)
+            base_sym = re.sub(r"^\d+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)", "", base_sym)
+            base_sym = re.sub(r"\d+$", "", base_sym).strip()
+            # Try base-symbol lookup in strategies (engine stores by base symbol)
+            strat_entry = self.strategies.get(base_sym) or self.strategies.get(inst, {})
+            strat_obj = strat_entry.get("strategy") if strat_entry else None
             if strat_obj:
                 tops = getattr(strat_obj, "_recent_tops", [])
                 bots = getattr(strat_obj, "_recent_bots", [])
@@ -2111,6 +2120,15 @@ class TradingEngine:
                     prev_top_val = float(tops[-1][1])
                 if bots:
                     prev_bot_val = float(bots[-1][1])
+            # Fallback: also check R1 monitor directly (always keyed by base symbol)
+            if prev_top_val == 0:
+                m_top = self._r1_monitor.get_confirmed_top(base_sym)
+                if m_top:
+                    prev_top_val = float(m_top)
+            if prev_bot_val == 0:
+                m_bot = self._r1_monitor.get_confirmed_bot(base_sym)
+                if m_bot:
+                    prev_bot_val = float(m_bot)
 
             # ── TB-1: map recent_level to prev_top/bottom for dashboard display ──
             # recent_level = most recent CONFIRMED swing point used as SL reference.
@@ -2909,8 +2927,8 @@ class TradingEngine:
                 self._positions[inst] = {
                     "status": "WAITING",
                     "mode": data.get("mode", "PAPER"),
-                    "direction": None,
-                    "side": None,
+                    "direction": "WAITING",   # explicit so dashboard shows "WAITING" not "—"
+                    "side": "WAITING",
                     "strategy": data.get("strategy", "SAR_TOP_BOTTOM"),
                     "sector": sector,
                     "initial_lots": initial_lots,
@@ -3265,7 +3283,7 @@ class TradingEngine:
                     try:
                         to_ts   = int(_dt.now().timestamp())
                         from_ts = to_ts - (200 * 15 * 60)
-                        inst_key = self._resolve_futures(symbol)
+                        inst_key = self._resolve_futures(inst)
                         mstock_candles = broker.get_candles(inst_key, interval, from_ts, to_ts)
                         if mstock_candles:
                             # Convert OHLC objects to [ts, o, h, l, c, v] lists for WebSocket JSON
