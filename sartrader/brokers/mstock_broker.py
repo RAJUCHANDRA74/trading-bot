@@ -663,9 +663,11 @@ class MStockBroker(AbstractBroker):
         s = re.sub(r'FUTURES?$', '', s)
         # Step 3: Remove leading 2-digit year prefix (index futures: 26SEPFUT)
         s = re.sub(r'^(\d{2})(?=(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))', '', s)
+        # Step 3.5: Remove trailing month+year (stock futures: SEP26, OCT26)
+        s = re.sub(r'(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\d{2}$', '', s)
         # Step 4: Remove trailing 2-digit year (26, 27) from base
         s = re.sub(r'\d{2}$', '', s)
-        # DO NOT strip month codes — token_map stores "TATAMOTORS" (not "TATAMOTORSEP")
+        # DO NOT strip bare month codes — token_map stores "TATAMOTORS" (not "TATAMOTORSEP")
         return s.strip()
 
     def _extract_expiry_for_nfo(self, inst: str) -> Optional[str]:
