@@ -1080,12 +1080,57 @@ function renderTlChart(inst, symbol, candles, interval, range){
     return;
   }
 
-  // Parse and filter out candles with missing/invalid price data
+  // ─── normalizeTime: convert any timestamp to Unix seconds for LC v4 ───
+  // Accepts: number (seconds or ms), ISO string, or BusinessDay {year,month,day}
+  // Returns: Unix seconds (integer), or null if invalid
+  function normalizeTime(val) {
+    if (val === null || val === undefined) return null;
+    // Already a number → treat as Unix seconds (if < 10B) or ms (if ≥ 10B)
+    if (typeof val === 'number' && Number.isFinite(val)) {
+      return val < 1e10 ? Math.floor(val) : Math.floor(val / 1000);
+    }
+    // ISO string like "2024-01-15" or "2024-01-15T00:00:00"
+    if (typeof val === 'string' && val.length >= 10) {
+      const d = new Date(val.slice(0, 10) + 'T00:00:00Z');
+      return isNaN(d.getTime()) ? null : Math.floor(d.getTime() / 1000);
+    }
+    // BusinessDay object {year,month,day} (LC v4 native format)
+    if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
+      const { year, month, day } = val;
+      if (Number.isFinite(year) && Number.isFinite(month) && Number.isFinite(day)) {
+        const d = new Date(Date.UTC(year, month - 1, day));
+        return isNaN(d.getTime()) ? null : Math.floor(d.getTime() / 1000);
+      }
+    }
+    return null;
+  }
+
+  // Parse and filter out candles with missing/invalid price data or timestamps
   const ohlc = candles
-    .map(c => ({ t: c[0], o: parseFloat(c[1]), h: parseFloat(c[2]), l: parseFloat(c[3]), c: parseFloat(c[4]) }))
-    .filter(d => d.t && Number.isFinite(d.o) && Number.isFinite(d.h) && Number.isFinite(d.l) && Number.isFinite(d.c));
-  const firstTs = ohlc[0]?.t || 0;
-  const lastTs = ohlc[ohlc.length - 1]?.t || 0;
+    .map(c => {
+      const rawT = c[0];
+      const normT = normalizeTime(rawT);
+      return {
+        t: normT,                                    // Unix seconds for LC v4
+        rawT: rawT,                                 // keep original for debug
+        o: parseFloat(c[1]), h: parseFloat(c[2]),
+        l: parseFloat(c[3]), c: parseFloat(c[4]),
+      };
+    })
+    .filter(d =>
+      d.t !== null &&
+      Number.isFinite(d.t) &&
+      Number.isFinite(d.o) && Number.isFinite(d.h) &&
+      Number.isFinite(d.l) && Number.isFinite(d.c)
+    );
+
+  if (!ohlc.length) {
+    console.warn('[Chart] No valid candles after normalization for', symbol, '| raw sample:', JSON.stringify(candles?.[0]));
+    return;
+  }
+
+  const firstTs = ohlc[0].t;
+  const lastTs = ohlc[ohlc.length - 1].t;
   const tfLabel = interval === '1d' ? 'Daily' : interval === '60m' ? '1 Hour' : interval === '15m' ? '15 Min' : '5 Min';
 
   if (isFirstOpen) {
