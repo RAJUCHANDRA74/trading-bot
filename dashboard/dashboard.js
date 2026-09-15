@@ -1050,6 +1050,15 @@ function closeChartModal(){
 }
 
 function renderTlChart(inst, symbol, candles, interval, range){
+  // ── Render mutex: block concurrent executions ──────────────────────────────
+  // This is the single most important fix. Without it, the 1-second auto-refresh
+  // timer can fire while renderTlChart is still running (e.g. between chart creation
+  // and setData), leaving LC's internal state in a half-initialized state that
+  // throws "Value is undefined" from inside the time-scale updater.
+  if (window._chartRendering) return;
+  window._chartRendering = true;
+
+  try {
   interval = interval || window._chartCfg?.interval || '1d';
   range = range || window._chartCfg?.range || '60d';
   const chartType = window._chartCfg?.chartType || 'candle';
@@ -1138,6 +1147,27 @@ function renderTlChart(inst, symbol, candles, interval, range){
   // Debug: log first candle raw vs normalized
   console.log('[Chart] Candles OK:', symbol, '| raw[0]:', JSON.stringify(candles[0]), '| norm t:', ohlc[0]?.t, '| count:', ohlc.length);
 
+  // ─── Sanitize data for Lightweight Charts ───
+  // Ensures every item has integer time + finite numeric prices; drops anything LC would reject
+  function sanitizeLC(items) {
+    return items.map(d => ({
+      time: Math.floor(d.t),   // LC v4 requires integer Unix seconds
+      open:   +d.o.toFixed(2),
+      high:   +d.h.toFixed(2),
+      low:    +d.l.toFixed(2),
+      close:  +d.c.toFixed(2),
+    })).filter(d =>
+      d.time > 0 &&
+      isFinite(d.open) && isFinite(d.high) &&
+      isFinite(d.low)  && isFinite(d.close)
+    );
+  }
+  const lcData = sanitizeLC(ohlc);
+  if (!lcData.length) {
+    console.warn('[Chart] sanitizeLC dropped all candles for', symbol);
+    return;
+  }
+
   const firstTs = ohlc[0].t;
   const lastTs = ohlc[ohlc.length - 1].t;
   const tfLabel = interval === '1d' ? 'Daily' : interval === '60m' ? '1 Hour' : interval === '15m' ? '15 Min' : '5 Min';
@@ -1208,8 +1238,18 @@ function renderTlChart(inst, symbol, candles, interval, range){
     modal.appendChild(shell);
 
     // ─── Initialize Lightweight Charts ───
+    // Destroy any previous instance first to avoid stale state
+    if (window._lcChart) {
+      try { window._lcChart.remove(); } catch(e) {}
+      window._lcChart = null;
+      window._lcSeries = null;
+    }
+
     try {
       const container = document.getElementById('tlChartContainer');
+      // Force a reflow so container has pixel dimensions before LC reads them
+      void container.offsetWidth;
+
       window._lcChart = LightweightCharts.createChart(container, {
         width: container.clientWidth || 700,
         height: 340,
@@ -1222,19 +1262,27 @@ function renderTlChart(inst, symbol, candles, interval, range){
 
       if (chartType === 'line') {
         window._lcSeries = window._lcChart.addLineSeries({ color: '#22c55e', lineWidth: 2 });
-        window._lcSeries.setData(ohlc.map(d => ({ time: d.t, value: d.c })));
+        window._lcSeries.setData(lcData.map(d => ({ time: d.time, value: d.close })));
       } else {
         window._lcSeries = window._lcChart.addCandlestickSeries({
           upColor: '#22c55e', downColor: '#ef4444',
           borderUpColor: '#22c55e', borderDownColor: '#ef4444',
           wickUpColor: '#22c55e', wickDownColor: '#ef4444',
         });
-        window._lcSeries.setData(ohlc);
+        window._lcSeries.setData(lcData);
       }
 
-      window._lcChart.timeScale().fitContent();
+      // Defer fitContent by one animation frame so LC's layout engine settles first.
+      // Calling it synchronously can trigger a time-scale recalc on an incomplete series.
+      requestAnimationFrame(() => {
+        if (window._lcChart) {
+          try { window._lcChart.timeScale().fitContent(); } catch(e) {}
+        }
+      });
     } catch (e) {
       console.error('[Chart] Lightweight Charts init error:', e);
+      window._lcChart = null;
+      window._lcSeries = null;
     }
 
     // Timeframe pill clicks
@@ -1277,28 +1325,26 @@ function renderTlChart(inst, symbol, candles, interval, range){
 
     const prevType = window._lcChartType || 'candle';
     if (prevType !== chartType) {
-      // Chart type changed — remove old series and add new one
-      try {
-        window._lcChart.removeSeries(window._lcSeries);
-      } catch (e) {}
-
-      if (chartType === 'line') {
-        window._lcSeries = window._lcChart.addLineSeries({ color: '#22c55e', lineWidth: 2 });
-        window._lcSeries.setData(ohlc.map(d => ({ time: d.t, value: d.c })));
-      } else {
-        window._lcSeries = window._lcChart.addCandlestickSeries({
-          upColor: '#22c55e', downColor: '#ef4444',
-          borderUpColor: '#22c55e', borderDownColor: '#ef4444',
-          wickUpColor: '#22c55e', wickDownColor: '#ef4444',
-        });
-        window._lcSeries.setData(ohlc);
-      }
-      window._lcChartType = chartType;
+      // Chart type changed — destroy entire chart and rebuild to avoid
+      // removeSeries() triggering an async time-scale recalc on a half-ready series.
+      // Cache current data so the rebuild uses the same candles.
+      const snapInterval = window._chartCfg?.interval || interval;
+      window._chartCache[snapInterval] = { candles, interval, range };
+      window._chartCfg.chartType = chartType;
+      // Recreate from scratch (isFirstOpen=true path handles everything)
+      window._lcChart = null;
+      window._lcSeries = null;
+      renderTlChart(inst, symbol, candles, interval, range);
+      return;
     } else {
-      // Same chart type — just update data
-      window._lcSeries.setData(chartType === 'line'
-        ? ohlc.map(d => ({ time: d.t, value: d.c }))
-        : ohlc);
+      // Same chart type — just update data on the existing series
+      } catch(e) {
+        console.error('[Chart] setData update error:', e);
+        // Fallback: destroy chart and rebuild from current candles
+        window._lcChart = null;
+        window._lcSeries = null;
+        renderTlChart(inst, symbol, candles, interval, range);
+      }
     }
 
     // Update stats bar
@@ -1306,6 +1352,9 @@ function renderTlChart(inst, symbol, candles, interval, range){
     if (stats) {
       stats.innerHTML = '<span>' + new Date(firstTs * 1000).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) + '</span><span style="color:var(--green)">Auto-refreshes every 1s</span><span>' + ohlc.length + ' bars</span><span>' + new Date(lastTs * 1000).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) + '</span>';
     }
+  } finally {
+    // Always release the render mutex so the next call can proceed
+    window._chartRendering = false;
   }
 }
 
