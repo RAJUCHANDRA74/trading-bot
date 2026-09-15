@@ -3502,6 +3502,23 @@ class DashboardHTTPHandler(http.server.BaseHTTPRequestHandler):
             except Exception as e:
                 logger.error(f"[HTTP] Failed to serve dashboard.js: {e}")
 
+        # Serve Lightweight Charts library from project root
+        if "lightweight-charts" in path and path.endswith(".js"):
+            lc_file = str(BASE_DIR / "lightweight-charts.standalone.production.js")
+            try:
+                with open(lc_file, "rb") as f:
+                    body = f.read()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/javascript; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Cache-Control", "max-age=86400")
+                self.end_headers()
+                self.wfile.write(body)
+                self.wfile.flush()
+                return
+            except Exception as e:
+                logger.error(f"[HTTP] Failed to serve lightweight-charts: {e}")
+
         # Serve favicon.ico if requested (avoid 404 noise)
         if path == "/favicon.ico":
             self.send_response(204)
