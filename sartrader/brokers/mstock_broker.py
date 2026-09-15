@@ -843,9 +843,18 @@ class MStockBroker(AbstractBroker):
             return []
 
         # Determine date range (up to 60 trading days back)
+        # NOTE: to_date must always be a past trading day — M-Stock API returns no data
+        # if to_date is today on a weekend/holiday, so we adjust to previous trading day.
         today = date.today()
-        from_date = (today - timedelta(days=60)).strftime("%Y-%m-%d")
-        to_date = today.strftime("%Y-%m-%d")
+        to_date = today
+        # Skip back past weekends (Sat=5, Sun=6) to get last trading day
+        if to_date.weekday() == 5:      # Saturday → use Friday
+            to_date = to_date - timedelta(days=1)
+        elif to_date.weekday() == 6:    # Sunday → use Friday
+            to_date = to_date - timedelta(days=2)
+        # to_date is already today on weekdays — the M-Stock API handles that fine
+        to_date_str = to_date.strftime("%Y-%m-%d")
+        from_date = (to_date - timedelta(days=60)).strftime("%Y-%m-%d")
 
         try:
             resp = self._client.get_historical_chart(
@@ -853,7 +862,7 @@ class MStockBroker(AbstractBroker):
                 _security_token=str(_token),
                 _interval="ONE_DAY",
                 _fromDate=from_date,
-                _toDate=to_date,
+                _toDate=to_date_str,
             )
             raw = resp.text
             try:
