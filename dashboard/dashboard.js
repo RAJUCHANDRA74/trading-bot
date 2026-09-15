@@ -1045,34 +1045,33 @@ function closeChartModal(){
   const modal=document.getElementById('chartModal');
   if(modal){ modal.remove(); }
   if(window._chartTimer){ clearInterval(window._chartTimer); window._chartTimer=null; }
+  // Destroy Lightweight Charts instance to free memory
+  try { if(window._lcChart){ window._lcChart.remove(); window._lcChart=null; window._lcSeries=null; } } catch(e){}
 }
 
 function renderTlChart(inst, symbol, candles, interval, range){
-  interval=interval||window._chartCfg.interval||'1d';
-  range=range||window._chartCfg.range||'60d';
-  const chartType=window._chartCfg.chartType||'candle';
+  interval = interval || window._chartCfg?.interval || '1d';
+  range = range || window._chartCfg?.range || '60d';
+  const chartType = window._chartCfg?.chartType || 'candle';
 
   // Update cache
-  window._chartCache[interval]={candles,interval,range};
+  window._chartCache[interval] = { candles, interval, range };
 
   // Only create the modal shell once — subsequent calls update content without rebuilding
-  let modal=document.getElementById('chartModal');
-  const isFirstOpen=!modal;
+  let modal = document.getElementById('chartModal');
+  const isFirstOpen = !modal;
 
-  if(isFirstOpen){
-    modal=document.createElement('div');
-    modal.id='chartModal';
-    modal.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center';
-    modal.onclick=function(e){if(e.target===modal)closeChartModal();};
+  if (isFirstOpen) {
+    modal = document.createElement('div');
+    modal.id = 'chartModal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center';
+    modal.onclick = function(e) { if (e.target === modal) closeChartModal(); };
     document.body.appendChild(modal);
-    // Start live auto-refresh when modal first opens
-    _startChartRefresh();
   }
 
-  if(!candles||!candles.length){
-    // Show empty state — only rebuild if modal is fresh (first open)
-    if(isFirstOpen){
-      modal.innerHTML=`<div style="background:var(--bg-card);border-radius:12px;padding:30px;text-align:center;max-width:380px">
+  if (!candles || !candles.length) {
+    if (isFirstOpen) {
+      modal.innerHTML = `<div style="background:var(--bg-card);border-radius:12px;padding:30px;text-align:center;max-width:380px">
         <div style="font-size:18px;margin-bottom:10px">📊 ${symbol}</div>
         <div style="color:var(--text-muted)">Loading candles...</div>
         <button onclick="closeChartModal()" style="margin-top:16px;padding:8px 20px;background:var(--bg-card2);border:1px solid var(--border);color:var(--text-primary);border-radius:8px;cursor:pointer">Close</button>
@@ -1081,108 +1080,175 @@ function renderTlChart(inst, symbol, candles, interval, range){
     return;
   }
 
-  const ohlc=candles.map(c=>({t:c[0],o:parseFloat(c[1]),h:parseFloat(c[2]),l:parseFloat(c[3]),c:parseFloat(c[4])}));
-  const firstTs=ohlc[0]?.t||0;
-  const lastTs=ohlc[ohlc.length-1]?.t||0;
-  const tfLabel=interval==='1d'?'Daily':interval==='60m'?'1 Hour':interval==='15m'?'15 Min':'5 Min';
+  const ohlc = candles.map(c => ({ t: c[0], o: parseFloat(c[1]), h: parseFloat(c[2]), l: parseFloat(c[3]), c: parseFloat(c[4]) }));
+  const firstTs = ohlc[0]?.t || 0;
+  const lastTs = ohlc[ohlc.length - 1]?.t || 0;
+  const tfLabel = interval === '1d' ? 'Daily' : interval === '60m' ? '1 Hour' : interval === '15m' ? '15 Min' : '5 Min';
 
-  if(isFirstOpen){
-    // Build full modal shell using DOM (no template literals to avoid parser issues)
-    const shell=document.createElement('div');
-    shell.style.cssText='background:var(--bg-card);border-radius:12px;padding:16px;max-width:740px;width:95vw;user-select:none';
-    const hdr=document.createElement('div');
-    hdr.style.cssText='display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;flex-wrap:wrap';
-    const titleDiv=document.createElement('div');
-    titleDiv.style.cssText='font-size:16px;font-weight:700;color:var(--text-primary)';
-    titleDiv.innerHTML='<span style="font-size:18px;margin-right:6px">&#x1F4CA;</span> '+symbol;
-    const labelSpan=document.createElement('span');
-    labelSpan.id='tlTfLabel';
-    labelSpan.style.cssText='font-size:12px;font-weight:400;color:var(--green);margin-left:4px';
-    labelSpan.textContent=tfLabel;
+  if (isFirstOpen) {
+    // Build full modal shell using DOM
+    const shell = document.createElement('div');
+    shell.style.cssText = 'background:var(--bg-card);border-radius:12px;padding:16px;max-width:740px;width:95vw;user-select:none';
+    const hdr = document.createElement('div');
+    hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;flex-wrap:wrap';
+    const titleDiv = document.createElement('div');
+    titleDiv.style.cssText = 'font-size:16px;font-weight:700;color:var(--text-primary)';
+    titleDiv.innerHTML = '<span style="font-size:18px;margin-right:6px">&#x1F4CA;</span> ' + symbol;
+    const labelSpan = document.createElement('span');
+    labelSpan.id = 'tlTfLabel';
+    labelSpan.style.cssText = 'font-size:12px;font-weight:400;color:var(--green);margin-left:4px';
+    labelSpan.textContent = tfLabel;
     titleDiv.appendChild(labelSpan);
-    const liveSpan=document.createElement('span');
-    liveSpan.style.cssText='font-size:11px;color:var(--green);font-weight:400;margin-left:6px';
-    liveSpan.textContent='\u25CF LIVE';
+    const liveSpan = document.createElement('span');
+    liveSpan.style.cssText = 'font-size:11px;color:var(--green);font-weight:400;margin-left:6px';
+    liveSpan.textContent = '\u25CF LIVE';
     titleDiv.appendChild(liveSpan);
     hdr.appendChild(titleDiv);
-    const tfDiv=document.createElement('div');
-    tfDiv.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap';
-    ['1d','60m','15m'].forEach(tf=>{
-      const btn=document.createElement('button');
-      const isActive=tf===interval;
-      btn.className='tl-tf-btn'+(isActive?' tl-tf-active':'');
-      btn.dataset.tf=tf;
-      btn.style.cssText='padding:4px 10px;font-size:11px;border-radius:6px;border:1px solid;cursor:pointer;font-weight:600;background:'+(isActive?'var(--accent)':'var(--bg-card2)')+';color:'+(isActive?'#fff':'var(--text-muted)')+';border-color:'+(isActive?'var(--accent)':'var(--border)');
-      btn.textContent=tf==='1d'?'1D':tf==='60m'?'1H':'15m';
+    const tfDiv = document.createElement('div');
+    tfDiv.style.cssText = 'display:flex;gap:8px;align-items:center;flex-wrap:wrap';
+    ['1d', '60m', '15m'].forEach(tf => {
+      const btn = document.createElement('button');
+      const isActive = tf === interval;
+      btn.className = 'tl-tf-btn' + (isActive ? ' tl-tf-active' : '');
+      btn.dataset.tf = tf;
+      btn.style.cssText = 'padding:4px 10px;font-size:11px;border-radius:6px;border:1px solid;cursor:pointer;font-weight:600;background:' + (isActive ? 'var(--accent)' : 'var(--bg-card2)') + ';color:' + (isActive ? '#fff' : 'var(--text-muted)') + ';border-color:' + (isActive ? 'var(--accent)' : 'var(--border)');
+      btn.textContent = tf === '1d' ? '1D' : tf === '60m' ? '1H' : '15m';
       tfDiv.appendChild(btn);
     });
-    const div2=document.createElement('div');
-    div2.style.cssText='width:1px;height:20px;background:var(--border)';
+    const div2 = document.createElement('div');
+    div2.style.cssText = 'width:1px;height:20px;background:var(--border)';
     tfDiv.appendChild(div2);
-    ['candle','line'].forEach(ct=>{
-      const btn=document.createElement('button');
-      const isActive=ct===chartType;
-      btn.className='tl-ct-btn'+(isActive?' tl-ct-active':'');
-      btn.dataset.ct=ct;
-      btn.style.cssText='padding:4px 10px;font-size:11px;border-radius:6px;border:1px solid;cursor:pointer;font-weight:600;color:'+(isActive?'#fff':'var(--text-muted)')+';background:'+(isActive?'var(--accent)':'var(--bg-card2)')+';border-color:'+(isActive?'var(--accent)':'var(--border)');
-      btn.textContent=ct==='candle'?'Candle':'Line';
+    ['candle', 'line'].forEach(ct => {
+      const btn = document.createElement('button');
+      const isActive = ct === chartType;
+      btn.className = 'tl-ct-btn' + (isActive ? ' tl-ct-active' : '');
+      btn.dataset.ct = ct;
+      btn.style.cssText = 'padding:4px 10px;font-size:11px;border-radius:6px;border:1px solid;cursor:pointer;font-weight:600;color:' + (isActive ? '#fff' : 'var(--text-muted)') + ';background:' + (isActive ? 'var(--accent)' : 'var(--bg-card2)') + ';border-color:' + (isActive ? 'var(--accent)' : 'var(--border)');
+      btn.textContent = ct === 'candle' ? 'Candle' : 'Line';
       tfDiv.appendChild(btn);
     });
     hdr.appendChild(tfDiv);
     shell.appendChild(hdr);
-    const canvas=document.createElement('canvas');
-    canvas.id='tlCanvas';
-    canvas.width=700;
-    canvas.height=340;
-    canvas.style.cssText='display:block;border-radius:8px;background:var(--bg-card2)';
-    shell.appendChild(canvas);
-    const stats=document.createElement('div');
-    stats.id='tlChartStats';
-    stats.style.cssText='margin-top:8px;display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted)';
-    stats.innerHTML='<span>'+new Date(firstTs*1000).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'})+'</span><span style="color:var(--green)">Auto-refreshes every 1s</span><span>'+ohlc.length+' bars</span><span>'+new Date(lastTs*1000).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'})+'</span>';
+
+    // Canvas container for Lightweight Charts
+    const chartContainer = document.createElement('div');
+    chartContainer.id = 'tlChartContainer';
+    chartContainer.style.cssText = 'width:100%;height:340px;border-radius:8px;overflow:hidden;background:var(--bg-card2)';
+    shell.appendChild(chartContainer);
+
+    const stats = document.createElement('div');
+    stats.id = 'tlChartStats';
+    stats.style.cssText = 'margin-top:8px;display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted)';
+    stats.innerHTML = '<span>' + new Date(firstTs * 1000).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) + '</span><span style="color:var(--green)">Auto-refreshes every 1s</span><span>' + ohlc.length + ' bars</span><span>' + new Date(lastTs * 1000).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) + '</span>';
     shell.appendChild(stats);
-    const closeBtn=document.createElement('button');
-    closeBtn.onclick=closeChartModal;
-    closeBtn.style.cssText='margin-top:10px;width:100%;padding:8px;background:var(--bg-card2);border:1px solid var(--border);color:var(--text-primary);border-radius:8px;cursor:pointer;font-size:13px';
-    closeBtn.textContent='Close';
+
+    const closeBtn = document.createElement('button');
+    closeBtn.onclick = closeChartModal;
+    closeBtn.style.cssText = 'margin-top:10px;width:100%;padding:8px;background:var(--bg-card2);border:1px solid var(--border);color:var(--text-primary);border-radius:8px;cursor:pointer;font-size:13px';
+    closeBtn.textContent = 'Close';
     shell.appendChild(closeBtn);
-    modal.innerHTML='';
+    modal.innerHTML = '';
     modal.appendChild(shell);
 
+    // ─── Initialize Lightweight Charts ───
+    try {
+      const container = document.getElementById('tlChartContainer');
+      window._lcChart = LightweightCharts.createChart(container, {
+        width: container.clientWidth || 700,
+        height: 340,
+        layout: { background: { color: 'transparent' }, textColor: '#9ca3af' },
+        grid: { vertLines: { color: '#1f2937' }, horzLines: { color: '#1f2937' } },
+        crosshair: { mode: 1 },
+        rightPriceScale: { borderColor: '#374151' },
+        timeScale: { borderColor: '#374151', timeVisible: true },
+      });
+
+      if (chartType === 'line') {
+        window._lcSeries = window._lcChart.addLineSeries({ color: '#22c55e', lineWidth: 2 });
+        window._lcSeries.setData(ohlc.map(d => ({ time: d.t, value: d.c })));
+      } else {
+        window._lcSeries = window._lcChart.addCandlestickSeries({
+          upColor: '#22c55e', downColor: '#ef4444',
+          borderUpColor: '#22c55e', borderDownColor: '#ef4444',
+          wickUpColor: '#22c55e', wickDownColor: '#ef4444',
+        });
+        window._lcSeries.setData(ohlc);
+      }
+
+      window._lcChart.timeScale().fitContent();
+    } catch (e) {
+      console.error('[Chart] Lightweight Charts init error:', e);
+    }
+
     // Timeframe pill clicks
-    modal.querySelectorAll('.tl-tf-btn').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        const tf=btn.dataset.tf;
-        if(tf===window._chartCfg.interval) return;
-        if(window._chartCfg){
-          window._chartCfg.interval=tf;
-          const cached=window._chartCache[tf];
-          if(cached){
-            renderTlChart(window._chartCfg.inst,window._chartCfg.symbol,cached.candles,cached.interval,cached.range);
+    modal.querySelectorAll('.tl-tf-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tf = btn.dataset.tf;
+        if (tf === window._chartCfg?.interval) return;
+        if (window._chartCfg) {
+          window._chartCfg.interval = tf;
+          const cached = window._chartCache[tf];
+          if (cached) {
+            renderTlChart(window._chartCfg.inst, window._chartCfg.symbol, cached.candles, cached.interval, cached.range);
           } else {
-            const rangeMap={'1d':'60d','60m':'5d','15m':'5d'};
-            ws.send(JSON.stringify({command:'get_candles',instrument:window._chartCfg.inst,symbol:window._chartCfg.symbol,interval:tf,range:rangeMap[tf]||'60d'}));
-            showToast('\uD83D\uDCCA Fetching '+tf+' candles...','var(--blue)');
+            const rangeMap = { '1d': '60d', '60m': '5d', '15m': '5d' };
+            ws.send(JSON.stringify({ command: 'get_candles', instrument: window._chartCfg.inst, symbol: window._chartCfg.symbol, interval: tf, range: rangeMap[tf] || '60d' }));
+            showToast('\uD83D\uDCCA Fetching ' + tf + ' candles...', 'var(--blue)');
           }
         }
       });
     });
 
     // Chart type pill clicks
-    modal.querySelectorAll('.tl-ct-btn').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        const ct=btn.dataset.ct;
-        if(window._chartCfg){
-          window._chartCfg.chartType=ct;
-          const cached=window._chartCache[window._chartCfg.interval];
-          if(cached){
-            renderTlChart(window._chartCfg.inst,window._chartCfg.symbol,cached.candles,cached.interval,cached.range);
+    modal.querySelectorAll('.tl-ct-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const ct = btn.dataset.ct;
+        if (window._chartCfg) {
+          window._chartCfg.chartType = ct;
+          const cached = window._chartCache[window._chartCfg.interval];
+          if (cached) {
+            renderTlChart(window._chartCfg.inst, window._chartCfg.symbol, cached.candles, cached.interval, cached.range);
           }
         }
       });
     });
 
     _startChartRefresh();
+  } else {
+    // ─── Subsequent calls: update data or switch chart type ───
+    if (!window._lcChart || !window._lcSeries) return; // Chart not ready yet
+
+    const prevType = window._lcChartType || 'candle';
+    if (prevType !== chartType) {
+      // Chart type changed — remove old series and add new one
+      try {
+        window._lcChart.removeSeries(window._lcSeries);
+      } catch (e) {}
+
+      if (chartType === 'line') {
+        window._lcSeries = window._lcChart.addLineSeries({ color: '#22c55e', lineWidth: 2 });
+        window._lcSeries.setData(ohlc.map(d => ({ time: d.t, value: d.c })));
+      } else {
+        window._lcSeries = window._lcChart.addCandlestickSeries({
+          upColor: '#22c55e', downColor: '#ef4444',
+          borderUpColor: '#22c55e', borderDownColor: '#ef4444',
+          wickUpColor: '#22c55e', wickDownColor: '#ef4444',
+        });
+        window._lcSeries.setData(ohlc);
+      }
+      window._lcChartType = chartType;
+    } else {
+      // Same chart type — just update data
+      window._lcSeries.setData(chartType === 'line'
+        ? ohlc.map(d => ({ time: d.t, value: d.c }))
+        : ohlc);
+    }
+
+    // Update stats bar
+    const stats = document.getElementById('tlChartStats');
+    if (stats) {
+      stats.innerHTML = '<span>' + new Date(firstTs * 1000).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) + '</span><span style="color:var(--green)">Auto-refreshes every 1s</span><span>' + ohlc.length + ' bars</span><span>' + new Date(lastTs * 1000).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) + '</span>';
+    }
   }
 }
 
