@@ -1080,7 +1080,10 @@ function renderTlChart(inst, symbol, candles, interval, range){
     return;
   }
 
-  const ohlc = candles.map(c => ({ t: c[0], o: parseFloat(c[1]), h: parseFloat(c[2]), l: parseFloat(c[3]), c: parseFloat(c[4]) }));
+  // Parse and filter out candles with missing/invalid price data
+  const ohlc = candles
+    .map(c => ({ t: c[0], o: parseFloat(c[1]), h: parseFloat(c[2]), l: parseFloat(c[3]), c: parseFloat(c[4]) }))
+    .filter(d => d.t && Number.isFinite(d.o) && Number.isFinite(d.h) && Number.isFinite(d.l) && Number.isFinite(d.c));
   const firstTs = ohlc[0]?.t || 0;
   const lastTs = ohlc[ohlc.length - 1]?.t || 0;
   const tfLabel = interval === '1d' ? 'Daily' : interval === '60m' ? '1 Hour' : interval === '15m' ? '15 Min' : '5 Min';
