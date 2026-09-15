@@ -1105,6 +1105,12 @@ function renderTlChart(inst, symbol, candles, interval, range){
     return null;
   }
 
+  // Early exit if chart is not yet ready (guards against auto-refresh firing before first render)
+  if (!isFirstOpen && (!window._lcChart || !window._lcSeries)) {
+    console.warn('[Chart] Chart not ready, skipping data update');
+    return;
+  }
+
   // Parse and filter out candles with missing/invalid price data or timestamps
   const ohlc = candles
     .map(c => {
@@ -1128,6 +1134,9 @@ function renderTlChart(inst, symbol, candles, interval, range){
     console.warn('[Chart] No valid candles after normalization for', symbol, '| raw sample:', JSON.stringify(candles?.[0]));
     return;
   }
+
+  // Debug: log first candle raw vs normalized
+  console.log('[Chart] Candles OK:', symbol, '| raw[0]:', JSON.stringify(candles[0]), '| norm t:', ohlc[0]?.t, '| count:', ohlc.length);
 
   const firstTs = ohlc[0].t;
   const lastTs = ohlc[ohlc.length - 1].t;
