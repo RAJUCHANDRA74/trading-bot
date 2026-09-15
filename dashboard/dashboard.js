@@ -1338,6 +1338,11 @@ function renderTlChart(inst, symbol, candles, interval, range){
       return;
     } else {
       // Same chart type — just update data on the existing series
+      try {
+        window._lcSeries.setData(chartType === 'line'
+          ? lcData.map(d => ({ time: d.time, value: d.close }))
+          : lcData
+        );
       } catch(e) {
         console.error('[Chart] setData update error:', e);
         // Fallback: destroy chart and rebuild from current candles
