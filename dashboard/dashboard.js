@@ -1058,7 +1058,6 @@ function renderTlChart(inst, symbol, candles, interval, range){
   if (window._chartRendering) return;
   window._chartRendering = true;
 
-  try {
   interval = interval || window._chartCfg?.interval || '1d';
   range = range || window._chartCfg?.range || '60d';
   const chartType = window._chartCfg?.chartType || 'candle';
@@ -1086,6 +1085,7 @@ function renderTlChart(inst, symbol, candles, interval, range){
         <button onclick="closeChartModal()" style="margin-top:16px;padding:8px 20px;background:var(--bg-card2);border:1px solid var(--border);color:var(--text-primary);border-radius:8px;cursor:pointer">Close</button>
       </div>`;
     }
+    window._chartRendering = false;
     return;
   }
 
@@ -1117,6 +1117,7 @@ function renderTlChart(inst, symbol, candles, interval, range){
   // Early exit if chart is not yet ready (guards against auto-refresh firing before first render)
   if (!isFirstOpen && (!window._lcChart || !window._lcSeries)) {
     console.warn('[Chart] Chart not ready, skipping data update');
+    window._chartRendering = false;
     return;
   }
 
@@ -1141,6 +1142,7 @@ function renderTlChart(inst, symbol, candles, interval, range){
 
   if (!ohlc.length) {
     console.warn('[Chart] No valid candles after normalization for', symbol, '| raw sample:', JSON.stringify(candles?.[0]));
+    window._chartRendering = false;
     return;
   }
 
@@ -1357,10 +1359,9 @@ function renderTlChart(inst, symbol, candles, interval, range){
     if (stats) {
       stats.innerHTML = '<span>' + new Date(firstTs * 1000).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) + '</span><span style="color:var(--green)">Auto-refreshes every 1s</span><span>' + ohlc.length + ' bars</span><span>' + new Date(lastTs * 1000).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) + '</span>';
     }
-} finally {
-    // Always release the render mutex so the next call can proceed
-    window._chartRendering = false;
-  }
+
+  // Always release the render mutex so the next call can proceed
+  window._chartRendering = false;
 }
 
 /* ════════════════════════════════════════
