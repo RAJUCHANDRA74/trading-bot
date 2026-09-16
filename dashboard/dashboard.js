@@ -1279,7 +1279,6 @@ function renderTlChart(inst, symbol, candles, interval, range){
           try { window._lcChart.timeScale().fitContent(); } catch(e) {}
         }
       });
-    }
     } catch (e) {
       console.error('[Chart] Lightweight Charts init error:', e);
       window._lcChart = null;
