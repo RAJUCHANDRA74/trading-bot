@@ -1057,6 +1057,7 @@ function renderTlChart(inst, symbol, candles, interval, range){
   // throws "Value is undefined" from inside the time-scale updater.
   if (window._chartRendering) return;
   window._chartRendering = true;
+  try {
 
   interval = interval || window._chartCfg?.interval || '1d';
   range = range || window._chartCfg?.range || '60d';
@@ -1359,9 +1360,10 @@ function renderTlChart(inst, symbol, candles, interval, range){
     if (stats) {
       stats.innerHTML = '<span>' + new Date(firstTs * 1000).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) + '</span><span style="color:var(--green)">Auto-refreshes every 1s</span><span>' + ohlc.length + ' bars</span><span>' + new Date(lastTs * 1000).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) + '</span>';
     }
-
-  // Always release the render mutex so the next call can proceed
-  window._chartRendering = false;
+  }
+  } finally {
+    window._chartRendering = false;
+  }
 }
 
 /* ════════════════════════════════════════
@@ -2129,4 +2131,3 @@ window.addEventListener('pageshow', function(e){
     window.location.reload();
   }
 });
-
