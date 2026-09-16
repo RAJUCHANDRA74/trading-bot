@@ -323,6 +323,7 @@ class TradingEngine:
         self._live_trades: List[dict] = []   # Live trade history
         self._tick_thread: Optional[threading.Thread] = None
         self._tick_interval = 1      # seconds between ticks (live updates)
+        self._last_candle_fetch: dict[str, float] = {}   # inst_key → last fetch timestamp
 
         # WebSocket clients
         self._ws_clients: List[Any] = []
@@ -1025,8 +1026,11 @@ class TradingEngine:
 
                 candles = None
 
-                # Try broker first (live data)
-                if broker and broker.is_connected():
+                # Try broker first (live data) — throttle to once per 15 min per instrument
+                now_ts = time.time()
+                last_fetch = self._last_candle_fetch.get(inst_key, 0)
+                if broker and broker.is_connected() and (now_ts - last_fetch >= 900):
+                    self._last_candle_fetch[inst_key] = now_ts
                     to_ts   = int(_dt.now().timestamp())
                     from_ts = to_ts - (50 * 15 * 60)
                     candles = broker.get_candles(inst_key, "15m", from_ts, to_ts)
