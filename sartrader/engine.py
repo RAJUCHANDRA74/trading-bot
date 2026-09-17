@@ -3510,7 +3510,7 @@ class DashboardHTTPHandler(http.server.BaseHTTPRequestHandler):
         # Serve Lightweight Charts library from project root
         # Matches /lightweight-charts... (root) and /dashboard/lightweight-charts... (with prefix)
         if path.startswith("/") and "lightweight-charts" in path and path.endswith(".js"):
-            lc_file = str(BASE_DIR / "lightweight-charts.standalone.production.js")
+            lc_file = str(BASE_DIR / "dashboard" / "lightweight-charts.standalone.production.js")
             try:
                 with open(lc_file, "rb") as f:
                     body = f.read()
