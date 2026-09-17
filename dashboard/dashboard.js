@@ -1361,6 +1361,7 @@ function renderTlChart(inst, symbol, candles, interval, range){
       stats.innerHTML = '<span>' + new Date(firstTs * 1000).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) + '</span><span style="color:var(--green)">Auto-refreshes every 1s</span><span>' + ohlc.length + ' bars</span><span>' + new Date(lastTs * 1000).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) + '</span>';
     }
   }
+  }
   } finally {
     window._chartRendering = false;
   }
