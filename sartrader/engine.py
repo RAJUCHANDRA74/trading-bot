@@ -3490,7 +3490,8 @@ class DashboardHTTPHandler(http.server.BaseHTTPRequestHandler):
         path = urllib.parse.urlparse(self.path).path
 
         # Serve dashboard.js directly from disk (not from HTML cache)
-        if path == "/dashboard.js":
+        # Matches both /dashboard.js (root) and /dashboard/dashboard.js (with directory prefix)
+        if path == "/dashboard.js" or path == "/dashboard/dashboard.js":
             js_file = str(BASE_DIR / "dashboard" / "dashboard.js")
             try:
                 with open(js_file, "rb") as f:
@@ -3507,7 +3508,8 @@ class DashboardHTTPHandler(http.server.BaseHTTPRequestHandler):
                 logger.error(f"[HTTP] Failed to serve dashboard.js: {e}")
 
         # Serve Lightweight Charts library from project root
-        if "lightweight-charts" in path and path.endswith(".js"):
+        # Matches /lightweight-charts... (root) and /dashboard/lightweight-charts... (with prefix)
+        if path.startswith("/") and "lightweight-charts" in path and path.endswith(".js"):
             lc_file = str(BASE_DIR / "lightweight-charts.standalone.production.js")
             try:
                 with open(lc_file, "rb") as f:
