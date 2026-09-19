@@ -1322,6 +1322,7 @@ function renderTlChart(inst, symbol, candles, interval, range){
     });
 
     _startChartRefresh();
+  }
   } else {
     // ─── Subsequent calls: update data or switch chart type ───
     if (!window._lcChart || !window._lcSeries) return; // Chart not ready yet
