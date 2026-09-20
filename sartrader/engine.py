@@ -1310,6 +1310,7 @@ class TradingEngine:
                     "sl": sl_price,
                 })
                 self._positions[inst] = {
+                    "status": "ACTIVE",
                     "side": side, "entry_price": actual_fill,
                     "entry_condition": entry_cond, "entry_time": _dt.now().isoformat(),
                     "qty": qty, "sl_mode": "auto", "sl_pct": sl_pct,
@@ -1335,6 +1336,7 @@ class TradingEngine:
         self.paper.capital -= brokerage
 
         self._positions[inst] = {
+            "status":         "ACTIVE",
             "side":           side,
             "entry_price":    fill_price,
             "entry_condition": entry_cond,
@@ -1393,6 +1395,7 @@ class TradingEngine:
         if existing is None:
             entry_sl = self._tb1_compute_day1_sl(inst, side, fill_price, confirmed_level)
             pos = {
+                "status":           "ACTIVE",
                 "side":              side,
                 "entries":           [{"entry_price": fill_price, "entry_date": today_str, "sl": entry_sl}],
                 "unified_sl":        entry_sl,
