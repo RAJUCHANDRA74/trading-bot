@@ -360,6 +360,10 @@ class TradingEngine:
         # Persisted to data/watchlist.json
         self._watchlist: Dict[str, dict] = {}
 
+        # Trade journal notes: instrument -> note string
+        # Persisted to data/journal.json
+        self._journal: Dict[str, str] = {}
+
         # Load strategies from config
         self._init_strategies()
 
@@ -738,6 +742,30 @@ class TradingEngine:
         except Exception as e:
             logger.error(f"[PERSIST] Failed to load watchlist: {e}")
 
+    def _journal_path(self) -> Path:
+        """Path to the journal persistence file."""
+        return BASE_DIR / "data" / "journal.json"
+
+    def _save_journal(self):
+        """Save journal notes to disk."""
+        try:
+            with open(self._journal_path(), "w", encoding="utf-8") as f:
+                json.dump(self._journal, f, indent=2)
+        except Exception as e:
+            logger.error(f"[PERSIST] Failed to save journal: {e}")
+
+    def _load_journal(self):
+        """Load journal notes from disk."""
+        path = self._journal_path()
+        if not path.exists():
+            return
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                self._journal = json.load(f)
+            logger.info(f"[PERSIST] Loaded {len(self._journal)} journal note(s)")
+        except Exception as e:
+            logger.error(f"[PERSIST] Failed to load journal: {e}")
+
     def _apply_strategy(self, inst: str, strategy_name: str, params: dict):
         """Apply a strategy to an instrument (internal helper)."""
         strategy_type = strategy_name  # "SAR_TOP_BOTTOM" or "TOP_BOTTOM_2"
@@ -792,6 +820,7 @@ class TradingEngine:
 
         # Restore dashboard-added instruments from previous session
         self._load_watchlist()
+        self._load_journal()
 
     # ── Broker access ────────────────────────────────────────────────────────
 
@@ -2232,6 +2261,7 @@ class TradingEngine:
             "watchlist":       list(self._watchlist.keys()),
             # Full watchlist data keyed by instrument symbol — used by dashboard for live LTP lookups
             "watchlist_data":  {k: v for k, v in self._watchlist.items()},
+            "journal":         self._journal,
             # TB-1 R1 confirmed levels from daily candle monitor
             "r1_levels": {
                 inst: {
@@ -2246,7 +2276,8 @@ class TradingEngine:
 
     async def handle_dashboard_message(self, data: dict, ws):
         """Handle commands from dashboard."""
-        cmd = data.get("command", "")
+        # Accept both 'command' (engine native) and 'type' (dashboard sends this)
+        cmd = data.get("command") or data.get("type") or ""
 
         if cmd == "get_state":
             await ws.send(json.dumps({
@@ -3433,6 +3464,24 @@ class TradingEngine:
                     "message": f"{inst} exit failed",
                     "success": False,
                 }))
+
+        elif cmd == "save_journal":
+            """
+            Save a trade journal note for an instrument.
+            Sends: { command: 'save_journal', instrument: 'ICICIBANKSEPFUT26', note: 'Watched for reversal at R1' }
+            """
+            inst = data.get("instrument", "")
+            note = data.get("note", "")
+            if inst in self._journal:
+                self._journal[inst] = note
+            else:
+                self._journal[inst] = note
+            self._save_journal()
+            await ws.send(json.dumps({
+                "type": "notification",
+                "message": f"Journal saved for {inst}",
+                "success": True,
+            }))
 
         elif cmd == "run_backtest":
             # Kick off a backtest (runs in background)

@@ -6,984 +6,1254 @@
 <title>SARTrader — Auto Trading OS</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--bg-primary:#080d17;--bg-secondary:#0d1525;--bg-card:#111c30;--bg-card2:#162038;--border:#1e3050;--border-light:#2a4070;--text-primary:#e2e8f0;--text-secondary:#8899bb;--text-muted:#445566;--green:#00c896;--green-dim:rgba(0,200,150,0.12);--red:#ff4d6a;--red-dim:rgba(255,77,106,0.12);--blue:#3b82f6;--blue-dim:rgba(59,130,246,0.12);--gold:#f5c842;--gold-dim:rgba(245,200,66,0.12);--purple:#a78bfa;--purple-dim:rgba(167,139,250,0.12);--orange:#f97316;--orange-dim:rgba(249,115,22,0.12);--font:'Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif}
+:root{
+  --bg:#000;
+  --bg2:#050a10;
+  --bg3:#0a1218;
+  --bg4:#0d1a24;
+  --bg-card:#0f1f2e;
+  --border:#1a3050;
+  --border2:#1e3a5c;
+  --text:#00ff88;
+  --text-dim:#00aa66;
+  --text-mid:#00cc77;
+  --text-soft:#00885544;
+  --red:#ff3344;
+  --red-dim:#ff334422;
+  --amber:#ffaa00;
+  --amber-dim:#ffaa0022;
+  --cyan:#00ddff;
+  --cyan-dim:#00ddff22;
+  --blue:#3388ff;
+  --dim:#003322;
+  --scanline:rgba(0,255,136,0.025);
+  --font:'Courier New',Courier,monospace;
+}
 
-/* LOGIN */
-#loginOverlay{position:fixed;inset:0;z-index:9999;background:var(--bg-primary);display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;overflow:hidden}
-#loginOverlay::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 20% 60%,rgba(0,200,150,0.06) 0%,transparent 70%),radial-gradient(ellipse 50% 60% at 80% 30%,rgba(59,130,246,0.06) 0%,transparent 70%);pointer-events:none}
-.login-particles{position:absolute;inset:0;overflow:hidden;pointer-events:none}
-.login-particle{position:absolute;border-radius:50%;opacity:0.15;animation:floatParticle linear infinite}
-@keyframes floatParticle{0%{transform:translateY(100vh) scale(1);opacity:0}10%{opacity:0.2}90%{opacity:0.1}100%{transform:translateY(-10vh) scale(0.5);opacity:0}}
-.login-logo-wrap{position:relative;z-index:1;text-align:center;margin-bottom:12px}
-.login-logo{font-size:52px;font-weight:800;background:linear-gradient(135deg,var(--green),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-1px}
-.login-tagline{font-size:12px;color:var(--text-muted);letter-spacing:4px;text-transform:uppercase;margin-top:4px}
-.login-motiv{position:relative;z-index:1;text-align:center;margin:24px 0 36px;font-size:17px;font-weight:600;line-height:1.7;letter-spacing:0.3px}
-.motiv-line1{background:linear-gradient(90deg,#f5c842,#ff6b6b,#a78bfa,#22d3ee,#00c896);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:gradientShift 4s ease infinite;background-size:200% auto}
-@keyframes gradientShift{0%{background-position:0% center}50%{background-position:100% center}100%{background-position:0% center}}
-.motiv-line2{font-size:14px;color:var(--text-secondary);margin-top:6px;font-weight:400}
-.login-box{position:relative;z-index:1;background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:36px 32px;width:360px;text-align:center}
-.login-title{font-size:13px;color:var(--text-muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:24px}
-.login-box input{width:100%;background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text-primary);font-size:14px;outline:none;margin-bottom:14px;text-align:center;letter-spacing:2px}
-.login-box input:focus{border-color:var(--green)}
-.login-box label{display:block;text-align:left;font-size:11px;color:var(--text-muted);margin-bottom:4px;letter-spacing:1px;text-transform:uppercase}
-.login-btn{width:100%;background:var(--green);color:#000;font-size:14px;font-weight:700;padding:12px;border:none;border-radius:10px;cursor:pointer;transition:opacity 0.15s;letter-spacing:1px}
-.login-btn:hover{opacity:0.85}
-.login-btn:active{transform:translateY(1px)}
-#loginError{margin-top:10px}
+body{
+  font-family:var(--font);
+  background:var(--bg);
+  color:var(--text);
+  height:100vh;
+  overflow:hidden;
+  font-size:13px;
+  line-height:1.4;
+}
 
-/* MAIN */
-body{font-family:var(--font);font-size:13px;line-height:1.5;background:var(--bg-primary);color:var(--text-primary)}
-::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
-.layout{display:none}
+/* ─── SCANLINES OVERLAY ─────────────────────────────── */
+body::before{
+  content:'';
+  position:fixed;inset:0;
+  background:repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    var(--scanline) 2px,
+    var(--scanline) 4px
+  );
+  pointer-events:none;
+  z-index:9998;
+}
 
-/* NAVIGATION */
-.nav-item{padding:10px 14px;display:flex;align-items:center;gap:8px;cursor:pointer;border-radius:8px;color:var(--text-secondary);font-size:12px;transition:all 0.15s;user-select:none}
-.nav-item:hover{background:var(--bg-card2);color:var(--text-primary)}
-.nav-item.active{background:var(--green-dim);color:var(--green);font-weight:600}
-.nav-item .nav-icon{font-size:14px}
+/* ─── SCROLLBAR ─────────────────────────────────────── */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
 
-/* PORTFOLIO */
-.portfolio-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-.pbox{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;text-align:center}
-.pbox-num{font-size:22px;font-weight:800;line-height:1}
-.pbox-sub{font-size:10px;color:var(--text-muted);margin-top:4px}
-.pbox.green .pbox-num{color:var(--green)}
-.pbox.red .pbox-num{color:var(--red)}
-.pbox.green{border-color:rgba(0,200,150,0.2)}
-.pbox.red{border-color:rgba(255,77,106,0.2)}
+/* ─── LAYOUT ───────────────────────────────────────── */
+.layout{display:none;height:100vh}
+.layout.active{display:flex}
 
-/* STRATEGY OPTIONS */
-.strat-opt{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;min-width:140px;background:var(--bg-card);transition:all 0.15s}
-.strat-opt:hover{border-color:var(--blue)}
-.strat-opt.active{border-color:var(--green);background:var(--green-dim)}
-.strat-opt-radio{font-size:14px;color:var(--text-muted);width:18px;text-align:center}
-.strat-opt.active .strat-opt-radio{color:var(--green)}
+/* ─── LOGIN ─────────────────────────────────────────── */
+#loginOverlay{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--bg);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+}
+.login-box{
+  background:var(--bg3);
+  border:1px solid var(--border);
+  padding:32px 28px;
+  width:320px;
+  text-align:center;
+}
+.login-logo{
+  font-size:48px;font-weight:bold;
+  color:var(--text);
+  margin-bottom:4px;
+  text-shadow:0 0 20px var(--text-dim);
+}
+.login-sub{font-size:11px;color:var(--text-dim);letter-spacing:3px;margin-bottom:24px}
+.login-box input{
+  width:100%;background:var(--bg2);border:1px solid var(--border);
+  color:var(--text);padding:10px 12px;font-size:14px;
+  text-align:center;letter-spacing:2px;outline:none;
+  font-family:var(--font);
+  border-radius:0;
+}
+.login-box input:focus{border-color:var(--text-dim)}
+.login-btn{
+  width:100%;margin-top:12px;
+  background:var(--dim);border:1px solid var(--text-dim);
+  color:var(--text);padding:10px;font-size:13px;font-weight:bold;
+  cursor:pointer;letter-spacing:1px;font-family:var(--font);
+  transition:all 0.15s;
+}
+.login-btn:hover{background:var(--text-dim);color:var(--bg)}
+#loginError{margin-top:10px;color:var(--red);font-size:12px}
 
-/* SEGMENT TABS */
-.seg-tab{padding:5px 12px;border-radius:6px;font-size:12px;background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);cursor:pointer;transition:all 0.15s}
-.seg-tab.active{background:var(--blue-dim);color:var(--blue);border-color:rgba(59,130,246,0.3)}
-.seg-header{font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:8px;padding:4px 0}
+/* ─── SIDEBAR ──────────────────────────────────────── */
+.sidebar{
+  width:190px;
+  background:var(--bg2);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  flex-shrink:0;
+}
 
-/* SUMMARY BLOCKS */
-.summary-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-.summary-block{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:16px}
-.summary-title{font-size:13px;font-weight:700;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
-.summary-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:12px}
-.summary-row span:first-child{color:var(--text-secondary)}
-.summary-row span:last-child{font-weight:700;color:var(--text-primary)}
-.summary-pnl-pos{color:var(--green)!important}
-.summary-pnl-neg{color:var(--red)!important}
+.sb-logo{
+  padding:14px 12px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+.sb-icon{
+  width:30px;height:30px;
+  background:var(--text-dim);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;font-weight:bold;color:var(--bg);
+  flex-shrink:0;
+}
+.sb-name{font-size:14px;font-weight:bold;color:var(--text);letter-spacing:0.5px}
+.sb-sub{font-size:9px;color:var(--text-dim);letter-spacing:2px}
 
-/* JOURNAL */
-.journal-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px}
-.journal-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.journal-inst{font-weight:700;font-size:13px}
-.journal-date{font-size:11px;color:var(--text-muted)}
-.journal-pnl{font-weight:700;font-size:13px}
-.journal-note{font-size:12px;color:var(--text-secondary);line-height:1.6;margin:8px 0}
-.journal-note textarea{width:100%;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text-primary);font-size:12px;resize:vertical;min-height:60px;font-family:var(--font)}
-.journal-note textarea:focus{outline:none;border-color:var(--green)}
-.journal-actions{display:flex;justify-content:flex-end;gap:8px}
-.journal-save{background:var(--green);color:#000;border:none;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer}
-.journal-del{background:var(--bg-card2);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer}
+.sb-nav{flex:1;padding:8px 6px;display:flex;flex-direction:column;gap:2px}
 
-/* TICKER */
-.ticker-bar{display:flex;gap:0;overflow:hidden;flex:1}
-.ticker-item{display:flex;align-items:center;gap:6px;padding:0 16px;border-right:1px solid var(--border);white-space:nowrap;font-size:12px}
-.ticker-item .tk-name{color:var(--text-primary);font-size:13px;font-weight:700;letter-spacing:0.3px}
-.ticker-item .tk-price{font-weight:800;color:var(--text-primary);font-size:13px}
-.ticker-item .tk-arrow{font-size:12px;font-weight:700}
-.ticker-item.up .tk-arrow{color:var(--green)}
-.ticker-item.down .tk-arrow{color:var(--red)}
-.ticker-item .tk-change{font-size:12px;font-weight:700;padding:1px 5px;border-radius:4px}
-.ticker-item.up .tk-change{background:rgba(0,200,150,0.15);color:var(--green)}
-.ticker-item.down .tk-change{background:rgba(255,77,106,0.15);color:var(--red)}
+.nav-btn{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 10px;
+  cursor:pointer;
+  border:1px solid transparent;
+  color:var(--text-dim);
+  font-size:12px;
+  border-radius:2px;
+  transition:all 0.1s;
+  user-select:none;
+}
+.nav-btn:hover{
+  background:var(--bg4);
+  color:var(--text);
+  border-color:var(--border);
+}
+.nav-btn.active{
+  background:var(--dim);
+  color:var(--text);
+  border-color:var(--text-soft);
+}
+.nav-btn .nav-icon{font-size:13px;width:16px;text-align:center}
 
-/* SIDEBAR */
-.sidebar{width:200px;background:var(--bg-secondary);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
-.sidebar-logo{padding:16px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
-.s-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--green),var(--blue));border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:#000}
-.s-text{font-size:14px;font-weight:700;color:var(--text-primary)}
-.s-sub{font-size:10px;color:var(--text-muted)}
-.sidebar-nav{flex:1;padding:8px;display:flex;flex-direction:column;gap:2px}
-.sidebar-footer{border-top:1px solid var(--border);padding:10px 14px;font-size:10px;color:var(--text-muted)}
-.footer-mode{display:flex;align-items:center;gap:6px;margin-bottom:4px}
-.mode-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
-.logout-btn{width:100%;margin-top:8px;padding:7px 10px;background:rgba(255,77,106,0.1);border:1px solid rgba(255,77,106,0.3);color:var(--red);border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:5px;transition:all 0.15s;letter-spacing:0.5px}
-.logout-btn:hover{background:rgba(255,77,106,0.2);border-color:rgba(255,77,106,0.5)}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.sb-footer{
+  border-top:1px solid var(--border);
+  padding:10px 12px;
+  font-size:10px;
+}
+.sb-ver{
+  color:var(--text-dim);
+  display:flex;align-items:center;gap:5px;
+  margin-bottom:6px;
+}
+.sb-ver span{color:var(--text)}
+.logout-btn{
+  width:100%;
+  background:rgba(255,51,68,0.08);
+  border:1px solid rgba(255,51,68,0.25);
+  color:var(--red);
+  padding:6px;
+  font-size:11px;font-weight:bold;
+  cursor:pointer;letter-spacing:0.5px;
+  font-family:var(--font);
+  transition:all 0.15s;
+  border-radius:2px;
+}
+.logout-btn:hover{background:rgba(255,51,68,0.2)}
 
-/* MAIN CONTENT */
-.main-content{flex:1;display:flex;flex-direction:column;overflow:hidden}
-.top-bar{background:var(--bg-secondary);border-bottom:1px solid var(--border);padding:8px 20px;display:flex;align-items:center;gap:16px}
-.live-badge{border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;letter-spacing:0.5px}
-.live-badge.paper{background:var(--blue-dim);color:var(--blue)}
-.live-badge.live{background:var(--red-dim);color:var(--red)}
-.content-area{flex:1;overflow-y:auto;padding:20px}
+/* ─── MAIN AREA ────────────────────────────────────── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
 
-/* TABLES */
-.table-wrap{overflow-y:auto;max-height:300px}
+/* TOP BAR */
+.top-bar{
+  background:var(--bg2);
+  border-bottom:1px solid var(--border);
+  padding:6px 14px;
+  display:flex;align-items:center;
+  gap:12px;
+  flex-shrink:0;
+  height:42px;
+}
+
+.mode-badge{
+  font-size:10px;font-weight:bold;
+  padding:3px 8px;
+  border-radius:2px;
+  letter-spacing:1px;
+  flex-shrink:0;
+}
+.mode-badge.paper{background:var(--dim);color:var(--text);border:1px solid var(--text-soft)}
+.mode-badge.live{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,51,68,0.3)}
+
+.ticker-bar{
+  display:flex;gap:0;flex:1;
+  overflow:hidden;
+}
+.ticker-item{
+  display:flex;align-items:center;gap:6px;
+  padding:0 14px;
+  border-right:1px solid var(--border);
+  white-space:nowrap;
+}
+.ticker-item:first-child{padding-left:0}
+.tk-sym{font-size:11px;color:var(--text-dim);font-weight:bold}
+.tk-price{font-size:12px;color:var(--text);font-weight:bold}
+.tk-arrow{font-size:11px;font-weight:bold}
+.tk-arrow.up{color:var(--text)}
+.tk-arrow.dn{color:var(--red)}
+.tk-change{
+  font-size:10px;font-weight:bold;
+  padding:1px 5px;border-radius:2px;
+}
+.tk-change.up{background:var(--dim);color:var(--text)}
+.tk-change.dn{background:var(--red-dim);color:var(--red)}
+
+.top-right{
+  display:flex;align-items:center;gap:10px;
+  margin-left:auto;
+}
+
+.exit-all-btn{
+  background:var(--red-dim);
+  border:1px solid rgba(255,51,68,0.4);
+  color:var(--red);
+  padding:4px 12px;
+  font-size:11px;font-weight:bold;
+  cursor:pointer;letter-spacing:0.5px;
+  font-family:var(--font);
+  border-radius:2px;
+  transition:all 0.15s;
+}
+.exit-all-btn:hover{background:var(--red);color:#fff}
+
+.top-clock{
+  font-size:12px;color:var(--text-dim);
+  font-variant-numeric:tabular-nums;
+  letter-spacing:0.5px;
+  min-width:70px;
+  text-align:right;
+}
+
+.top-status{
+  display:flex;align-items:center;gap:5px;
+  font-size:10px;color:var(--text-dim);
+}
+.status-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--text);
+  animation:pulse 2s infinite;
+}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;padding:14px}
+
+/* ─── METRIC BOXES ─────────────────────────────────── */
+.metric-row{
+  display:grid;
+  grid-template-columns:repeat(8,1fr);
+  gap:8px;
+  margin-bottom:14px;
+}
+
+.mbox{
+  background:var(--bg3);
+  border:1px solid var(--border);
+  padding:10px 12px;
+  text-align:center;
+  position:relative;
+  overflow:hidden;
+}
+.mbox::before{
+  content:'';
+  position:absolute;
+  top:0;left:0;right:0;
+  height:2px;
+}
+.mbox.green::before{background:var(--text-dim)}
+.mbox.red::before{background:var(--red)}
+.mbox.amber::before{background:var(--amber)}
+.mbox.cyan::before{background:var(--cyan)}
+
+.mbox-val{
+  font-size:18px;font-weight:bold;
+  color:var(--text);
+  line-height:1.1;
+  font-variant-numeric:tabular-nums;
+}
+.mbox-val.green{color:var(--text)}
+.mbox-val.red{color:var(--red)}
+.mbox-val.amber{color:var(--amber)}
+.mbox-sub{
+  font-size:9px;color:var(--text-dim);
+  text-transform:uppercase;
+  letter-spacing:1px;
+  margin-top:3px;
+}
+
+.mbox-running{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+}
+.mbox-dir{
+  display:flex;flex-direction:column;align-items:center;
+}
+.mbox-dir-num{
+  font-size:18px;font-weight:bold;
+  line-height:1;
+}
+.mbox-dir-lbl{font-size:8px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase}
+.mbox-sep{width:1px;height:28px;background:var(--border)}
+
+/* ─── SECTION HEADER ───────────────────────────────── */
+.section-header{
+  display:flex;align-items:center;
+  justify-content:space-between;
+  margin-bottom:8px;
+}
+.sec-title{
+  font-size:11px;font-weight:bold;
+  color:var(--text);
+  letter-spacing:1px;
+  text-transform:uppercase;
+  display:flex;align-items:center;gap:6px;
+}
+.sec-title::before{
+  content:'';
+  display:inline-block;
+  width:3px;height:12px;
+  background:var(--text-dim);
+}
+.sec-badge{
+  font-size:9px;padding:2px 7px;
+  background:var(--dim);color:var(--text-dim);
+  border:1px solid var(--text-soft);
+  border-radius:2px;
+  letter-spacing:0.5px;
+}
+
+/* ─── TABLES ───────────────────────────────────────── */
+.table-wrap{
+  background:var(--bg3);
+  border:1px solid var(--border);
+  overflow-y:auto;
+  max-height:280px;
+  margin-bottom:14px;
+}
 table{width:100%;border-collapse:collapse}
-table th{padding:8px 10px;text-align:left;font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg-card);white-space:nowrap}
-table td{padding:7px 10px;border-bottom:1px solid rgba(30,48,80,0.35);font-size:12px;white-space:nowrap}
-table tr:hover td{background:rgba(255,255,255,0.02)}
-table .empty-state{text-align:center;padding:30px;color:var(--text-muted);font-size:12px}
+th{
+  padding:7px 10px;
+  text-align:left;
+  font-size:9px;
+  font-weight:bold;
+  color:var(--text-dim);
+  text-transform:uppercase;
+  letter-spacing:1px;
+  border-bottom:1px solid var(--border);
+  background:var(--bg4);
+  white-space:nowrap;
+  position:sticky;top:0;
+  z-index:2;
+}
+td{
+  padding:6px 10px;
+  font-size:12px;
+  border-bottom:1px solid rgba(26,48,80,0.3);
+  white-space:nowrap;
+  font-variant-numeric:tabular-nums;
+}
+tbody tr:hover td{background:rgba(0,255,136,0.03)}
+.empty-row td{
+  text-align:center;
+  color:var(--text-dim);
+  font-size:11px;
+  padding:24px;
+  font-style:italic;
+}
 
-/* VIEWS */
+/* COLUMNS */
+.col-n{color:var(--text-dim);width:30px;text-align:center}
+.col-time{color:var(--text-dim);font-size:11px;width:55px}
+.col-strat{color:var(--amber);font-weight:bold;font-size:11px}
+.col-inst{color:var(--cyan);font-weight:bold}
+.col-type{font-size:10px;color:var(--text-dim)}
+.col-price{font-weight:bold}
+.col-dir{font-weight:bold;font-size:11px}
+.col-dir.long{color:var(--text)}
+.col-dir.short{color:var(--red)}
+.col-score{color:var(--amber);font-size:11px}
+.col-sl{color:var(--red);font-size:11px}
+.col-target{color:var(--text);font-size:11px}
+.col-status{font-size:10px;font-weight:bold}
+.col-status.active{color:var(--text)}
+.col-status.closed{color:var(--text-dim)}
+.col-status.pending{color:var(--amber)}
+.col-qty{color:var(--text-mid)}
+.col-ltp{font-weight:bold}
+.col-pnl{font-weight:bold}
+.col-pnl.pos{color:var(--text)}
+.col-pnl.neg{color:var(--red)}
+.col-sector{color:var(--text-dim);font-size:10px}
+.col-remove{color:var(--red);cursor:pointer;font-size:14px;text-align:center;width:24px}
+
+/* SEGMENT DROPDOWN */
+.seg-filter{
+  display:flex;align-items:center;gap:8px;
+}
+.seg-label{font-size:10px;color:var(--text-dim);letter-spacing:0.5px}
+.seg-select{
+  background:var(--bg2);
+  border:1px solid var(--border);
+  color:var(--text);
+  padding:3px 8px;
+  font-size:11px;
+  font-family:var(--font);
+  cursor:pointer;
+  outline:none;
+}
+.seg-select:focus{border-color:var(--text-dim)}
+.seg-select option{background:var(--bg3)}
+
+/* ─── VIEWS ─────────────────────────────────────────── */
 .view{display:none}
 .view.active{display:block}
 
-/* Strategy page */
-.strat-page-wrap{display:flex;flex-direction:column;gap:16px}
-.strat-segments{display:flex;flex-direction:column;gap:10px}
-.strat-seg{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
-.strat-seg-header{display:flex;align-items:center;padding:14px 16px;cursor:pointer;user-select:none;transition:background 0.15s}
-.strat-seg-header:hover{background:var(--bg-card2)}
-.strat-seg-icon{font-size:18px;margin-right:10px}
-.strat-seg-title{font-size:14px;font-weight:700;flex:1}
-.strat-seg-count{font-size:11px;color:var(--text-muted);margin-right:8px}
-.strat-seg-arrow{font-size:10px;color:var(--text-muted);transition:transform 0.2s}
-.strat-seg.open .strat-seg-arrow{transform:rotate(90deg)}
-.strat-seg-body{display:none;padding:8px 12px 12px;border-top:1px solid var(--border)}
-.strat-seg.open .strat-seg-body{display:block}
-.sys-row{background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;overflow:hidden}
-.sys-row-header{display:flex;align-items:center;padding:10px 12px;cursor:pointer;user-select:none;transition:background 0.15s}
-.sys-row-header:hover{background:var(--bg-card)}
-.sys-row.open .sys-row-header{background:var(--bg-card2)}
-.sys-cb{width:15px;height:15px;accent-color:var(--green);cursor:pointer;margin-right:8px;flex-shrink:0}
-.sys-label{font-size:12px;font-weight:600;color:var(--text-primary);flex:1}
-.sys-meta{font-size:10px;color:var(--text-muted);margin-right:8px}
-.sys-arrow{font-size:10px;color:var(--text-muted);transition:transform 0.2s}
-.sys-row.open .sys-arrow{transform:rotate(90deg)}
-.sys-row-body{display:none;padding:8px 12px 10px}
-.sys-row.open .sys-row-body{display:block}
-.sys-row-actions{display:flex;align-items:center;gap:6px;padding:8px 12px;border-top:1px solid var(--border);background:rgba(0,0,0,0.15)}
-.btn-add{background:var(--green-dim);color:var(--green);border:1px solid rgba(0,200,150,0.3);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;transition:all 0.15s;font-weight:600}
-.btn-add:hover{background:var(--green);color:#000}
-.btn-remove{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,77,106,0.3);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;transition:all 0.15s;font-weight:600}
-.btn-remove:hover{background:var(--red);color:#fff}
-.sys-stocks{display:flex;flex-wrap:wrap;gap:6px;min-height:32px}
-.stock-chip{display:flex;align-items:center;gap:5px;background:var(--bg-card);border:1px solid var(--border);border-radius:20px;padding:4px 8px 4px 6px;font-size:11px;color:var(--text-secondary);cursor:pointer;transition:all 0.15s;user-select:none}
-.stock-chip:hover{border-color:var(--border-light);color:var(--text-primary)}
-.stock-chip.checked{background:var(--green-dim);border-color:rgba(0,200,150,0.4);color:var(--green)}
-.stock-chip input[type=checkbox]{width:12px;height:12px;accent-color:var(--green);cursor:pointer;margin-right:2px}
-.chip-ltp{font-size:10px;opacity:0.7}
-.chip-rm{font-size:9px;width:14px;height:14px;line-height:14px;text-align:center;background:rgba(255,77,106,0.2);color:var(--red);border-radius:50%;cursor:pointer;opacity:0;transition:opacity 0.15s;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.stock-chip:hover .chip-rm{opacity:1}
-.chip-rm:hover{background:var(--red);color:#fff}
-.no-stocks{font-size:11px;color:var(--text-muted);padding:6px 0;font-style:italic}
-.sector-row{background:rgba(0,0,0,0.1);border:1px solid rgba(30,48,80,0.5);border-radius:6px;margin-bottom:6px;overflow:hidden}
-.sector-row-header{display:flex;align-items:center;padding:8px 10px;cursor:pointer;user-select:none}
-.sector-row-header:hover{background:rgba(255,255,255,0.03)}
-.sector-row.open .sector-row-header{background:rgba(255,255,255,0.05)}
-.sector-cb{width:14px;height:14px;accent-color:var(--green);cursor:pointer;margin-right:7px;flex-shrink:0}
-.sector-name{font-size:12px;font-weight:600;color:var(--text-primary);flex:1}
-.sector-meta{font-size:10px;color:var(--text-muted);margin-right:6px}
-.sector-arrow{font-size:10px;color:var(--text-muted);transition:transform 0.2s}
-.sector-row.open .sector-arrow{transform:rotate(90deg)}
-.sector-row-body{display:none;padding:6px 10px 8px}
-.sector-row.open .sector-row-body{display:block}
-
-/* Watchlist */
-.wl-tabs{display:flex;gap:0;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px}
-.wl-tab{flex:1;padding:12px;text-align:center;font-size:13px;font-weight:600;color:var(--text-secondary);cursor:pointer;transition:all 0.15s;border-right:1px solid var(--border)}
-.wl-tab:last-child{border-right:none}
-.wl-tab:hover{background:var(--bg-card2);color:var(--text-primary)}
-.wl-tab.active{background:var(--green-dim);color:var(--green)}
-.wl-tab .wl-tab-count{font-size:10px;opacity:0.7;margin-left:4px}
-
-.wl-panels{display:flex;flex-direction:column;gap:16px}
-.wl-panel{display:none}
-.wl-panel.active{display:block}
-
-.wl-table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border);background:var(--bg-card)}
-.wl-table{width:100%;border-collapse:collapse}
-.wl-table th{
-  padding:9px 12px;text-align:left;font-size:10px;color:var(--text-muted);
-  text-transform:uppercase;letter-spacing:0.5px;
+/* ─── BROKERS PAGE ──────────────────────────────────── */
+.broker-card{
+  background:var(--bg3);
+  border:1px solid var(--border);
+  padding:16px;
+  margin-bottom:12px;
+}
+.broker-card-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:12px;
+  padding-bottom:10px;
   border-bottom:1px solid var(--border);
-  position:sticky;top:0;background:var(--bg-card);white-space:nowrap;
-  background:linear-gradient(to bottom,var(--bg-card2),var(--bg-card));
 }
-.wl-table td{padding:8px 12px;border-bottom:1px solid rgba(30,48,80,0.3);font-size:12px;white-space:nowrap;vertical-align:middle}
-.wl-table tr:last-child td{border-bottom:none}
-.wl-table tr:hover td{background:rgba(255,255,255,0.025)}
-.wl-table .wl-empty-row td{padding:40px;text-align:center;color:var(--text-muted);font-size:13px}
+.broker-name{font-size:14px;font-weight:bold;color:var(--text)}
+.broker-status{
+  font-size:10px;font-weight:bold;
+  padding:3px 10px;
+  border-radius:2px;
+  letter-spacing:0.5px;
+}
+.broker-status.connected{background:var(--dim);color:var(--text);border:1px solid var(--text-soft)}
+.broker-status.disconnected{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,51,68,0.3)}
+.broker-status.pending{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(255,170,0,0.3)}
 
-/* Watchlist columns */
-.wl-sr{color:var(--text-muted);font-size:11px;width:36px;text-align:center}
-.wl-inst{font-weight:700;color:var(--text-primary);min-width:120px}
-.wl-sys{color:var(--text-secondary);font-size:11px}
-.wl-ltp{font-weight:700;font-size:13px;min-width:80px}
-.wl-ltp.up{color:var(--green)}
-.wl-ltp.dn{color:var(--red)}
-.wl-entry{color:var(--text-secondary);font-size:11px}
-.wl-sl{color:var(--red);font-size:11px}
-.wl-change{font-size:10px;min-width:55px}
-.wl-change.up{color:var(--green)}
-.wl-change.dn{color:var(--red)}
-.wl-mode{display:inline-flex;border-radius:12px;padding:3px 10px;font-size:10px;font-weight:700;cursor:pointer;transition:all 0.15s;border:1px solid}
-.wl-mode.paper{background:var(--blue-dim);color:var(--blue);border-color:rgba(59,130,246,0.3)}
-.wl-mode.live{background:var(--red-dim);color:var(--red);border-color:rgba(255,77,106,0.3)}
-.wl-mode:hover{opacity:0.8}
-.wl-hit{background:var(--green);color:#000;border:none;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;transition:all 0.15s;white-space:nowrap}
-.wl-hit:hover{opacity:0.85}
-.wl-hit:disabled{background:var(--border);color:var(--text-muted);cursor:not-allowed;opacity:1}
-.wl-rm{background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;opacity:0.4;transition:opacity 0.15s;padding:2px 6px;border-radius:4px}
-.wl-rm:hover{opacity:1;background:var(--red-dim)}
+.broker-row{
+  display:flex;justify-content:space-between;
+  padding:5px 0;
+  border-bottom:1px solid rgba(26,48,80,0.3);
+  font-size:12px;
+}
+.broker-row:last-child{border:none}
+.broker-row label{color:var(--text-dim)}
+.broker-row span{color:var(--text);font-weight:bold}
 
-/* Trade Log action buttons */
-.btn-stop{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,77,106,0.3);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;transition:all 0.15s;font-weight:600}
-.btn-stop:hover{background:var(--red);color:#fff}
-.btn-restart{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(59,130,246,0.3);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;transition:all 0.15s;font-weight:600}
-.btn-restart:hover{background:var(--blue);color:#fff}
-.btn-remove-tl{background:var(--gold-dim);color:var(--gold);border:1px solid rgba(245,200,66,0.3);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;transition:all 0.15s;font-weight:600}
-.btn-remove-tl:hover{background:var(--gold);color:#000}
-
-/* Editable inputs in table */
-.wl-edit{
-  background:var(--bg-secondary);border:1px solid var(--border);
-  border-radius:5px;padding:3px 7px;color:var(--text-primary);
-  font-size:11px;width:75px;text-align:right;outline:none;
+.broker-actions{
+  display:flex;gap:8px;margin-top:12px;
+}
+.broker-btn{
+  padding:6px 14px;
+  font-size:11px;font-weight:bold;
+  cursor:pointer;letter-spacing:0.5px;
   font-family:var(--font);
+  border-radius:2px;
+  transition:all 0.15s;
 }
-.wl-edit:focus{border-color:var(--green)}
-.wl-edit::placeholder{color:var(--text-muted);text-align:center}
+.broker-btn.connect{
+  background:var(--dim);border:1px solid var(--text-soft);
+  color:var(--text);
+}
+.broker-btn.connect:hover{background:var(--text-dim);color:var(--bg)}
+.broker-btn.disconnect{
+  background:var(--red-dim);border:1px solid rgba(255,51,68,0.3);
+  color:var(--red);
+}
+.broker-btn.disconnect:hover{background:var(--red);color:#fff}
 
-/* Watchlist header stats */
-.wl-stats{display:flex;gap:12px;margin-bottom:12px}
-.wl-stat-box{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:10px 16px;display:flex;align-items:center;gap:10px}
-.wl-stat-icon{font-size:20px}
-.wl-stat-info{display:flex;flex-direction:column}
-.wl-stat-num{font-size:18px;font-weight:800;line-height:1}
-.wl-stat-lbl{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px}
+/* ─── STRATEGIES PAGE ───────────────────────────────── */
+.strat-block{
+  background:var(--bg3);
+  border:1px solid var(--border);
+  margin-bottom:12px;
+}
+.strat-block-header{
+  padding:10px 14px;
+  display:flex;align-items:center;gap:10px;
+  cursor:pointer;
+  border-bottom:1px solid var(--border);
+  transition:background 0.1s;
+}
+.strat-block-header:hover{background:var(--bg4)}
+.strat-block-icon{font-size:16px}
+.strat-block-title{font-size:13px;font-weight:bold;color:var(--text);flex:1}
+.strat-block-count{font-size:10px;color:var(--text-dim)}
+.strat-block-arrow{color:var(--text-dim);font-size:10px;transition:transform 0.2s}
+.strat-block.open .strat-block-arrow{transform:rotate(90deg)}
+.strat-block-body{display:none;padding:12px}
+.strat-block.open .strat-block-body{display:block}
 
-/* Add row in watchlist */
-.wl-add-section{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:12px 16px}
-.wl-add-lbl{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px}
-.wl-add-row{display:flex;gap:8px;align-items:center}
-.wl-add-inp{flex:1;background:var(--bg-secondary);border:1px solid var(--border);border-radius:7px;padding:8px 12px;color:var(--text-primary);font-size:12px;outline:none}
-.wl-add-inp:focus{border-color:var(--green)}
-.wl-add-btn{background:var(--green-dim);color:var(--green);border:1px solid rgba(0,200,150,0.4);border-radius:7px;padding:8px 16px;font-size:12px;cursor:pointer;font-weight:600;transition:all 0.15s;white-space:nowrap}
-.wl-add-btn:hover{background:var(--green);color:#000}
+.sys-item{
+  background:var(--bg4);
+  border:1px solid var(--border);
+  margin-bottom:8px;
+}
+.sys-item-header{
+  padding:8px 12px;
+  display:flex;align-items:center;gap:8px;
+  cursor:pointer;
+}
+.sys-item-header:hover{background:var(--bg-card)}
+.sys-cb{accent-color:var(--text-dim);cursor:pointer}
+.sys-name{font-size:12px;color:var(--text);flex:1;font-weight:bold}
+.sys-meta{font-size:10px;color:var(--text-dim)}
+.sys-toggle{color:var(--text-dim);font-size:10px;transition:transform 0.2s}
+.sys-item.open .sys-toggle{transform:rotate(90deg)}
+.sys-body{display:none;padding:8px 12px;border-top:1px solid var(--border)}
+.sys-item.open .sys-body{display:block}
 
-.badge-green,.badge-red,.badge-gold{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700}
-.badge-green{background:var(--green-dim);color:var(--green)}
-.badge-red{background:var(--red-dim);color:var(--red)}
-.badge-gold{background:var(--gold-dim);color:var(--gold)}
-.btn-link{background:none;border:none;color:var(--blue);cursor:pointer;font-size:12px;text-decoration:none}
-.btn-link:hover{text-decoration:underline}
-.content-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-.breadcrumb{font-size:11px;color:var(--text-muted)}
-.breadcrumb span{color:var(--text-primary);font-weight:600}
-.live-clock{font-size:12px;color:var(--text-muted)}
+.stocks-row{
+  display:flex;flex-wrap:wrap;gap:6px;
+  min-height:30px;
+}
+.stock-chip{
+  display:flex;align-items:center;gap:5px;
+  background:var(--bg2);
+  border:1px solid var(--border);
+  padding:4px 8px;
+  font-size:11px;
+  color:var(--text-dim);
+  cursor:pointer;
+  border-radius:2px;
+  transition:all 0.1s;
+}
+.stock-chip:hover{border-color:var(--text-dim);color:var(--text)}
+.stock-chip.active{background:var(--dim);border-color:var(--text-soft);color:var(--text)}
+.chip-ltp{font-size:10px;color:var(--text-dim)}
+.chip-x{font-size:10px;color:var(--red);margin-left:2px;cursor:pointer}
+
+.sys-actions{
+  display:flex;gap:6px;margin-top:8px;
+}
+.sys-btn{
+  padding:4px 10px;
+  font-size:10px;font-weight:bold;
+  cursor:pointer;
+  font-family:var(--font);
+  border-radius:2px;
+  transition:all 0.15s;
+}
+.sys-btn.add{background:var(--dim);border:1px solid var(--text-soft);color:var(--text)}
+.sys-btn.add:hover{background:var(--text-dim);color:var(--bg)}
+.sys-btn.remove{background:var(--red-dim);border:1px solid rgba(255,51,68,0.3);color:var(--red)}
+.sys-btn.remove:hover{background:var(--red);color:#fff}
+
+/* ─── WATCHLIST ──────────────────────────────────────── */
+.wl-stats{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+  margin-bottom:14px;
+}
+.wl-stat{
+  background:var(--bg3);
+  border:1px solid var(--border);
+  padding:10px 14px;
+  display:flex;align-items:center;gap:10px;
+}
+.wl-stat-icon{font-size:18px}
+.wl-stat-num{font-size:20px;font-weight:bold;color:var(--text);line-height:1}
+.wl-stat-lbl{font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px}
+
+.wl-tabs{
+  display:flex;
+  background:var(--bg3);
+  border:1px solid var(--border);
+  margin-bottom:10px;
+}
+.wl-tab{
+  flex:1;padding:9px;
+  text-align:center;
+  font-size:11px;font-weight:bold;
+  color:var(--text-dim);
+  cursor:pointer;
+  border-right:1px solid var(--border);
+  transition:all 0.1s;
+}
+.wl-tab:last-child{border-right:none}
+.wl-tab:hover{background:var(--bg4);color:var(--text)}
+.wl-tab.active{background:var(--dim);color:var(--text)}
+
+/* ─── TRADE LOG ──────────────────────────────────────── */
+.tl-summary{
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  gap:8px;
+  margin-bottom:14px;
+}
+.tl-stat{
+  background:var(--bg3);
+  border:1px solid var(--border);
+  padding:10px 12px;
+  text-align:center;
+}
+.tl-stat-val{font-size:20px;font-weight:bold;color:var(--text);line-height:1}
+.tl-stat-val.red{color:var(--red)}
+.tl-stat-val.amber{color:var(--amber)}
+.tl-stat-lbl{font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-top:3px}
+
+.journal-card{
+  background:var(--bg3);
+  border:1px solid var(--border);
+  padding:12px 14px;
+  margin-bottom:8px;
+}
+.journal-card-head{
+  display:flex;justify-content:space-between;
+  margin-bottom:8px;
+}
+.journal-inst{font-weight:bold;color:var(--cyan);font-size:12px}
+.journal-date{font-size:10px;color:var(--text-dim)}
+.journal-pnl{font-weight:bold;font-size:13px}
+.journal-note{color:var(--text-dim);font-size:11px;line-height:1.6}
+.journal-note textarea{
+  width:100%;background:var(--bg2);border:1px solid var(--border);
+  color:var(--text);padding:8px;font-size:11px;resize:vertical;
+  min-height:50px;font-family:var(--font);outline:none;
+  border-radius:0;
+}
+.journal-note textarea:focus{border-color:var(--text-dim)}
+.journal-save{
+  background:var(--dim);border:1px solid var(--text-soft);
+  color:var(--text);padding:5px 12px;font-size:11px;
+  font-weight:bold;cursor:pointer;font-family:var(--font);
+  margin-top:6px;
+  transition:all 0.15s;
+}
+.journal-save:hover{background:var(--text-dim);color:var(--bg)}
+
+.tl-action-btn{
+  padding:4px 10px;font-size:11px;font-weight:bold;
+  cursor:pointer;font-family:var(--font);border-radius:2px;
+  transition:all 0.15s;
+}
+.tl-stop{background:var(--red-dim);border:1px solid rgba(255,51,68,0.3);color:var(--red)}
+.tl-stop:hover{background:var(--red);color:#fff}
+.tl-restart{background:var(--dim);border:1px solid var(--text-soft);color:var(--text)}
+.tl-restart:hover{background:var(--text-dim);color:var(--bg)}
+.tl-remove{background:var(--amber-dim);border:1px solid rgba(255,170,0,0.3);color:var(--amber)}
+.tl-remove:hover{background:var(--amber);color:var(--bg)}
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
+<!-- ─── LOGIN ─────────────────────────────────────────────── -->
 <div id="loginOverlay">
-  <div class="login-particles" id="loginParticles"></div>
-  <div class="login-logo-wrap">
-    <div class="login-logo">S</div>
-    <div class="login-tagline">Auto Trading OS</div>
-  </div>
-  <div class="login-motiv">
-    <div class="motiv-line1">DREAM BIG WITH PURPOSE.</div>
-    <div class="motiv-line2">TOGETHER WE CAN ACHIEVE BEYOND OUR IMAGINATION.</div>
-  </div>
   <div class="login-box">
-    <div class="login-title">SARTrader Access</div>
-    <label>Password</label>
-    <input type="password" id="loginPassword" placeholder="••••••••" onkeydown="if(event.key==='Enter')attemptLogin()">
-    <button class="login-btn" onclick="attemptLogin()">Enter Dashboard</button>
-    <div id="loginError" style="text-align:center;color:var(--red);font-size:12px;margin-top:10px;display:none">Incorrect password</div>
+    <div class="login-logo">S</div>
+    <div class="login-sub">AUTO TRADING OS</div>
+    <input type="password" id="loginPassword" placeholder="PASSWORD" onkeydown="if(event.key==='Enter')attemptLogin()" autocomplete="current-password">
+    <button class="login-btn" onclick="attemptLogin()">[ ENTER ]</button>
+    <div id="loginError" style="display:none;margin-top:10px;color:var(--red);font-size:11px">> ACCESS DENIED</div>
   </div>
 </div>
 
-<!-- LAYOUT -->
-<div class="layout" style="display:flex;height:100vh;overflow:hidden">
+<!-- ─── MAIN LAYOUT ───────────────────────────────────────── -->
+<div class="layout" id="mainLayout">
 
   <!-- SIDEBAR -->
   <div class="sidebar">
-    <div class="sidebar-logo">
-      <div class="s-icon">S</div>
-      <div><div class="s-text">SARTrader</div><div class="s-sub">Auto Trading OS</div></div>
+    <div class="sb-logo">
+      <div class="sb-icon">S</div>
+      <div>
+        <div class="sb-name">SARTRADER</div>
+        <div class="sb-sub">AUTO TRADING OS v1.0</div>
+      </div>
     </div>
-    <div class="sidebar-nav">
-      <div class="nav-item active" id="navDashboard" onclick="switchView('Dashboard')"><span class="nav-icon">◉</span> Dashboard</div>
-      <div class="nav-item" id="navStrategies" onclick="switchView('Strategies')"><span class="nav-icon">⚙</span> Strategies</div>
-      <div class="nav-item" id="navWatchlist" onclick="switchView('Watchlist')"><span class="nav-icon">☆</span> Watchlist</div>
-      <div class="nav-item" id="navOrders" onclick="switchView('Orders')"><span class="nav-icon">☰</span> Trade Log</div>
-      <div class="nav-item" id="navPortfolio" onclick="switchView('Portfolio')"><span class="nav-icon">◈</span> Portfolio</div>
-      <div class="nav-item" id="navBrokers" onclick="switchView('Brokers')"><span class="nav-icon">⚡</span> Brokers</div>
+    <div class="sb-nav">
+      <div class="nav-btn active" id="navDashboard" onclick="switchView('Dashboard')">
+        <span class="nav-icon">◉</span> Dashboard
+      </div>
+      <div class="nav-btn" id="navStrategies" onclick="switchView('Strategies')">
+        <span class="nav-icon">⚙</span> Strategies
+      </div>
+      <div class="nav-btn" id="navWatchlist" onclick="switchView('Watchlist')">
+        <span class="nav-icon">☆</span> Watchlist
+      </div>
+      <div class="nav-btn" id="navTradeLog" onclick="switchView('TradeLog')">
+        <span class="nav-icon">☰</span> Trade Log
+      </div>
+      <div class="nav-btn" id="navPortfolio" onclick="switchView('Portfolio')">
+        <span class="nav-icon">◈</span> Portfolio
+      </div>
+      <div class="nav-btn" id="navBrokers" onclick="switchView('Brokers')">
+        <span class="nav-icon">⚡</span> Brokers
+      </div>
     </div>
-    <div class="sidebar-footer">
-      <button class="logout-btn" onclick="logout()">⏻ Logout</button>
-      <div class="footer-mode" style="margin-top:10px"><div class="mode-dot"></div><span>SARTrader v1.0</span></div>
-      <div id="footerMode">PAPER MODE</div>
+    <div class="sb-footer">
+      <div class="sb-ver">MODE: <span id="footerMode">PAPER</span></div>
+      <div class="sb-ver">STATUS: <span id="footerStatus" style="color:var(--text)">ACTIVE</span></div>
+      <button class="logout-btn" onclick="logout()">⏻ LOGOUT</button>
     </div>
   </div>
 
-  <!-- MAIN CONTENT -->
-  <div class="main-content">
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- TOP BAR -->
     <div class="top-bar">
-      <div class="live-badge paper" id="topModeBadge">● PAPER</div>
+      <div class="mode-badge paper" id="topModeBadge">● PAPER</div>
+
       <div class="ticker-bar">
-        <div class="ticker-item" id="tkNifty"><span class="tk-name">Nifty 50</span><span class="tk-price">—</span><span class="tk-arrow">—</span><span class="tk-change">—</span></div>
-        <div class="ticker-item" id="tkBankNifty"><span class="tk-name">BankNifty</span><span class="tk-price">—</span><span class="tk-arrow">—</span><span class="tk-change">—</span></div>
-        <div class="ticker-item" id="tkGold"><span class="tk-name">Gold</span><span class="tk-price">—</span><span class="tk-arrow">—</span><span class="tk-change">—</span></div>
-        <div class="ticker-item" id="tkSilver"><span class="tk-name">Silver</span><span class="tk-price">—</span><span class="tk-arrow">—</span><span class="tk-change">—</span></div>
-        <div class="ticker-item" id="tkUsdInr"><span class="tk-name">USD/INR</span><span class="tk-price">—</span><span class="tk-arrow">—</span><span class="tk-change">—</span></div>
+        <div class="ticker-item" id="tkNifty">
+          <span class="tk-sym">NIFTY</span>
+          <span class="tk-price" id="niftyPrice">—</span>
+          <span class="tk-arrow" id="niftyArrow">—</span>
+          <span class="tk-change" id="niftyChange">—</span>
+        </div>
+        <div class="ticker-item" id="tkBankNifty">
+          <span class="tk-sym">BANK</span>
+          <span class="tk-price" id="bnPrice">—</span>
+          <span class="tk-arrow" id="bnArrow">—</span>
+          <span class="tk-change" id="bnChange">—</span>
+        </div>
+        <div class="ticker-item" id="tkGold">
+          <span class="tk-sym">GOLD</span>
+          <span class="tk-price" id="goldPrice">—</span>
+          <span class="tk-arrow" id="goldArrow">—</span>
+          <span class="tk-change" id="goldChange">—</span>
+        </div>
+        <div class="ticker-item" id="tkSilver">
+          <span class="tk-sym">SILVER</span>
+          <span class="tk-price" id="silverPrice">—</span>
+          <span class="tk-arrow" id="silverArrow">—</span>
+          <span class="tk-change" id="silverChange">—</span>
+        </div>
+        <div class="ticker-item" id="tkUsdInr">
+          <span class="tk-sym">USD/INR</span>
+          <span class="tk-price" id="usdPrice">—</span>
+          <span class="tk-arrow" id="usdArrow">—</span>
+          <span class="tk-change" id="usdChange">—</span>
+        </div>
       </div>
-      <button id="btnExitAll" onclick="onExitAll()" style="margin-left:auto;margin-right:8px;padding:5px 14px;font-size:11px;font-weight:700;background:rgba(255,77,106,0.15);color:var(--red);border:1px solid rgba(255,77,106,0.4);border-radius:8px;cursor:pointer;display:none">Exit All</button>
-      <div class="live-clock" id="liveClock" style="font-size:12px;color:var(--text-muted)">—</div>
+
+      <div class="top-right">
+        <div class="top-status">
+          <div class="status-dot" id="wsDot"></div>
+          <span id="wsLabel">WS</span>
+        </div>
+        <div class="top-clock" id="liveClock">—</div>
+        <button class="exit-all-btn" id="btnExitAll" onclick="onExitAll()" style="display:none">EXIT ALL</button>
+      </div>
     </div>
 
-    <div class="content-area">
+    <!-- CONTENT AREA -->
+    <div class="content" id="contentArea">
 
-      <!-- DASHBOARD -->
+      <!-- ═══ DASHBOARD ══════════════════════════════════════ -->
       <div class="view active" id="viewDashboard">
-        <div class="content-header">
-          <div class="breadcrumb">SARTrader / <span>Dashboard</span></div>
-        </div>
-        <div class="portfolio-grid">
-          <div class="pbox"><div class="pbox-num" id="snapTotalPnl">₹0</div><div class="pbox-sub" id="snapTotalPnlSub">total P&L</div></div>
-          <div class="pbox"><div class="pbox-num" id="snapTodayPnl">₹0</div><div class="pbox-sub" id="snapTodaySub">today</div></div>
-          <div class="pbox" id="snapRunningBox">
-            <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">Running</div>
-            <div style="display:flex;gap:8px;align-items:center">
-              <div style="flex:1;text-align:center">
-                <div class="pbox-num" style="font-size:16px;color:var(--green)" id="snapLongs">0</div>
-                <div class="pbox-sub">Longs</div>
+
+        <!-- 8 METRIC BOXES -->
+        <div class="metric-row">
+          <div class="mbox green">
+            <div class="mbox-val green" id="snapTotalPnl">₹0</div>
+            <div class="mbox-sub">Total P&L</div>
+          </div>
+          <div class="mbox green">
+            <div class="mbox-val green" id="snapTodayPnl">₹0</div>
+            <div class="mbox-sub">Today</div>
+          </div>
+          <div class="mbox cyan">
+            <div class="mbox-running">
+              <div class="mbox-dir">
+                <div class="mbox-dir-num green" id="snapLongs">0</div>
+                <div class="mbox-dir-lbl">Longs</div>
               </div>
-              <div style="width:1px;height:28px;background:var(--border)"></div>
-              <div style="flex:1;text-align:center">
-                <div class="pbox-num" style="font-size:16px;color:var(--red)" id="snapShorts">0</div>
-                <div class="pbox-sub">Shorts</div>
+              <div class="mbox-sep"></div>
+              <div class="mbox-dir">
+                <div class="mbox-dir-num red" id="snapShorts">0</div>
+                <div class="mbox-dir-lbl">Shorts</div>
               </div>
             </div>
+            <div class="mbox-sub">Running</div>
           </div>
-          <div class="pbox"><div class="pbox-num" id="snapFutPnl">₹0</div><div class="pbox-sub">futures</div></div>
-          <div class="pbox"><div class="pbox-num" id="snapCashPnl">₹0</div><div class="pbox-sub">cash</div></div>
-          <div class="pbox"><div class="pbox-num" id="snapOptPnl">₹0</div><div class="pbox-sub">options</div></div>
-          <div class="pbox"><div class="pbox-num" id="snapWinRate">—</div><div class="pbox-sub">win rate</div></div>
-          <div class="pbox"><div class="pbox-num" id="snapClosedPnl">₹0</div><div class="pbox-sub">closed P&L</div></div>
-        </div>
-        <div style="margin-top:16px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-            <span style="font-size:12px;font-weight:600">Recent Signals</span>
+          <div class="mbox">
+            <div class="mbox-val" id="snapFutPnl">₹0</div>
+            <div class="mbox-sub">Futures</div>
           </div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>#</th><th>Time</th><th>Strategy</th><th>Instrument</th><th>Type</th><th>Price</th><th>Dir</th><th>Score</th><th>SL</th><th>Target</th><th>Status</th></tr></thead>
-              <tbody id="signalsBody"><tr><td colspan="6" class="empty-state">No signals yet...</td></tr></tbody>
-            </table>
+          <div class="mbox">
+            <div class="mbox-val" id="snapCashPnl">₹0</div>
+            <div class="mbox-sub">Cash</div>
           </div>
-        </div>
-        <div style="margin-top:16px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-            <span style="font-size:12px;font-weight:600">Recent Trades</span>
-            <button class="btn-link" onclick="switchView('Orders')">View All →</button>
+          <div class="mbox">
+            <div class="mbox-val" id="snapOptPnl">₹0</div>
+            <div class="mbox-sub">Options</div>
           </div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>#</th><th>Date/Time</th><th>Instrument</th><th>Dir</th><th>Entry ₹</th><th>Qty</th><th>LTP</th><th>P&L</th><th>Status</th><th>Sector</th><th>C. P&L</th></tr></thead>
-              <tbody id="tradesBody"><tr><td colspan="8" class="empty-state">No trades yet...</td></tr></tbody>
-            </table>
+          <div class="mbox amber">
+            <div class="mbox-val amber" id="snapWinRate">—</div>
+            <div class="mbox-sub">Win Rate</div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-val" id="snapClosedPnl">₹0</div>
+            <div class="mbox-sub">Closed P&L</div>
           </div>
         </div>
-      </div>
 
-      <!-- STRATEGIES -->
-      <div class="view" id="viewStrategies">
-        <div class="content-header">
-          <div class="breadcrumb">SARTrader / <span>Strategies</span></div>
-          <div class="live-clock" id="stratClock">—</div>
+        <!-- RECENT SIGNALS -->
+        <div class="section-header">
+          <div class="sec-title">Recent Signals</div>
+          <div class="sec-badge" id="signalCount">0</div>
         </div>
-        <div class="strat-page-wrap">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="col-n">#</th>
+                <th class="col-time">Time</th>
+                <th class="col-strat">Strategy</th>
+                <th>Instrument</th>
+                <th>Type</th>
+                <th>Price</th>
+                <th>Dir</th>
+                <th>Score</th>
+                <th>SL</th>
+                <th>Target</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="signalsBody">
+              <tr class="empty-row"><td colspan="11">No signals yet...</td></tr>
+            </tbody>
+          </table>
+        </div>
 
-          <!-- CASH STRATEGY -->
-          <div class="strat-seg open" id="segCASH">
-            <div class="strat-seg-header" onclick="toggleSeg('CASH')">
-              <span class="strat-seg-icon">💰</span>
-              <span class="strat-seg-title">Cash Strategy</span>
-              <span class="strat-seg-count" id="cntCASH">0 in watchlist</span>
-              <span class="strat-seg-arrow">▶</span>
-            </div>
-            <div class="strat-seg-body">
-              <!-- RSI Strategy selector for Cash (more suited for cash/stock trading) -->
-              <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px">
-                <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:1px">Select Strategy for Cash</div>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-                  <div class="strat-opt active" id="cashStratRSI" onclick="selectCashStrat('RSI')">
-                    <div class="strat-opt-radio">●</div>
-                    <div>
-                      <div style="font-weight:700;font-size:13px">RSI Reversal</div>
-                      <div style="font-size:10px;color:var(--text-muted)">RSI oversold/overbought</div>
-                    </div>
-                  </div>
-                </div>
-                <button class="wl-add-btn" style="width:100%;font-size:12px;padding:8px" onclick="applyCashStrategy()">Apply Strategy →</button>
-              </div>
-              <div class="sys-row open" id="sysABCT">
-                <div class="sys-row-header" onclick="toggleSys('ABCT')">
-                  <input type="checkbox" class="sys-cb" id="cbABCT" onchange="onSysCheckChange('ABCT')">
-                  <span class="sys-label">ABCT System-1</span>
-                  <span class="sys-meta" id="cntABCT">0 stocks</span>
-                  <span class="sys-arrow">▶</span>
-                </div>
-                <div class="sys-row-body">
-                  <div class="sys-stocks" id="stocksABCT"></div>
-                  <div class="sys-row-actions">
-                    <button class="btn-add" onclick="addStockPrompt('ABCT')">+ Add Stock</button>
-                    <button class="btn-remove" onclick="removeStockPrompt('ABCT')">− Remove Stock</button>
-                  </div>
-                </div>
-              </div>
-              <div class="sys-row" id="sysCUP">
-                <div class="sys-row-header" onclick="toggleSys('CUP')">
-                  <input type="checkbox" class="sys-cb" id="cbCUP" onchange="onSysCheckChange('CUP')">
-                  <span class="sys-label">CUP Strategy</span>
-                  <span class="sys-meta" id="cntCUP">0 stocks</span>
-                  <span class="sys-arrow">▶</span>
-                </div>
-                <div class="sys-row-body">
-                  <div class="sys-stocks" id="stocksCUP"></div>
-                  <div class="sys-row-actions">
-                    <button class="btn-add" onclick="addStockPrompt('CUP')">+ Add Stock</button>
-                    <button class="btn-remove" onclick="removeStockPrompt('CUP')">− Remove Stock</button>
-                  </div>
-                </div>
-              </div>
-
-              <div class="sys-row" id="sysVALUE">
-                <div class="sys-row-header" onclick="toggleSys('VALUE')">
-                  <input type="checkbox" class="sys-cb" id="cbVALUE" onchange="onSysCheckChange('VALUE')">
-                  <span class="sys-label">Value Buy</span>
-                  <span class="sys-meta" id="cntVALUE">0 stocks</span>
-                  <span class="sys-arrow">▶</span>
-                </div>
-                <div class="sys-row-body">
-                  <div class="sys-stocks" id="stocksVALUE"></div>
-                  <div class="sys-row-actions">
-                    <button class="btn-add" onclick="addStockPrompt('VALUE')">+ Add Stock</button>
-                    <button class="btn-remove" onclick="removeStockPrompt('VALUE')">− Remove Stock</button>
-                  </div>
-                </div>
-              </div>
-              <div class="sys-row" id="sysMONSTER">
-                <div class="sys-row-header" onclick="toggleSys('MONSTER')">
-                  <input type="checkbox" class="sys-cb" id="cbMONSTER" onchange="onSysCheckChange('MONSTER')">
-                  <span class="sys-label">Monster Move</span>
-                  <span class="sys-meta" id="cntMONSTER">0 stocks</span>
-                  <span class="sys-arrow">▶</span>
-                </div>
-                <div class="sys-row-body">
-                  <div class="sys-stocks" id="stocksMONSTER"></div>
-                  <div class="sys-row-actions">
-                    <button class="btn-add" onclick="addStockPrompt('MONSTER')">+ Add Stock</button>
-                    <button class="btn-remove" onclick="removeStockPrompt('MONSTER')">− Remove Stock</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- FUTURE STRATEGY -->
-          <div class="strat-seg" id="segFUTURE">
-            <div class="strat-seg-header" onclick="toggleSeg('FUTURE')">
-              <span class="strat-seg-icon">📈</span>
-              <span class="strat-seg-title">Future Strategy</span>
-              <span class="strat-seg-count" id="cntFUTURE">0 in watchlist</span>
-              <span class="strat-seg-arrow">▶</span>
-            </div>
-            <div class="strat-seg-body">
-              <div class="sys-row open" id="sysSTOCKFUT">
-                <div class="sys-row-header" onclick="toggleSys('STOCKFUT')">
-                  <input type="checkbox" class="sys-cb" id="cbSTOCKFUT" onchange="onSysCheckChange('STOCKFUT')">
-                  <span class="sys-label">Stock Futures (by sector)</span>
-                  <span class="sys-meta" id="cntSTOCKFUT">0 stocks</span>
-                  <span class="sys-arrow">▶</span>
-                </div>
-                <div class="sys-row-body" id="futureSectorsBody"></div>
-              </div>
-              <div class="sys-row" id="sysIDXFUT">
-                <div class="sys-row-header" onclick="toggleSys('IDXFUT')">
-                  <input type="checkbox" class="sys-cb" id="cbIDXFUT" onchange="onSysCheckChange('IDXFUT')">
-                  <span class="sys-label">Index Futures</span>
-                  <span class="sys-meta" id="cntIDXFUT">0 stocks</span>
-                  <span class="sys-arrow">▶</span>
-                </div>
-                <div class="sys-row-body">
-                  <div class="sys-stocks" id="stocksIDXFUT"></div>
-                  <div class="sys-row-actions">
-                    <button class="btn-add" onclick="addStockPrompt('IDXFUT')">+ Add</button>
-                    <button class="btn-remove" onclick="removeStockPrompt('IDXFUT')">− Remove</button>
-                  </div>
-                </div>
-              </div>
-              <div class="sys-row" id="sysCOMMOFUT">
-                <div class="sys-row-header" onclick="toggleSys('COMMOFUT')">
-                  <input type="checkbox" class="sys-cb" id="cbCOMMOFUT" onchange="onSysCheckChange('COMMOFUT')">
-                  <span class="sys-label">Commodity Futures</span>
-                  <span class="sys-meta" id="cntCOMMOFUT">0 stocks</span>
-                  <span class="sys-arrow">▶</span>
-                </div>
-                <div class="sys-row-body">
-                  <div class="sys-stocks" id="stocksCOMMOFUT"></div>
-                  <div class="sys-row-actions">
-                    <button class="btn-add" onclick="addStockPrompt('COMMOFUT')">+ Add</button>
-                    <button class="btn-remove" onclick="removeStockPrompt('COMMOFUT')">− Remove</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- OPTION STRATEGY (placeholder) -->
-          <div class="strat-seg" id="segOPTION">
-            <div class="strat-seg-header" onclick="toggleSeg('OPTION')">
-              <span class="strat-seg-icon">📊</span>
-              <span class="strat-seg-title">Option Strategy</span>
-              <span class="strat-seg-count">Coming soon</span>
-              <span class="strat-seg-arrow">▶</span>
-            </div>
-            <div class="strat-seg-body">
-              <div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px">
-                Option strategy will be configured here. Stay tuned!
-              </div>
-            </div>
-          </div>
-
-          <!-- Custom Instrument -->
-          <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
-            <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Add custom instrument</div>
-            <div style="display:flex;gap:8px;align-items:center">
-              <input type="text" id="stratCustomInput" class="wl-add-inp" placeholder="e.g. RELIANCE, BANKNIFTYSEP26FUT, GOLD" style="flex:1;background:var(--bg-secondary);border:1px solid var(--border);border-radius:7px;padding:8px 12px;color:var(--text-primary);font-size:12px;outline:none">
-              <select id="stratCustomSeg" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:7px;padding:8px 10px;color:var(--text-primary);font-size:12px;outline:none">
-                <option value="CASH">💰 Cash</option>
-                <option value="FUTURE">📈 Future</option>
+        <!-- RECENT TRADES -->
+        <div class="section-header">
+          <div class="sec-title">Recent Trades</div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="seg-filter">
+              <span class="seg-label">SEG:</span>
+              <select class="seg-select" id="segFilter" onchange="onSegFilter()">
+                <option value="ALL">All</option>
+                <option value="CASH">Cash</option>
+                <option value="FUTURE">Future</option>
+                <option value="OPTIONS">Options</option>
               </select>
-              <button class="wl-add-btn" onclick="addCustomInstrument()">+ Add</button>
+            </div>
+            <button class="btn-link" onclick="switchView('TradeLog')" style="background:none;border:none;color:var(--cyan);cursor:pointer;font-size:12px;text-decoration:none">View All →</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="col-n">#</th>
+                <th class="col-time">Date/Time</th>
+                <th>Instrument</th>
+                <th>Dir</th>
+                <th>Entry ₹</th>
+                <th>Qty</th>
+                <th>LTP</th>
+                <th>P&L</th>
+                <th>Status</th>
+                <th>Sector</th>
+                <th>C. P&L</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tradesBody">
+              <tr class="empty-row"><td colspan="12">No trades yet...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+      <!-- ═══ /DASHBOARD ═══════════════════════════════════ -->\
+
+      <!-- ═══ STRATEGIES ════════════════════════════════════ -->
+      <div class="view" id="viewStrategies">
+        <div class="section-header" style="margin-bottom:14px">
+          <div class="sec-title">Strategies</div>
+          <div class="top-clock" id="stratClock">—</div>
+        </div>
+
+        <!-- CASH SEGMENT -->
+        <div class="strat-block open" id="segCASH">
+          <div class="strat-block-header" onclick="toggleSeg('CASH')">
+            <span class="strat-block-icon">💰</span>
+            <span class="strat-block-title">Cash Strategy</span>
+            <span class="strat-block-count" id="cntCASH">0 in watchlist</span>
+            <span class="strat-block-arrow">▶</span>
+          </div>
+          <div class="strat-block-body">
+            <div style="background:var(--bg4);border:1px solid var(--border);padding:10px;margin-bottom:10px">
+              <div style="font-size:9px;color:var(--text-dim);margin-bottom:6px;letter-spacing:1px;text-transform:uppercase">Select Strategy</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <div class="stock-chip active" id="cashStratRSI" onclick="selectCashStrat('RSI')">RSI Reversal</div>
+                <div class="stock-chip" id="cashStratCUP" onclick="selectCashStrat('CUP')">CUP Strategy</div>
+                <div class="stock-chip" id="cashStratVALUE" onclick="selectCashStrat('VALUE')">Value Buy</div>
+                <div class="stock-chip" id="cashStratMONSTER" onclick="selectCashStrat('MONSTER')">Monster Move</div>
+              </div>
+            </div>
+            <div class="sys-item open" id="sysABCT">
+              <div class="sys-item-header" onclick="toggleSys('ABCT')">
+                <input type="checkbox" class="sys-cb" id="cbABCT">
+                <span class="sys-name">ABCT System-1</span>
+                <span class="sys-meta" id="cntABCT">0 stocks</span>
+                <span class="sys-toggle">▶</span>
+              </div>
+              <div class="sys-body">
+                <div class="stocks-row" id="stocksABCT"></div>
+                <div class="sys-actions">
+                  <button class="sys-btn add" onclick="addStockPrompt('ABCT')">+ Add</button>
+                  <button class="sys-btn remove" onclick="removeStockPrompt('ABCT')">− Remove</button>
+                </div>
+              </div>
             </div>
           </div>
+        </div>
 
-        </div><!-- /strat-page-wrap -->
-      </div><!-- /viewStrategies -->
+        <!-- FUTURE SEGMENT -->
+        <div class="strat-block" id="segFUTURE">
+          <div class="strat-block-header" onclick="toggleSeg('FUTURE')">
+            <span class="strat-block-icon">📈</span>
+            <span class="strat-block-title">Future Strategy</span>
+            <span class="strat-block-count" id="cntFUTURE">0 in watchlist</span>
+            <span class="strat-block-arrow">▶</span>
+          </div>
+          <div class="strat-block-body">
+            <div class="sys-item open" id="sysSTOCKFUT">
+              <div class="sys-item-header" onclick="toggleSys('STOCKFUT')">
+                <input type="checkbox" class="sys-cb" id="cbSTOCKFUT">
+                <span class="sys-name">Stock Futures (by sector)</span>
+                <span class="sys-meta" id="cntSTOCKFUT">0 stocks</span>
+                <span class="sys-toggle">▶</span>
+              </div>
+              <div class="sys-body">
+                <div id="sectorListSTOCKFUT"></div>
+                <div class="sys-actions" style="margin-top:8px">
+                  <button class="sys-btn add" onclick="addFuturePrompt()">+ Add Future</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
-      <!-- WATCHLIST VIEW -->
+        <!-- OPTIONS SEGMENT -->
+        <div class="strat-block" id="segOPTIONS">
+          <div class="strat-block-header" onclick="toggleSeg('OPTIONS')">
+            <span class="strat-block-icon">🎯</span>
+            <span class="strat-block-title">Options Strategy</span>
+            <span class="strat-block-count" id="cntOPTIONS">0 in watchlist</span>
+            <span class="strat-block-arrow">▶</span>
+          </div>
+          <div class="strat-block-body">
+            <div class="sys-item open" id="sysTB1">
+              <div class="sys-item-header" onclick="toggleSys('TB1')">
+                <input type="checkbox" class="sys-cb" id="cbTB1">
+                <span class="sys-name">TB-1 (Trend Breakout)</span>
+                <span class="sys-meta" id="cntTB1">0 instruments</span>
+                <span class="sys-toggle">▶</span>
+              </div>
+              <div class="sys-body">
+                <div class="stocks-row" id="stocksTB1"></div>
+                <div class="sys-actions">
+                  <button class="sys-btn add" onclick="addOptionPrompt()">+ Add Option</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- ═══ /STRATEGIES ═══════════════════════════════════ -->\
+
+      <!-- ═══ WATCHLIST ══════════════════════════════════════ -->
       <div class="view" id="viewWatchlist">
-        <div class="content-header">
-          <div class="breadcrumb">SARTrader / <span>Watchlist</span></div>
-          <div class="live-clock" id="wlClock">—</div>
-        </div>
-
-        <!-- 3 Tabs -->
-        <div class="wl-tabs">
-          <div class="wl-tab" id="wlTabCASH" onclick="switchWlTab('CASH')">
-            💰 Cash <span class="wl-tab-count" id="wlCountCASH">(0)</span>
-          </div>
-          <div class="wl-tab active" id="wlTabFUTURE" onclick="switchWlTab('FUTURE')">
-            📈 Futures <span class="wl-tab-count" id="wlCountFUTURE">(0)</span>
-          </div>
-          <div class="wl-tab" id="wlTabOPTION" onclick="switchWlTab('OPTION')">
-            📊 Options <span class="wl-tab-count" id="wlCountOPTION">(0)</span>
+        <div class="section-header" style="margin-bottom:14px">
+          <div class="sec-title">Watchlist</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <div class="top-clock" id="wlClock">—</div>
+            <button class="exit-all-btn" style="font-size:11px;padding:4px 12px" onclick="addWatchlistPrompt()">+ ADD</button>
           </div>
         </div>
 
-        <div class="wl-panels">
-
-          <!-- CASH TABLE -->
-          <div class="wl-panel active" id="wlPanelCASH">
-            <div class="wl-stats">
-              <div class="wl-stat-box">
-                <div class="wl-stat-icon">💰</div>
-                <div class="wl-stat-info">
-                  <div class="wl-stat-num" id="wlStatCountCASH" style="color:var(--text-primary)">0</div>
-                  <div class="wl-stat-lbl">Instruments</div>
-                </div>
-              </div>
-              <div class="wl-stat-box">
-                <div class="wl-stat-icon">📋</div>
-                <div class="wl-stat-info">
-                  <div class="wl-stat-num" style="color:var(--blue)" id="wlStatPaperCASH">0</div>
-                  <div class="wl-stat-lbl">Paper Mode</div>
-                </div>
-              </div>
-              <div class="wl-stat-box">
-                <div class="wl-stat-icon">⚡</div>
-                <div class="wl-stat-info">
-                  <div class="wl-stat-num" style="color:var(--red)" id="wlStatLiveCASH">0</div>
-                  <div class="wl-stat-lbl">Live Mode</div>
-                </div>
-              </div>
-            </div>
-            <div class="wl-table-wrap">
-              <table class="wl-table">
-                <thead>
-                  <tr>
-                    <th style="width:36px">#</th>
-                    <th>Instrument</th>
-                    <th>Strategy</th>
-                    <th>LTP</th>
-                    <th>Change</th>
-                    <th>Entry Price</th>
-                    <th>Stop Loss</th>
-                    <th>Mode</th>
-                    <th style="width:60px">Action</th>
-                    <th style="width:36px"></th>
-                  </tr>
-                </thead>
-                <tbody id="wlTbodyCASH">
-                  <tr class="wl-empty-row"><td colspan="10">No instruments in Cash Watchlist. Add from the Strategies page.</td></tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="wl-add-section">
-              <div class="wl-add-lbl">Add instrument to Cash Watchlist</div>
-              <div class="wl-add-row">
-                <input type="text" id="wlAddCASH" class="wl-add-inp" placeholder="Type stock name, e.g. RELIANCE">
-                <button class="wl-add-btn" onclick="wlAddInstrument('CASH')">+ Add to Watchlist</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- FUTURE TABLE -->
-          <div class="wl-panel" id="wlPanelFUTURE">
-            <div class="wl-stats">
-              <div class="wl-stat-box">
-                <div class="wl-stat-icon">📈</div>
-                <div class="wl-stat-info">
-                  <div class="wl-stat-num" id="wlStatCountFUTURE" style="color:var(--text-primary)">0</div>
-                  <div class="wl-stat-lbl">Instruments</div>
-                </div>
-              </div>
-              <div class="wl-stat-box">
-                <div class="wl-stat-icon">📋</div>
-                <div class="wl-stat-info">
-                  <div class="wl-stat-num" style="color:var(--blue)" id="wlStatPaperFUTURE">0</div>
-                  <div class="wl-stat-lbl">Paper Mode</div>
-                </div>
-              </div>
-              <div class="wl-stat-box">
-                <div class="wl-stat-icon">⚡</div>
-                <div class="wl-stat-info">
-                  <div class="wl-stat-num" style="color:var(--red)" id="wlStatLiveFUTURE">0</div>
-                  <div class="wl-stat-lbl">Live Mode</div>
-                </div>
-              </div>
-            </div>
-            <div class="wl-table-wrap">
-              <table class="wl-table">
-                <thead>
-                  <tr>
-                    <th style="width:36px">Sr.</th>
-                    <th>Instrument</th>
-                    <th>Sector</th>
-                    <th>Strategy</th>
-                    <th>LTP</th>
-                    <th>Change</th>
-                    <th>Mode</th>
-                    <th style="width:60px">Action</th>
-                    <th style="width:36px"></th>
-                  </tr>
-                </thead>
-                <tbody id="wlTbodyFUTURE">
-                  <tr class="wl-empty-row"><td colspan="9">No instruments in Futures Watchlist. Add from the Strategies page.</td></tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="wl-add-section">
-              <div class="wl-add-lbl">Add instrument to Futures Watchlist</div>
-              <div class="wl-add-row">
-                <input type="text" id="wlAddFUTURE" class="wl-add-inp" placeholder="CANBK, M&M, BANKNIFTY" style="width:110px" onkeydown="if(event.key==='Enter')wlAddInstrument('FUTURE')">
-                <select id="wlFutSector" style="background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-primary);border-radius:7px;padding:8px 6px;font-size:12px">
-                  <option value="">— Sector —</option>
-                  <option value="PSU_BANK">PSU Bank</option>
-                  <option value="PVT_BANK">PVT Bank</option>
-                  <option value="AUTO">Auto</option>
-                  <option value="IT">IT</option>
-                  <option value="PHARMA">Pharma</option>
-                  <option value="METAL">Metal</option>
-                  <option value="FMCG">FMCG</option>
-                  <option value="REAL_ESTATE">Real Estate</option>
-                  <option value="INDEX_FUTURES">Index Futures</option>
-                  <option value="OTHER">Other</option>
-                </select>
-                <select id="wlFutStrat" style="background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-primary);border-radius:7px;padding:8px 6px;font-size:12px">
-                  <option value="SAR_TOP_BOTTOM">TB</option>
-                </select>
-                <button class="wl-add-btn" onclick="wlAddInstrument('FUTURE')">+ Add</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- OPTION TABLE (placeholder) -->
-          <div class="wl-panel" id="wlPanelOPTION">
-            <div class="wl-stats">
-              <div class="wl-stat-box">
-                <div class="wl-stat-icon">📊</div>
-                <div class="wl-stat-info">
-                  <div class="wl-stat-num" style="color:var(--text-muted)">—</div>
-                  <div class="wl-stat-lbl">Options</div>
-                </div>
-              </div>
-            </div>
-            <div class="wl-table-wrap">
-              <table class="wl-table">
-                <thead>
-                  <tr>
-                    <th style="width:36px">#</th>
-                    <th>Instrument</th>
-                    <th>Strategy</th>
-                    <th>LTP</th>
-                    <th>Change</th>
-                    <th>Entry Price</th>
-                    <th>Stop Loss</th>
-                    <th>Mode</th>
-                    <th style="width:60px">Action</th>
-                    <th style="width:36px"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr class="wl-empty-row"><td colspan="10">Options strategy coming soon. Stay tuned!</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-        </div><!-- /wl-panels -->
-      </div><!-- /viewWatchlist -->
-
-      <!-- ORDERS -->
-      <div class="view" id="viewOrders">
-        <div class="content-header">
-          <div class="breadcrumb">SARTrader / <span>Trade Log</span></div>
-          <div style="display:flex;gap:8px">
-            <button onclick="exportTradesCSV()" style="padding:6px 14px;font-size:12px;background:var(--bg-card2);border:1px solid var(--border);color:var(--text-primary);border-radius:8px;cursor:pointer">📥 Export</button>
-            <button onclick="switchOrdersTab('Summary')" id="ordersTabSummary" style="padding:6px 14px;font-size:12px;background:var(--bg-card2);border:1px solid var(--border);color:var(--text-primary);border-radius:8px;cursor:pointer">📊 Summary</button>
-            <button onclick="switchOrdersTab('Journal')" id="ordersTabJournal" style="padding:6px 14px;font-size:12px;background:var(--bg-card2);border:1px solid var(--border);color:var(--text-primary);border-radius:8px;cursor:pointer">📝 Journal</button>
-            <button onclick="switchOrdersTab('History')" id="ordersTabHistory" style="padding:6px 14px;font-size:12px;background:var(--bg-card2);border:1px solid var(--border);color:var(--text-primary);border-radius:8px;cursor:pointer">📋 History</button>
-            <button onclick="switchOrdersTab('Trades')" id="ordersTabTrades" style="padding:6px 14px;font-size:12px;background:var(--accent);border:1px solid var(--accent);color:#fff;border-radius:8px;cursor:pointer;font-weight:700">📊 Trade Log</button>
-          </div>
-        </div>
-
-        <!-- DAILY SUMMARY PANEL -->
-        <div id="ordersPanelSummary" style="display:none">
-          <div class="summary-grid">
-            <div class="summary-block"><div class="summary-title">📅 Today</div>
-              <div class="summary-row"><span>Trades</span><span id="sumTodayCount">0</span></div>
-              <div class="summary-row"><span>Wins</span><span id="sumTodayWins">0</span></div>
-              <div class="summary-row"><span>Losses</span><span id="sumTodayLoss">0</span></div>
-              <div class="summary-row"><span>Win Rate</span><span id="sumTodayWr">—</span></div>
-              <div class="summary-row"><span>P&L</span><span id="sumTodayPnl">₹0</span></div>
-            </div>
-            <div class="summary-block"><div class="summary-title">📆 This Week</div>
-              <div class="summary-row"><span>Trades</span><span id="sumWeekCount">0</span></div>
-              <div class="summary-row"><span>Wins</span><span id="sumWeekWins">0</span></div>
-              <div class="summary-row"><span>Losses</span><span id="sumWeekLoss">0</span></div>
-              <div class="summary-row"><span>Win Rate</span><span id="sumWeekWr">—</span></div>
-              <div class="summary-row"><span>P&L</span><span id="sumWeekPnl">₹0</span></div>
-            </div>
-            <div class="summary-block"><div class="summary-title">🗓️ This Month</div>
-              <div class="summary-row"><span>Trades</span><span id="sumMonthCount">0</span></div>
-              <div class="summary-row"><span>Wins</span><span id="sumMonthWins">0</span></div>
-              <div class="summary-row"><span>Losses</span><span id="sumMonthLoss">0</span></div>
-              <div class="summary-row"><span>Win Rate</span><span id="sumMonthWr">—</span></div>
-              <div class="summary-row"><span>P&L</span><span id="sumMonthPnl">₹0</span></div>
-            </div>
-            <div class="summary-block"><div class="summary-title">🏆 All Time</div>
-              <div class="summary-row"><span>Total Trades</span><span id="sumAllCount">0</span></div>
-              <div class="summary-row"><span>Wins</span><span id="sumAllWins">0</span></div>
-              <div class="summary-row"><span>Losses</span><span id="sumAllLoss">0</span></div>
-              <div class="summary-row"><span>Win Rate</span><span id="sumAllWr">—</span></div>
-              <div class="summary-row"><span>Total P&L</span><span id="sumAllPnl">₹0</span></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- JOURNAL PANEL -->
-        <div id="ordersPanelJournal" style="display:none">
-          <div id="journalEmpty" style="text-align:center;padding:40px;color:var(--text-muted)">Click "Journal" on any closed trade to add notes.</div>
-          <div id="journalEntries"></div>
-        </div>
-
-        <!-- TRADE LOG PANEL (20-column open positions) -->
-        <div id="ordersPanelTrades" style="display:block">
-          <!-- PAPER/LIVE mode filter + Segment filter + counts -->
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-            <!-- PAPER/LIVE filter -->
-            <div class="seg-tab active" id="tlModeALL" data-mode="ALL" onclick="switchTradeMode('ALL')">All</div>
-            <div class="seg-tab" id="tlModePAPER" data-mode="PAPER" onclick="switchTradeMode('PAPER')">📋 Paper</div>
-            <div class="seg-tab" id="tlModeLIVE" data-mode="LIVE" onclick="switchTradeMode('LIVE')">⚡ Live</div>
-            <div style="width:1px;height:20px;background:var(--border);margin:0 4px"></div>
-            <span style="font-size:12px;color:var(--text-muted)">Segment:</span>
-            <div class="seg-tab active" id="tlSegAll" onclick="switchTlSeg('ALL')">All</div>
-            <div class="seg-tab" id="tlSegFUTURES" onclick="switchTlSeg('FUTURES')">📈 Futures</div>
-            <div class="seg-tab" id="tlSegCASH" onclick="switchTlSeg('CASH')">💰 Cash</div>
-            <div class="seg-tab" id="tlSegOPTIONS" onclick="switchTlSeg('OPTIONS')">📊 Options</div>
-            <span style="margin-left:12px;font-size:12px;color:var(--green)">● Active: <b id="tlActiveCount">0</b></span>
-            <span style="font-size:12px;color:var(--gold)">⏳ Waiting: <b id="tlWaitingCount">0</b></span>
-            <span id="tlTotalPnl" style="margin-left:auto;font-size:13px;font-weight:700;color:var(--text-muted)">Total P&L: —</span>
-          </div>
-          <div class="table-wrap">
-            <table style="font-size:12px;white-space:nowrap">
-              <thead>
-                <tr>
-                  <th>#</th><th>Entry</th><th>Lots</th><th>Strat</th><th>Instrument</th><th>Sector</th>
-                  <th>Dir</th><th>Entry / Reason</th><th>LTP</th><th>SL</th><th>Gap</th>
-                  <th>Prev Top</th><th>Prev Bot</th><th title="Pyramiding Lots">Pyr</th><th title="Rollover">Roll</th>
-                  <th>P&L</th><th>Total P&L</th><th>Chart</th><th>Stop</th><th>Restart</th><th>Remove</th>
-                </tr>
-              </thead>
-              <tbody id="tlBody"><tr><td colspan="21" class="empty-state">No positions. Use the form below or go to Watchlist → GO.</td></tr></tbody>
-            </table>
-          </div>
-          <!-- Add Instrument form at bottom of Trade Log -->
-          <div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding:10px 12px;background:var(--bg-card2);border-radius:8px;border:1px solid var(--border);flex-wrap:wrap">
-            <span style="font-size:12px;font-weight:600;color:var(--text-secondary);white-space:nowrap">Add Instrument:</span>
-            <input type="text" id="tlAddInst" placeholder="e.g. CANBK, M&M" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:5px 8px;font-size:12px;width:100px" onkeydown="if(event.key==='Enter')tlQuickAdd()">
-            <select id="tlAddStrat" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:5px 6px;font-size:12px">
-              <option value="SAR_TOP_BOTTOM">TB</option>
-            </select>
-            <select id="tlAddSector" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:5px 6px;font-size:12px">
-              <option value="">— Sector —</option>
-              <option value="PSU_BANK">PSU Bank</option>
-              <option value="PVT_BANK">PVT Bank</option>
-              <option value="AUTO">Auto</option>
-              <option value="IT">IT</option>
-              <option value="PHARMA">Pharma</option>
-              <option value="METAL">Metal</option>
-              <option value="FMCG">FMCG</option>
-              <option value="REAL_ESTATE">Real Estate</option>
-              <option value="INDEX_FUTURES">Index Futures</option>
-              <option value="OTHER">Other</option>
-            </select>
-            <select id="tlAddMode" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:5px 6px;font-size:12px">
-              <option value="PAPER">📋 PAPER</option>
-              <option value="LIVE">⚡ LIVE</option>
-            </select>
-            <button onclick="tlQuickAdd()" style="padding:5px 14px;background:var(--accent);border:1px solid var(--accent);color:#fff;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">+ Add</button>
-          </div>
-        </div>
-
-        <!-- TRADE HISTORY PANEL — closed/exited trades -->
-        <div id="ordersPanelHistory" style="display:none">
-          <!-- Filter bar -->
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-            <div class="seg-tab active" id="thModeALL" onclick="switchThMode('ALL')">All</div>
-            <div class="seg-tab" id="thModePAPER" onclick="switchThMode('PAPER')">📋 Paper</div>
-            <div class="seg-tab" id="thModeLIVE" onclick="switchThMode('LIVE')">⚡ Live</div>
-            <div style="width:1px;height:20px;background:var(--border);margin:0 4px"></div>
-            <span style="font-size:12px;color:var(--text-muted)">Segment:</span>
-            <div class="seg-tab active" id="thSegAll" onclick="switchThSeg('ALL')">All</div>
-            <div class="seg-tab" id="thSegFUTURES" onclick="switchThSeg('FUTURES')">📈 Futures</div>
-            <div class="seg-tab" id="thSegCASH" onclick="switchThSeg('CASH')">💰 Cash</div>
-            <div class="seg-tab" id="thSegOPTIONS" onclick="switchThSeg('OPTIONS')">📊 Options</div>
-            <span style="margin-left:auto;font-size:12px;color:var(--text-muted)"><b id="thTotalCount">0</b> closed trades</span>
-          </div>
-          <div class="table-wrap">
-            <table style="font-size:12px;white-space:nowrap">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Entry Date</th>
-                  <th>Instrument</th>
-                  <th>Dir</th>
-                  <th>Entry ₹</th>
-                  <th>Exit Date</th>
-                  <th>Exit ₹</th>
-                  <th>P&L</th>
-                  <th>Lots</th>
-                  <th>Reason</th>
-                  <th>Mode</th>
-                </tr>
-              </thead>
-              <tbody id="thBody"><tr><td colspan="11" class="empty-state">No closed trades yet.</td></tr></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- PORTFOLIO -->
-      <div class="view" id="viewPortfolio">
-        <div class="content-header">
-          <div class="breadcrumb">SARTrader / <span>Portfolio</span></div>
-        </div>
-        <div style="text-align:center;padding:60px;color:var(--text-muted)">Portfolio view coming soon...</div>
-      </div>
-
-      <!-- BROKERS -->
-      <div class="view" id="viewBrokers">
-        <div class="content-header">
-          <div class="breadcrumb">SARTrader / <span>Brokers</span></div>
-        </div>
-
-        <!-- M-Stock Card -->
-        <div id="brokerMStock" style="max-width:600px;margin:20px auto">
-          <div class="section-title" style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
-            <span style="font-size:24px">M</span>
+        <div class="wl-stats">
+          <div class="wl-stat">
+            <span class="wl-stat-icon">📋</span>
             <div>
-              <div style="font-size:16px;font-weight:700">M-Stock</div>
-              <div style="font-size:12px;color:var(--text-muted)">Mirae Asset</div>
-            </div>
-            <div id="mstockStatusBadge" style="margin-left:auto;font-size:12px;padding:4px 10px;border-radius:20px;font-weight:600">Checking...</div>
-          </div>
-
-          <!-- Connect Section -->
-          <div id="mstockConnectSection" style="background:var(--bg-card2);border-radius:12px;padding:20px;margin-bottom:16px;border:1px solid var(--border)">
-            <div id="mstockConnectForm" style="display:none">
-              <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px">
-                Auto-TOTP enabled. Just click Connect — no manual entry needed.
-              </div>
-              <button onclick="connectBroker('MSTOCK')" class="btn-primary" style="width:100%;padding:10px;font-size:14px;font-weight:700">
-                Connect M-Stock
-              </button>
-            </div>
-            <div id="mstockConnectedSection" style="display:none">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-                <span style="color:var(--green);font-size:18px">&#10003;</span>
-                <span style="font-weight:600;color:var(--green)">Connected</span>
-                <span id="mstockExpiry" style="margin-left:auto;font-size:11px;color:var(--text-muted)"></span>
-              </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-                <div style="background:var(--bg-card);border-radius:8px;padding:12px">
-                  <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Client ID</div>
-                  <div id="mstockClient" style="font-weight:600;font-size:14px">—</div>
-                </div>
-                <div style="background:var(--bg-card);border-radius:8px;padding:12px">
-                  <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Balance</div>
-                  <div id="mstockBalance" style="font-weight:600;font-size:14px;color:var(--green)">—</div>
-                </div>
-              </div>
-              <button onclick="disconnectBroker('MSTOCK')" style="width:100%;padding:8px;background:var(--bg-card);border:1px solid var(--red);color:var(--red);border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">
-                Disconnect
-              </button>
+              <div class="wl-stat-num" id="wlCount">0</div>
+              <div class="wl-stat-lbl">Instruments</div>
             </div>
           </div>
-
-          <!-- Positions Section -->
-          <div id="mstockPositionsSection" style="background:var(--bg-card2);border-radius:12px;padding:16px;border:1px solid var(--border)">
-            <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text-muted)">Live Positions</div>
-            <div id="mstockPositionsList">
-              <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px">No open positions</div>
+          <div class="wl-stat">
+            <span class="wl-stat-icon">◉</span>
+            <div>
+              <div class="wl-stat-num" id="wlActive">0</div>
+              <div class="wl-stat-lbl">Active</div>
+            </div>
+          </div>
+          <div class="wl-stat">
+            <span class="wl-stat-icon">↑</span>
+            <div>
+              <div class="wl-stat-num" id="wlLongs">0</div>
+              <div class="wl-stat-lbl">Long Signals</div>
+            </div>
+          </div>
+          <div class="wl-stat">
+            <span class="wl-stat-icon">↓</span>
+            <div>
+              <div class="wl-stat-num" id="wlShorts">0</div>
+              <div class="wl-stat-lbl">Short Signals</div>
             </div>
           </div>
         </div>
 
-        <div style="text-align:center;padding:16px;font-size:12px;color:var(--text-muted)">
-          M-Stock auth token expires at midnight. Reconnect daily.
+        <div class="wl-tabs">
+          <div class="wl-tab active" onclick="wlTab('ALL',this)">All</div>
+          <div class="wl-tab" onclick="wlTab('CASH',this)">Cash</div>
+          <div class="wl-tab" onclick="wlTab('FUTURE',this)">Futures</div>
+          <div class="wl-tab" onclick="wlTab('OPTIONS',this)">Options</div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="col-n">#</th>
+                <th>Instrument</th>
+                <th>Strategy</th>
+                <th>LTP</th>
+                <th>Change</th>
+                <th>Entry</th>
+                <th>SL</th>
+                <th>Signal</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="wlBody">
+              <tr class="empty-row"><td colspan="9">No instruments in watchlist...</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
+      <!-- ═══ /WATCHLIST ════════════════════════════════════ -->\
 
-    </div><!-- /content-area -->
-  </div><!-- /main-content -->
+      <!-- ═══ TRADE LOG ══════════════════════════════════════ -->
+      <div class="view" id="viewTradeLog">
+        <div class="section-header" style="margin-bottom:14px">
+          <div class="sec-title">Trade Log</div>
+          <div class="top-clock" id="tlClock">—</div>
+        </div>
+
+        <div class="tl-summary">
+          <div class="tl-stat">
+            <div class="tl-stat-val" id="tlTotal">0</div>
+            <div class="tl-stat-lbl">Total Trades</div>
+          </div>
+          <div class="tl-stat">
+            <div class="tl-stat-val green" id="tlWins">0</div>
+            <div class="tl-stat-lbl">Wins</div>
+          </div>
+          <div class="tl-stat">
+            <div class="tl-stat-val red" id="tlLosses">0</div>
+            <div class="tl-stat-lbl">Losses</div>
+          </div>
+          <div class="tl-stat">
+            <div class="tl-stat-val amber" id="tlWinRate">—</div>
+            <div class="tl-stat-lbl">Win Rate</div>
+          </div>
+          <div class="tl-stat">
+            <div class="tl-stat-val" id="tlPnl">₹0</div>
+            <div class="tl-stat-lbl">Net P&L</div>
+          </div>
+          <div class="tl-stat">
+            <div class="tl-stat-val" id="tlActive">0</div>
+            <div class="tl-stat-lbl">Active</div>
+          </div>
+        </div>
+
+        <div class="section-header" style="margin-bottom:8px">
+          <div class="seg-filter">
+            <span class="seg-label">SEG:</span>
+            <select class="seg-select" id="tlSegFilter" onchange="onTlSegFilter()">
+              <option value="ALL">All</option>
+              <option value="CASH">Cash</option>
+              <option value="FUTURE">Future</option>
+              <option value="OPTIONS">Options</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-wrap" style="max-height:400px">
+          <table>
+            <thead>
+              <tr>
+                <th class="col-n">#</th>
+                <th class="col-time">Date/Time</th>
+                <th>Instrument</th>
+                <th>Dir</th>
+                <th>Entry ₹</th>
+                <th>Qty</th>
+                <th>Exit ₹</th>
+                <th>P&L</th>
+                <th>Status</th>
+                <th>Sector</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tlBody">
+              <tr class="empty-row"><td colspan="11">No trades recorded...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- JOURNAL -->
+        <div class="section-header" style="margin-top:16px;margin-bottom:8px">
+          <div class="sec-title">Trade Journal</div>
+        </div>
+        <div id="journalList">
+          <div class="journal-card">
+            <div class="journal-card-head">
+              <span class="journal-inst">NIFTY 26000 CE</span>
+              <span class="journal-date">Sep 20, 2026 09:45</span>
+              <span class="journal-pnl" style="color:var(--text)">+₹340</span>
+            </div>
+            <div class="journal-note">
+              <textarea placeholder="Add notes about this trade..."></textarea>
+              <button class="journal-save" onclick="saveJournal(this)">SAVE NOTE</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- ═══ /TRADE LOG ════════════════════════════════════ -->\
+
+      <!-- ═══ PORTFOLIO ════════════════════════════════════ -->
+      <div class="view" id="viewPortfolio">
+        <div class="section-header" style="margin-bottom:14px">
+          <div class="sec-title">Portfolio</div>
+          <div class="top-clock" id="pfClock">—</div>
+        </div>
+
+        <div class="metric-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
+          <div class="mbox green">
+            <div class="mbox-val green" id="pfCapital">₹1,63,199</div>
+            <div class="mbox-sub">Capital</div>
+          </div>
+          <div class="mbox green">
+            <div class="mbox-val green" id="pfDeployed">₹0</div>
+            <div class="mbox-sub">Deployed</div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-val" id="pfAvailable">₹1,63,199</div>
+            <div class="mbox-sub">Available</div>
+          </div>
+          <div class="mbox amber">
+            <div class="mbox-val amber" id="pfDD">₹0</div>
+            <div class="mbox-sub">Max Drawdown</div>
+          </div>
+        </div>
+
+        <div class="section-header" style="margin-bottom:8px">
+          <div class="sec-title">Active Positions</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="col-n">#</th>
+                <th>Instrument</th>
+                <th>Dir</th>
+                <th>Qty</th>
+                <th>Entry</th>
+                <th>LTP</th>
+                <th>P&L</th>
+                <th>SL</th>
+                <th>Target</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="pfBody">
+              <tr class="empty-row"><td colspan="10">No active positions...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <!-- ═══ /PORTFOLIO ════════════════════════════════════ -->\
+
+      <!-- ═══ BROKERS ═══════════════════════════════════════ -->
+      <div class="view" id="viewBrokers">
+        <div class="section-header" style="margin-bottom:14px">
+          <div class="sec-title">Brokers</div>
+          <div class="top-clock" id="brClock">—</div>
+        </div>
+
+        <!-- M-Stock -->
+        <div class="broker-card">
+          <div class="broker-card-header">
+            <span class="broker-name">M-Stock</span>
+            <span class="broker-status connected" id="mstockStatus">CONNECTED</span>
+          </div>
+          <div class="broker-row"><label>Account</label><span id="brAccount">—</span></div>
+          <div class="broker-row"><label>Balance</label><span id="brBalance">—</span></div>
+          <div class="broker-row"><label>API Status</label><span id="brApi">WHITELISTED</span></div>
+          <div class="broker-row"><label>Market Data</label><span id="brData">STREAMING</span></div>
+          <div class="broker-row"><label>Orders</label><span id="brOrders">—</span></div>
+          <div class="broker-actions">
+            <button class="broker-btn disconnect" onclick="disconnectBroker('MSTOCK')">DISCONNECT</button>
+            <button class="broker-btn connect" onclick="reconnectBroker('MSTOCK')">RECONNECT</button>
+          </div>
+        </div>
+
+        <!-- Kite (Zerodha) -->
+        <div class="broker-card">
+          <div class="broker-card-header">
+            <span class="broker-name">Kite (Zerodha)</span>
+            <span class="broker-status disconnected" id="kiteStatus">NOT CONNECTED</span>
+          </div>
+          <div class="broker-row"><label>API Key</label><span>—</span></div>
+          <div class="broker-row"><label>Access Token</label><span>—</span></div>
+          <div class="broker-actions">
+            <button class="broker-btn connect" onclick="showKiteConnect()">CONNECT</button>
+          </div>
+        </div>
+
+        <!-- ALPINE -->
+        <div class="broker-card">
+          <div class="broker-card-header">
+            <span class="broker-name">Alpine Securities</span>
+            <span class="broker-status disconnected" id="alpineStatus">NOT CONNECTED</span>
+          </div>
+          <div class="broker-row"><label>Client ID</label><span>—</span></div>
+          <div class="broker-row"><label>Status</label><span>—</span></div>
+          <div class="broker-actions">
+            <button class="broker-btn connect" onclick="showAlpineConnect()">CONNECT</button>
+          </div>
+        </div>
+      </div>
+      <!-- ═══ /BROKERS ═════════════════════════════════════ -->\
+
+    </div><!-- /content -->
+  </div><!-- /main -->
 </div><!-- /layout -->
 
-<script src="lightweight-charts.standalone.production.js"></script>
-<script src="dashboard.js?v=14"></script>
+<script src="dashboard.js?v=1"></script>
 </body>
 </html>
