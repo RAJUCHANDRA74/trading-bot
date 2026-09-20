@@ -26,7 +26,8 @@ var _realCapital = 163199;
 var _wsConnected = false;
 var _reconnectTimer = null;
 var _lastState = null;
-var _liveTrades = [];     // closed trades from engine
+var _liveTrades = [];     // closed trades from engine (live_trades key)
+var _trades = [];         // closed trades from trades key
 var _segmentPnl = {};     // {CASH: x, FUTURE: x, OPTIONS: x}
 
 // ─── PASSWORD ────────────────────────────────────────────────
@@ -133,6 +134,7 @@ function handleMessage(msg) {
     _positions = msg.data.positions || {};
     _signals = msg.data.signals || [];
     _liveTrades = msg.data.live_trades || [];
+    _trades = msg.data.trades || [];
     _quotes = msg.data.quotes || {};
     _quotesBase = msg.data.quotes || {};
     _segmentPnl = msg.data.segment_pnl || {};
@@ -259,10 +261,10 @@ function updateMetrics() {
     else if (dir === 'SHORT') shorts++;
   }
 
-  // Closed P&L from live_trades
+  // Closed P&L from trades
   var closedPnl = 0, wins = 0, losses = 0, tradeCount = 0;
-  for (var j = 0; j < _liveTrades.length; j++) {
-    var t = _liveTrades[j];
+  for (var j = 0; j < _trades.length; j++) {
+    var t = _trades[j];
     var pnl = parseFloat(t.pnl || 0);
     closedPnl += pnl;
     tradeCount++;
