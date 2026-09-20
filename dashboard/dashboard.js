@@ -297,6 +297,7 @@ function updateAll(state){
   updateTicker('tkBankNifty',state.quotes['BANKNIFTY']);
   updateTicker('tkGold',state.quotes['GOLD']);
   updateTicker('tkSilver',state.quotes['SILVER']);
+  updateTicker('tkUsdInr',state.quotes['USDINR'] || state.quotes['USD/INR'] || state.quotes['USD_INR']);
   updateTrades(state.trades||[]);
   window._allTrades=state.trades||[];
   updateSignals(state.signals||[],prevSignalCount);
@@ -325,6 +326,10 @@ function updateAll(state){
   renderBrokerStatus(state.brokers||{});
   // Render Trade Log (18-column open positions)
   renderTradeLog();
+  // Show/hide Exit All button based on active positions
+  const activeList=Object.values(window._positions||{}).filter(p=>p.status==='ACTIVE');
+  const eaBtn=document.getElementById('btnExitAll');
+  if(eaBtn) eaBtn.style.display=activeList.length>0?'block':'none';
 }
 function updateTicker(id,q){
   const el=document.getElementById(id); if(!el)return;
@@ -345,19 +350,47 @@ function updateTicker(id,q){
 function updateTrades(trades){
   const tb=document.getElementById('tradesBody');
   if(!tb)return;
-  if(!trades.length){ tb.innerHTML='<tr><td colspan="8" class="empty-state">No trades yet...</td></tr>'; return; }
+  if(!trades.length){ tb.innerHTML='<tr><td colspan="11" class="empty-state">No trades yet...</td></tr>'; return; }
+
+  // Compute closed P&L total once (used for C.P&L column)
+  const closedPnl=(trades.filter(t=>t.exit_price!=null)).reduce((s,t)=>s+(t.pnl||0),0);
+
   tb.innerHTML=trades.slice(-10).reverse().map((t,i)=>{
-    const pnl=t.pnl||0;const cls=pnl>=0?'badge-green':'badge-red';
+    const qty=t.quantity||1;
+    const pnl=t.pnl||0;
+    const cls=pnl>=0?'badge-green':'badge-red';
     const status=t.exit_price?'Closed':'Open';
+
+    // Live LTP for running trades
+    const q=getQuote(t.instrument);
+    const ltp=q?.last_price||q?.price||null;
+    const ltpStr=ltp!=null?'₹'+Number(ltp).toLocaleString('en-IN',{minimumFractionDigits:2}):'—';
+
+    // Unrealized running P&L for this trade
+    let unrealizedPnl=0;
+    if(!t.exit_price && ltp){
+      const mult=(t.direction==='LONG')?1:-1;
+      unrealizedPnl=mult*(ltp-t.entry_price)*qty;
+    }
+    // Cumulative P&L = closed P&L so far + current unrealized
+    const cumPnl=closedPnl+unrealizedPnl;
+    const cumCls=cumPnl>=0?'badge-green':'badge-red';
+    const cumPnlStr=cumPnl>=0?'+':''+'₹'+cumPnl.toLocaleString('en-IN',{minimumFractionDigits:0});
+
+    const sector=_inferSector(t.instrument||'');
+
     return`<tr>
       <td>${trades.length-i}</td>
       <td>${(t.entry_date||'').split('T')[0]||'—'}</td>
       <td>${t.instrument||'—'}</td>
       <td><span class="${t.direction==='LONG'?'badge-green':'badge-red'}">${t.direction||'—'}</span></td>
       <td>₹${(t.entry_price||0).toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
-      <td>${t.exit_price?'₹'+Number(t.exit_price).toLocaleString('en-IN',{minimumFractionDigits:2}):'—'}</td>
+      <td>${qty}</td>
+      <td>${ltpStr}</td>
       <td><span class="${cls}">${pnl>=0?'+':''}₹${pnl.toFixed(0)}</span></td>
       <td>${status}</td>
+      <td style="font-size:10px;color:var(--text-secondary)">${sector}</td>
+      <td><span class="${cumCls}" style="font-size:10px;font-weight:600">${cumPnlStr}</span></td>
     </tr>`;
   }).join('');
 
@@ -372,9 +405,7 @@ function updateTrades(trades){
   const wins=closedTrades.filter(t=>t.pnl>0).length;
   const winRate=closedTrades.length>0?Math.round((wins/closedTrades.length)*100):null;
 
-  // Closed P&L (only closed trades)
-  const closedPnl=closedTrades.reduce((s,t)=>s+(t.pnl||0),0);
-
+  // Closed P&L (already computed above as closedPnl — reuse it here)
   // Today P&L (closed trades today)
   const todayPnl=closedTrades
     .filter(t=>(t.exit_date||'').startsWith(today))
@@ -920,6 +951,19 @@ function tlQuickAdd(){
   input.value='';
 }
 function onTlRestart(inst){if(!confirm('Restart '+inst+'?'))return;if(ws&&ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify({command:'restart_position',instrument:inst,mode:'PAPER'}));}
+function onExitAll(){
+  const positions=window._positions||{};
+  const active=Object.entries(positions).filter(([,p])=>p.status==='ACTIVE');
+  if(!active.length){showToast('No active positions to exit','var(--text-muted)');return;}
+  const list=active.map(([inst])=>inst).join(', ');
+  if(!confirm('Exit all '+(active.length)+' active position(s)?\n\n'+list))return;
+  active.forEach(([inst])=>{
+    if(ws&&ws.readyState===WebSocket.OPEN){
+      ws.send(JSON.stringify({command:'exit_position',instrument:inst,mode:'PAPER'}));
+    }
+  });
+  showToast('Exit All sent for '+active.length+' position(s)','var(--orange)');
+}
 function onTlRemove(inst){
   if(!confirm('Remove '+inst+' from log?'))return;
   // Remove from local state immediately for instant UI feedback
@@ -1322,8 +1366,15 @@ function renderTlChart(inst, symbol, candles, interval, range){
     });
 
     _startChartRefresh();
+  } // closes isFirstOpen block (opened line 1178)
+
+  } catch(e) {
+    console.error('[Chart] renderTlChart error:', e);
+  } finally {
+    window._chartRendering = false;
   }
-  } else {
+
+  if (window._lcChart) {
     // ─── Subsequent calls: update data or switch chart type ───
     if (!window._lcChart || !window._lcSeries) return; // Chart not ready yet
 
@@ -1362,10 +1413,6 @@ function renderTlChart(inst, symbol, candles, interval, range){
       stats.innerHTML = '<span>' + new Date(firstTs * 1000).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) + '</span><span style="color:var(--green)">Auto-refreshes every 1s</span><span>' + ohlc.length + ' bars</span><span>' + new Date(lastTs * 1000).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) + '</span>';
     }
   }
-  }
-  } finally {
-    window._chartRendering = false;
-  }
 }
 
 /* ════════════════════════════════════════
@@ -1398,7 +1445,7 @@ function playSignalAlert(type){
 function updateSignals(signals, prevCount=0){
   const sb=document.getElementById('signalsBody');
   if(!sb)return;
-  if(!signals.length){sb.innerHTML='<tr><td colspan="6" class="empty-state">No signals yet...</td></tr>';return;}
+  if(!signals.length){sb.innerHTML='<tr><td colspan="11" class="empty-state">No signals yet...</td></tr>';return;}
 
   // Play alert sound for NEW signals only
   if(signals.length>prevCount){
@@ -1408,13 +1455,25 @@ function updateSignals(signals, prevCount=0){
 
   sb.innerHTML=signals.slice(-10).reverse().map((s,i)=>{
     const cls=s.type==='BUY'?'badge-green':s.type==='SELL'?'badge-red':'badge-gold';
+    const dir=s.direction||'—';
+    const dirCls=dir==='LONG'?'badge-green':dir==='SHORT'?'badge-red':'badge-gold';
+    const score=s.signal_score!=null?s.signal_score:(s.score!=null?s.score:'—');
+    const sl=s.stop_loss!=null?'₹'+Number(s.stop_loss).toLocaleString('en-IN',{minimumFractionDigits:2}):'—';
+    const tgt=s.target!=null?'₹'+Number(s.target).toLocaleString('en-IN',{minimumFractionDigits:2}):'—';
+    const status=s.status||(s.type==='BUY'||s.type==='SELL'?'SIGNAL':'—');
+    const statusCls=status==='FILLED'?'badge-green':status==='REJECTED'?'badge-red':status==='SIGNAL'?'badge-gold':'badge-gray';
     return`<tr>
       <td>${signals.length-i}</td>
       <td>${(s.time||'').split('T')[1]?.substring(0,5)||'—'}</td>
-      <td>${s.strategy_name||'SAR'}</td>
-      <td>${s.instrument||'—'}</td>
+      <td style="font-size:11px;color:var(--accent)">${s.strategy_name||'SAR'}</td>
+      <td style="font-size:11px;font-weight:600">${s.instrument||'—'}</td>
       <td><span class="${cls}">${s.type||'—'}</span></td>
       <td>₹${(s.price||0).toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
+      <td><span class="${dirCls}" style="font-size:10px">${dir}</span></td>
+      <td style="font-weight:700;color:var(--gold)">${score}</td>
+      <td style="font-size:11px;color:var(--red)">${sl}</td>
+      <td style="font-size:11px;color:var(--green)">${tgt}</td>
+      <td><span class="${statusCls}" style="font-size:10px">${status}</span></td>
     </tr>`;
   }).join('');
 }

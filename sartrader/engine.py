@@ -3620,6 +3620,9 @@ async def main_async():
     ws_task = asyncio.create_task(
         ws_server(lambda: engine, host, port + 1)
     )
+    ws_task.add_done_callback(
+        lambda t: logger.error(f"[WS] Server task failed: {t.exception()}") if t.exception() else None
+    )
 
     # Wait for HTTP server to be listening before starting tick loop
     await server_ready.wait()

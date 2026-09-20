@@ -336,8 +336,10 @@ table .empty-state{text-align:center;padding:30px;color:var(--text-muted);font-s
         <div class="ticker-item" id="tkBankNifty"><span class="tk-name">BankNifty</span><span class="tk-price">—</span><span class="tk-arrow">—</span><span class="tk-change">—</span></div>
         <div class="ticker-item" id="tkGold"><span class="tk-name">Gold</span><span class="tk-price">—</span><span class="tk-arrow">—</span><span class="tk-change">—</span></div>
         <div class="ticker-item" id="tkSilver"><span class="tk-name">Silver</span><span class="tk-price">—</span><span class="tk-arrow">—</span><span class="tk-change">—</span></div>
+        <div class="ticker-item" id="tkUsdInr"><span class="tk-name">USD/INR</span><span class="tk-price">—</span><span class="tk-arrow">—</span><span class="tk-change">—</span></div>
       </div>
-      <div class="live-clock" id="liveClock" style="margin-left:auto;font-size:12px;color:var(--text-muted)">—</div>
+      <button id="btnExitAll" onclick="onExitAll()" style="margin-left:auto;margin-right:8px;padding:5px 14px;font-size:11px;font-weight:700;background:rgba(255,77,106,0.15);color:var(--red);border:1px solid rgba(255,77,106,0.4);border-radius:8px;cursor:pointer;display:none">Exit All</button>
+      <div class="live-clock" id="liveClock" style="font-size:12px;color:var(--text-muted)">—</div>
     </div>
 
     <div class="content-area">
@@ -376,7 +378,7 @@ table .empty-state{text-align:center;padding:30px;color:var(--text-muted);font-s
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>#</th><th>Time</th><th>Strategy</th><th>Instrument</th><th>Type</th><th>Price</th></tr></thead>
+              <thead><tr><th>#</th><th>Time</th><th>Strategy</th><th>Instrument</th><th>Type</th><th>Price</th><th>Dir</th><th>Score</th><th>SL</th><th>Target</th><th>Status</th></tr></thead>
               <tbody id="signalsBody"><tr><td colspan="6" class="empty-state">No signals yet...</td></tr></tbody>
             </table>
           </div>
@@ -388,7 +390,7 @@ table .empty-state{text-align:center;padding:30px;color:var(--text-muted);font-s
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>#</th><th>Entry</th><th>Instrument</th><th>Dir</th><th>Entry ₹</th><th>Exit ₹</th><th>P&L</th><th>Status</th></tr></thead>
+              <thead><tr><th>#</th><th>Date/Time</th><th>Instrument</th><th>Dir</th><th>Entry ₹</th><th>Qty</th><th>LTP</th><th>P&L</th><th>Status</th><th>Sector</th><th>C. P&L</th></tr></thead>
               <tbody id="tradesBody"><tr><td colspan="8" class="empty-state">No trades yet...</td></tr></tbody>
             </table>
           </div>
